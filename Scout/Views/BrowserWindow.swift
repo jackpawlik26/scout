@@ -96,12 +96,12 @@ struct BrowserContent: View {
             nsWindow.applyTransparency(transparency)
         }
         .onChange(of: transparency) { _, amount in window.nsWindow?.applyTransparency(amount) }
-        // ⌘↓ opens, like Finder (⌘O is in the File menu).
-        .onWindowKey(.downArrow, modifiers: .command) {
-            guard !isEditingText, !window.isPaletteOpen else { return false }
-            window.current.openSelection()
-            return true
-        }
+        // ⌘↓, ⌘↩ and ⌃↩ open, alongside ⌘O in the File menu. (Plain Return renames, like Finder.)
+        .onWindowKey(.downArrow, modifiers: .command, perform: openSelection)
+        .onWindowKey(.returnKey, modifiers: .command, perform: openSelection)
+        .onWindowKey(.returnKey, modifiers: .control, perform: openSelection)
+        .onWindowKey(.keypadEnter, modifiers: .command, perform: openSelection)
+        .onWindowKey(.keypadEnter, modifiers: .control, perform: openSelection)
         .sheet(isPresented: $window.isGoToPathOpen) {
             GoToPathView(window: window)
         }
@@ -127,6 +127,13 @@ struct BrowserContent: View {
     /// The top 32pt: macOS's title-bar zone, where the traffic lights live. Clicks
     /// here drag the window, so nothing interactive goes in it, except the sidebar
     /// toggle, which macOS hosts in the title bar itself (`SidebarToggleAccessory`).
+    /// Opens the selection, unless you're typing or the palette is up (it has its own ⌘↩).
+    private func openSelection() -> Bool {
+        guard !isEditingText, !window.isPaletteOpen, !window.current.selection.isEmpty else { return false }
+        window.current.openSelection()
+        return true
+    }
+
     private var titleBand: some View {
         WindowDragArea()
             .frame(height: Layout.titleRowHeight)

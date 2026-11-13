@@ -59,7 +59,7 @@ struct FileTableView: View {
             .width(min: 120, ideal: 150)
 
             TableColumn("Date Modified", value: \.modifiedSortKey) { item in
-                FittingDate(date: item.dateModified).foregroundStyle(.secondary)
+                FittingDate(date: browser.date(of: item)).foregroundStyle(.secondary)
             }
             .width(min: 76, ideal: 120)
 
@@ -71,9 +71,17 @@ struct FileTableView: View {
             }
             .width(min: 52, ideal: 64)
         } rows: {
-            ForEach(browser.displayedItems) { item in
-                TableRow(item)
-                    .itemProvider { NSItemProvider(contentsOf: item.url) }
+            ForEach(browser.displayedGroups) { group in
+                Section {
+                    ForEach(group.items) { item in
+                        TableRow(item)
+                            .itemProvider { NSItemProvider(contentsOf: item.url) }
+                    }
+                } header: {
+                    if !group.title.isEmpty {
+                        GroupHeader(title: group.title, count: group.items.count)
+                    }
+                }
             }
         }
         .contextMenu(forSelectionType: URL.self) { urls in
@@ -106,13 +114,18 @@ struct FileGridView: View {
     static let spacing: CGFloat = 6
     static let padding: CGFloat = 16
 
-    /// Folders and files in their own sections (when folders are kept on top), else one.
-    private var sections: [[FileItem]] {
+    /// The Group By groups; or Folders and Files (when folders are kept on top); else one.
+    private var sections: [[FileItem]] { groups.map(\.items) }
+
+    private var groups: [ItemGroup] {
+        if browser.groupBy != .none { return browser.displayedGroups }
         let items = browser.displayedItems
         let folders = items.filter(\.isNavigable)
         let files = items.filter { !$0.isNavigable }
-        if browser.foldersFirst, browser.isFolder, !folders.isEmpty, !files.isEmpty { return [folders, files] }
-        return [items]
+        if browser.foldersFirst, browser.isFolder, !folders.isEmpty, !files.isEmpty {
+            return [ItemGroup(title: "Folders", items: folders), ItemGroup(title: "Files", items: files)]
+        }
+        return [ItemGroup(title: "", items: items)]
     }
 
     private var columnCount: Int {
@@ -123,12 +136,12 @@ struct FileGridView: View {
         ScrollViewReader { proxy in
         ScrollView {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: Self.cellWidth, maximum: 140), spacing: Self.spacing)], spacing: 16) {
-                let sections = sections
-                if sections.count == 2 {
-                    Section { cells(sections[0]) } header: { sectionHeader("Folders", count: sections[0].count) }
-                    Section { cells(sections[1]) } header: { sectionHeader("Files", count: sections[1].count) }
-                } else {
-                    cells(sections[0])
+                ForEach(groups) { group in
+                    if group.title.isEmpty {
+                        cells(group.items)
+                    } else {
+                        Section { cells(group.items) } header: { sectionHeader(group.title, count: group.items.count) }
+                    }
                 }
             }
             .padding(Self.padding)
@@ -290,6 +303,21 @@ private struct GridCell: View {
             return "\(itemCount) item\(itemCount == 1 ? "" : "s")"
         }
         return Format.size(item)
+    }
+}
+
+/// A Finder-style group title ("Documents", "Yesterday") with its count.
+struct GroupHeader: View {
+    let title: String
+    let count: Int
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(title).font(.system(size: 12, weight: .semibold))
+            Text("\(count)").font(.system(size: 11)).foregroundStyle(.tertiary).monospacedDigit()
+            Spacer()
+        }
+        .padding(.top, 6)
     }
 }
 

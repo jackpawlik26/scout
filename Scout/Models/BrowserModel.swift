@@ -8,17 +8,22 @@ enum ViewMode: String, CaseIterable, Identifiable {
 }
 
 enum SortField: String, CaseIterable, Identifiable {
-    case name, modified, size, kind
+    case name, kind, modified, added, created, size
     var id: Self { self }
 
     var title: String {
         switch self {
         case .name: "Name"
         case .modified: "Date Modified"
+        case .added: "Date Added"
+        case .created: "Date Created"
         case .size: "Size"
         case .kind: "Kind"
         }
     }
+
+    /// Which date the list's date column shows.
+    var isDate: Bool { self == .modified || self == .added || self == .created }
 
     /// Dates and sizes start newest/biggest first.
     var defaultAscending: Bool { self == .name || self == .kind }
@@ -68,6 +73,15 @@ final class BrowserModel: Identifiable {
     var filterText = "" { didSet { refreshDisplayed() } }
     /// New tabs start from Settings' choices; the View menu changes one tab.
     var foldersFirst = UserDefaults.standard.object(forKey: "foldersFirst") as? Bool ?? true { didSet { refreshDisplayed() } }
+    /// Finder-style groups (Kind, Date Added…). Remembered per folder, like the sort.
+    var groupBy: GroupBy = .none {
+        didSet {
+            refreshDisplayed()
+            rememberFolderView()
+        }
+    }
+    /// `displayedItems` split into labeled groups (one untitled group when not grouping).
+    private(set) var displayedGroups: [ItemGroup] = []
     var showHidden = UserDefaults.standard.bool(forKey: "showHidden") { didSet { Task { await load(recordVisit: false) } } }
     /// Remembered across tabs and launches, like Finder.
     var viewMode: ViewMode = ViewMode(rawValue: UserDefaults.standard.string(forKey: "viewMode") ?? "") ?? .list {
@@ -151,6 +165,7 @@ final class BrowserModel: Identifiable {
     init(location: URL, services: AppServices) {
         self.location = .folder(location.filePath)
         self.services = services
+        applyFolderView()
         Task { await load(recordVisit: true) }
     }
 
@@ -181,6 +196,8 @@ final class BrowserModel: Identifiable {
         case \FileItem.modifiedSortKey: return .modified
         case \FileItem.sizeSortKey: return .size
         case \FileItem.kind: return .kind
+        case \FileItem.addedSortKey: return .added
+        case \FileItem.createdSortKey: return .created
         default: return nil
         }
     }
@@ -194,9 +211,67 @@ final class BrowserModel: Identifiable {
         case .modified: comparator = KeyPathComparator(\FileItem.modifiedSortKey)
         case .size: comparator = KeyPathComparator(\FileItem.sizeSortKey)
         case .kind: comparator = KeyPathComparator(\FileItem.kind, comparator: String.StandardComparator.localizedStandard)
+        case .added: comparator = KeyPathComparator(\FileItem.addedSortKey)
+        case .created: comparator = KeyPathComparator(\FileItem.createdSortKey)
         }
         comparator.order = ascending ? .forward : .reverse
         sortOrder = [comparator]
+        rememberFolderView()
+    }
+
+    /// The date the list shows: the one you're grouping or sorting by, else Date Modified.
+    var shownDate: SortField {
+        switch groupBy {
+        case .dateAdded: return .added
+        case .dateCreated: return .created
+        case .dateModified: return .modified
+        default: return sortField?.isDate == true ? sortField! : .modified
+        }
+    }
+
+    func date(of item: FileItem) -> Date? {
+        switch shownDate {
+        case .added: item.dateAdded
+        case .created: item.dateCreated
+        default: item.dateModified
+        }
+    }
+
+    // MARK: - Per-folder view settings (like Finder)
+
+    @ObservationIgnored private var isApplyingFolderView = false
+
+    /// Saved as "field|ascending|groupBy" per folder path.
+    private static let folderViewsKey = "folderViews"
+
+    /// Restores this folder's sort and grouping (Downloads starts newest-added first, grouped by day).
+    private func applyFolderView() {
+        guard mode == .folder else { return }
+        let saved = (UserDefaults.standard.dictionary(forKey: Self.folderViewsKey) as? [String: String])?[location.filePath]
+        var field = SortField.name, ascending = true, group = GroupBy.none
+        if let saved {
+            let parts = saved.split(separator: "|").map(String.init)
+            if parts.count == 3 {
+                field = SortField(rawValue: parts[0]) ?? .name
+                ascending = parts[1] == "1"
+                group = GroupBy(rawValue: parts[2]) ?? .none
+            }
+        } else if location.filePath == services.homePath + "/Downloads" {
+            field = .added
+            ascending = false
+            group = .dateAdded
+        }
+        isApplyingFolderView = true
+        sort(by: field, ascending: ascending)
+        groupBy = group
+        isApplyingFolderView = false
+    }
+
+    private func rememberFolderView() {
+        guard !isApplyingFolderView, mode == .folder else { return }
+        var views = UserDefaults.standard.dictionary(forKey: Self.folderViewsKey) as? [String: String] ?? [:]
+        views[location.filePath] = "\(sortField?.rawValue ?? "name")|\(sortAscending ? 1 : 0)|\(groupBy.rawValue)"
+        UserDefaults.standard.set(views, forKey: Self.folderViewsKey)
     }
 
     // MARK: - Navigation
@@ -312,6 +387,8 @@ final class BrowserModel: Identifiable {
         filterText = ""
         previewURL = nil
         pendingSelection = child?.filePath
+        // Folders get their own remembered view; searches and workspaces keep their own order.
+        if mode == .folder { applyFolderView() } else if groupBy != .none { groupBy = .none }
         Task { await load(recordVisit: record) }
     }
 
@@ -488,8 +565,14 @@ final class BrowserModel: Identifiable {
         let query = filterText.trimmingCharacters(in: .whitespaces)
         if !query.isEmpty { list = list.filter { $0.name.localizedCaseInsensitiveContains(query) } }
         if !sortOrder.isEmpty { list.sort(using: sortOrder) }
+        if groupBy != .none {
+            displayedGroups = ItemGrouper.groups(list, by: groupBy)
+            displayedItems = displayedGroups.flatMap(\.items)
+            return
+        }
         if foldersFirst, isFolder { list = list.filter(\.isNavigable) + list.filter { !$0.isNavigable } }
         displayedItems = list
+        displayedGroups = [ItemGroup(title: "", items: list)]
     }
 
     // MARK: - Opening

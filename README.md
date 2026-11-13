@@ -73,7 +73,7 @@ scout duplicates ~/Desktop   # list duplicate files (no folder = whole home)
 | ⌘T / ⌘W | New tab / close tab |
 | ⇧⌘] / ⇧⌘[ | Next / previous tab |
 | ⌘[ / ⌘] / ⌘↑ | Back / forward / enclosing folder |
-| ⌘O, ⌘↓ or double-click | Open |
+| ⌘O, ⌘↩, ⌃↩, ⌘↓ or double-click | Open |
 | Type a name | Select the first match (like Finder) |
 | Arrow keys | Move the selection (list and icons) |
 | ⌘/ | All keyboard shortcuts |

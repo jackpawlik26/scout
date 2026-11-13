@@ -548,9 +548,9 @@ private struct SortMenu: View {
         Menu {
             SortMenuItems(browser: browser)
         } label: {
-            Image(systemName: "arrow.up.arrow.down")
+            Image(systemName: browser.groupBy == .none ? "arrow.up.arrow.down" : "square.split.1x2")
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(browser.groupBy == .none ? Color.secondary : Color.accentColor)
                 .frame(width: 28, height: 28)
                 .contentShape(Rectangle())
         }
@@ -558,7 +558,7 @@ private struct SortMenu: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
-        .help("Sort")
+        .help(browser.groupBy == .none ? "Sort" : "Sort and Group (grouped by \(browser.groupBy.title))")
     }
 }
 
@@ -579,5 +579,12 @@ private struct SortMenuItems: View {
                 set: { browser.sort(by: browser.sortField ?? .name, ascending: $0) }
             ))
             Toggle("Folders on Top", isOn: $browser.foldersFirst)
+                .disabled(browser.groupBy != .none)
+            if !browser.showsLocations {
+                Divider()
+                Picker("Group By", selection: $browser.groupBy) {
+                    ForEach(GroupBy.allCases) { Text($0.title).tag($0) }
+                }
+            }
     }
 }

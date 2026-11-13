@@ -27,7 +27,7 @@ struct ShortcutsView: View {
             ]),
             ShortcutGroup(title: "Move around", rows: [
                 ("↑ ↓ ← →", "Move the selection"),
-                ("⌘O  or  ⌘↓", "Open"),
+                ("⌘O  ⌘↩  ⌘↓", "Open (⌃↩ too)"),
                 ("⌘↑", "Enclosing folder"),
                 ("⌘[  ⌘]", "Back, forward"),
                 ("⇧⌘H ⇧⌘D ⇧⌘O", "Home, Desktop, Docs"),

@@ -5,6 +5,9 @@ import SwiftUI
 /// text field is editing, because the field editor eats it, so these are caught at the window.)
 enum Key: UInt16 {
     case escape = 53
+    case returnKey = 36
+    /// Enter on a numeric keypad.
+    case keypadEnter = 76
     case downArrow = 125
     case upArrow = 126
     case leftArrow = 123

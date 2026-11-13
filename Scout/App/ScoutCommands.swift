@@ -102,6 +102,25 @@ struct ScoutCommands: Commands {
             Button("as Icons") { browser?.viewMode = .icons }
                 .keyboardShortcut("2")
             Divider()
+            Menu("Group By") {
+                ForEach(Array(zip(GroupBy.allCases, ["0", "2", "6", "5", "7", "3", "1"])), id: \.0) { group, key in
+                    Toggle(group.title, isOn: Binding(
+                        get: { browser?.groupBy == group },
+                        set: { _ in browser?.groupBy = group }
+                    ))
+                    .keyboardShortcut(KeyEquivalent(Character(key)), modifiers: [.command, .control])
+                }
+            }
+            .disabled(browser?.showsLocations ?? true)
+            Menu("Sort By") {
+                ForEach(SortField.allCases) { field in
+                    Toggle(field.title, isOn: Binding(
+                        get: { browser?.sortField == field },
+                        set: { _ in browser?.sort(by: field, ascending: field.defaultAscending) }
+                    ))
+                }
+            }
+            Divider()
             Button(browser?.showHidden == true ? "Hide Hidden Files" : "Show Hidden Files") {
                 browser?.showHidden.toggle()
             }
