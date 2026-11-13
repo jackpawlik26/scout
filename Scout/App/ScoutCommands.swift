@@ -23,7 +23,7 @@ struct ScoutCommands: Commands {
                 .keyboardShortcut("n", modifiers: [.command, .shift])
             Divider()
             Button("Open") { browser?.openSelection() }
-                .keyboardShortcut(.downArrow, modifiers: .command)
+                .keyboardShortcut("o")
             Button("Quick Look") { browser?.toggleQuickLook() }
                 .keyboardShortcut("y")
             Button(window?.isInspectorShown == true ? "Hide Info Panel" : "Show Info Panel") {
@@ -106,6 +106,14 @@ struct ScoutCommands: Commands {
             Button("Show Previous Tab") { window?.selectTab(offset: -1) }
                 .keyboardShortcut("[", modifiers: [.command, .shift])
             Divider()
+        }
+
+        CommandGroup(replacing: .help) {
+            Button("Keyboard Shortcuts") {
+                window?.isPaletteOpen = false
+                window?.isShortcutsOpen.toggle()
+            }
+            .keyboardShortcut("/")
         }
 
         CommandMenu("Go") {

@@ -10,6 +10,7 @@ import Foundation
 ///     scout://cleanup                            open Clean Up
 ///     scout://packages                           open Packages (Homebrew, npm)
 ///     scout://settings                           open Settings
+///     scout://shortcuts                          show the keyboard shortcuts
 ///     scout://changes?path=~/Scout               every changed file in a git repository
 public enum ScoutLink: Equatable, Sendable {
     case open(path: String, newTab: Bool, split: Bool = false)
@@ -18,6 +19,7 @@ public enum ScoutLink: Equatable, Sendable {
     case cleanup
     case packages
     case settings
+    case shortcuts
     case changes(path: String)
 
     public static let scheme = "scout"
@@ -45,6 +47,8 @@ public enum ScoutLink: Equatable, Sendable {
             self = .packages
         case "settings", "preferences":
             self = .settings
+        case "shortcuts", "keys":
+            self = .shortcuts
         case "changes":
             guard let path = query["path"], !path.isEmpty else { return nil }
             self = .changes(path: path)
@@ -74,6 +78,8 @@ public enum ScoutLink: Equatable, Sendable {
             components.host = "packages"
         case .settings:
             components.host = "settings"
+        case .shortcuts:
+            components.host = "shortcuts"
         case .changes(let path):
             components.host = "changes"
             components.queryItems = [URLQueryItem(name: "path", value: path)]

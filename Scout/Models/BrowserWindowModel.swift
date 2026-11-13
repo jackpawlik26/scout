@@ -58,6 +58,10 @@ final class BrowserWindowModel {
     /// Scope to start the palette in (e.g. Files for ⇧⌘F).
     var paletteInitialScope: SearchScope?
     var isGoToPathOpen = false
+    /// The keyboard shortcuts sheet (⌘/).
+    var isShortcutsOpen = false
+    /// The window this model is shown in (set once SwiftUI puts it on screen).
+    @ObservationIgnored weak var nsWindow: NSWindow?
     /// Remembered across launches.
     var isSidebarShown = UserDefaults.standard.object(forKey: "sidebarShown") as? Bool ?? true {
         didSet { UserDefaults.standard.set(isSidebarShown, forKey: "sidebarShown") }
@@ -77,6 +81,7 @@ final class BrowserWindowModel {
         focusedPaneID = first.id
         panes = [first]
         first.window = self
+        services.register(self)
     }
 
     var focusedPane: PaneModel { panes.first { $0.id == focusedPaneID } ?? panes[0] }
@@ -177,6 +182,9 @@ final class BrowserWindowModel {
             current.showPackages()
         case .settings:
             current.showSettings()
+        case .shortcuts:
+            isPaletteOpen = false
+            isShortcutsOpen = true
         case .changes(let path):
             current.showChanges(in: PathCompletion.expandTilde(path, home: services.homePath))
         case .jump(let query):

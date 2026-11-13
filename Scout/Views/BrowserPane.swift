@@ -293,7 +293,7 @@ struct BrowserPane: View {
         .font(.system(size: 13))
         .padding(.horizontal, 10)
         .frame(height: 32)
-        .background(RoundedRectangle(cornerRadius: 9).fill(Color.raised))
+        .background(RaisedFill(shape: RoundedRectangle(cornerRadius: 9)))
         .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Color.accentColor.opacity(0.35)))
         .padding(.horizontal, 12)
         .padding(.bottom, 10)
@@ -336,7 +336,7 @@ struct BrowserPane: View {
         .font(.system(size: 13))
         .padding(.horizontal, 12)
         .frame(height: 38)
-        .background(RoundedRectangle(cornerRadius: 9).fill(Color.raised))
+        .background(RaisedFill(shape: RoundedRectangle(cornerRadius: 9)))
         .padding(.horizontal, 12)
         .padding(.bottom, 10)
     }
@@ -364,7 +364,7 @@ struct BrowserPane: View {
         .font(.system(size: 13))
         .padding(.horizontal, 12)
         .frame(height: 38)
-        .background(RoundedRectangle(cornerRadius: 9).fill(Color.raised))
+        .background(RaisedFill(shape: RoundedRectangle(cornerRadius: 9)))
         .padding(.horizontal, 12)
         .padding(.bottom, 10)
     }
@@ -406,7 +406,7 @@ struct BrowserPane: View {
         .font(.system(size: 13))
         .padding(.horizontal, 12)
         .frame(height: 38)
-        .background(RoundedRectangle(cornerRadius: 9).fill(Color.raised))
+        .background(RaisedFill(shape: RoundedRectangle(cornerRadius: 9)))
         .padding(.horizontal, 12)
         .padding(.bottom, 10)
     }

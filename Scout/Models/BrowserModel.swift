@@ -83,6 +83,8 @@ final class BrowserModel: Identifiable {
     }
     /// The file shown in Quick Look, if it's open.
     var previewURL: URL?
+    /// An item the list or grid should scroll to (after type-select, reveal, arrow keys).
+    var scrollTarget: URL?
     /// The item being renamed (drives the rename dialog).
     var renaming: FileItem?
     var alertMessage: String?
@@ -408,7 +410,34 @@ final class BrowserModel: Identifiable {
     private func selectPath(_ path: String) -> Bool {
         guard let item = items.first(where: { $0.path == path }) else { return false }
         selection = [item.id]
+        scrollTarget = item.id
         return true
+    }
+
+    // MARK: - Keyboard selection
+
+    @ObservationIgnored private var typedPrefix = ""
+    @ObservationIgnored private var lastTyped = Date.distantPast
+
+    /// Typing in the middle of a type-select (so Space adds a space instead of Quick Look).
+    var isTypeSelecting: Bool { Date.now.timeIntervalSince(lastTyped) < 1 }
+
+    /// Finder-style type-select: typing "rep" quickly selects the first item starting with "rep".
+    func typeSelect(_ characters: String) {
+        typedPrefix = isTypeSelecting ? typedPrefix + characters : characters
+        lastTyped = .now
+        let typed = typedPrefix
+        let match = displayedItems.first {
+            $0.name.range(of: typed, options: [.caseInsensitive, .diacriticInsensitive, .anchored]) != nil
+        } ?? displayedItems.first { $0.name.localizedStandardContains(typed) }
+        guard let match else { return }
+        select(match)
+    }
+
+    /// Selects one item and scrolls to it.
+    func select(_ item: FileItem) {
+        selection = [item.id]
+        scrollTarget = item.id
     }
 
     private func watch(_ folder: URL) {

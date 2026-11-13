@@ -31,10 +31,15 @@ struct GoToPathView: View {
             HStack {
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
                 Button("Go", action: go).keyboardShortcut(.defaultAction)
             }
         }
         .padding(20)
+        .onWindowKey(.escape) {
+            dismiss()
+            return true
+        }
         .onAppear {
             let current = window.current.location.filePath
             path = PathDisplay.display(current, home: window.services.homePath) + "/"

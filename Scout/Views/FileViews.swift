@@ -7,7 +7,32 @@ struct FileTableView: View {
     let window: BrowserWindowModel
     @Bindable var browser: BrowserModel
 
+    @State private var anchor = TableAnchor()
+
     var body: some View {
+        table
+            .background(TableAnchorView(anchor: anchor))
+            .onChange(of: browser.location) {
+                Task {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    anchor.focus()
+                }
+            }
+            .onChange(of: browser.scrollTarget) { _, target in
+                guard let target else { return }
+                // SwiftUI's scrollTo doesn't reach Table rows, so ask the AppKit table directly,
+                // now and again once a freshly loaded folder has laid out.
+                let row = { browser.displayedItems.firstIndex { $0.id == target } }
+                if let index = row() { anchor.scroll(to: index) }
+                Task {
+                    try? await Task.sleep(for: .milliseconds(150))
+                    if let index = row() { anchor.scroll(to: index) }
+                    browser.scrollTarget = nil
+                }
+            }
+    }
+
+    private var table: some View {
         Table(of: FileItem.self, selection: $browser.selection, sortOrder: $browser.sortOrder) {
             TableColumn("Name", value: \.name, comparator: .localizedStandard) { item in
                 HStack(spacing: 8) {
@@ -75,22 +100,42 @@ struct FileGridView: View {
     @Bindable var browser: BrowserModel
     @FocusState private var isFocused: Bool
 
+    @State private var width: CGFloat = 0
+
+    static let cellWidth: CGFloat = 112
+    static let spacing: CGFloat = 6
+    static let padding: CGFloat = 16
+
+    /// Folders and files in their own sections (when folders are kept on top), else one.
+    private var sections: [[FileItem]] {
+        let items = browser.displayedItems
+        let folders = items.filter(\.isNavigable)
+        let files = items.filter { !$0.isNavigable }
+        if browser.foldersFirst, browser.isFolder, !folders.isEmpty, !files.isEmpty { return [folders, files] }
+        return [items]
+    }
+
+    private var columnCount: Int {
+        max(1, Int((width - Self.padding * 2 + Self.spacing) / (Self.cellWidth + Self.spacing)))
+    }
+
     var body: some View {
+        ScrollViewReader { proxy in
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 112, maximum: 140), spacing: 6)], spacing: 16) {
-                let items = browser.displayedItems
-                let folders = items.filter(\.isNavigable)
-                let files = items.filter { !$0.isNavigable }
-                // Folders and files in their own sections (when folders are kept on top).
-                if browser.foldersFirst, browser.isFolder, !folders.isEmpty, !files.isEmpty {
-                    Section { cells(folders) } header: { sectionHeader("Folders", count: folders.count) }
-                    Section { cells(files) } header: { sectionHeader("Files", count: files.count) }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: Self.cellWidth, maximum: 140), spacing: Self.spacing)], spacing: 16) {
+                let sections = sections
+                if sections.count == 2 {
+                    Section { cells(sections[0]) } header: { sectionHeader("Folders", count: sections[0].count) }
+                    Section { cells(sections[1]) } header: { sectionHeader("Files", count: sections[1].count) }
                 } else {
-                    cells(items)
+                    cells(sections[0])
                 }
             }
-            .padding(16)
+            .padding(Self.padding)
             .frame(maxWidth: .infinity, alignment: .top)
+        }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .onChange(of: browser.scrollTarget) { _, target in scroll(proxy, to: target, browser) }
         }
         .contentShape(Rectangle())
         .onTapGesture { browser.selection = [] }
@@ -98,6 +143,10 @@ struct FileGridView: View {
         .focusable()
         .focused($isFocused)
         .focusEffectDisabled()
+        .onKeyPress(.leftArrow) { move(.left) }
+        .onKeyPress(.rightArrow) { move(.right) }
+        .onKeyPress(.upArrow) { move(.up) }
+        .onKeyPress(.downArrow) { move(.down) }
         .fileKeyboardShortcuts(browser)
         .onCopyCommand {
             browser.copySelectionToPasteboard()
@@ -105,6 +154,7 @@ struct FileGridView: View {
         }
         .onPasteCommand(of: [.fileURL]) { _ in browser.paste(move: false) }
         .onAppear { isFocused = true }
+        .onChange(of: browser.location) { if !isEditingText { isFocused = true } }
     }
 
     private func cells(_ items: [FileItem]) -> some View {
@@ -127,6 +177,55 @@ struct FileGridView: View {
         }
         .padding(.horizontal, 4)
         .padding(.top, 6)
+    }
+
+    private enum Direction { case left, right, up, down }
+
+    /// Arrow keys move the selection through the grid, row by row within each section.
+    private func move(_ direction: Direction) -> KeyPress.Result {
+        let sections = sections
+        let flat = sections.flatMap(\.self)
+        guard !flat.isEmpty else { return .ignored }
+        guard let current = flat.lastIndex(where: { browser.selection.contains($0.id) }) else {
+            browser.select(flat[0])
+            return .handled
+        }
+        var target = current
+        switch direction {
+        case .left: target = max(0, current - 1)
+        case .right: target = min(flat.count - 1, current + 1)
+        case .up, .down:
+            // Position inside its section.
+            var start = 0
+            var sectionIndex = 0
+            while current >= start + sections[sectionIndex].count {
+                start += sections[sectionIndex].count
+                sectionIndex += 1
+            }
+            let columns = columnCount
+            let index = current - start
+            let column = index % columns
+            let count = sections[sectionIndex].count
+            if direction == .down {
+                if index + columns < count {
+                    target = current + columns
+                } else if (index / columns) < (count - 1) / columns {
+                    target = start + count - 1 // a shorter last row
+                } else if sectionIndex + 1 < sections.count {
+                    target = start + count + min(column, sections[sectionIndex + 1].count - 1)
+                }
+            } else {
+                if index - columns >= 0 {
+                    target = current - columns
+                } else if sectionIndex > 0 {
+                    let previous = sections[sectionIndex - 1].count
+                    let lastRowStart = (previous - 1) / columns * columns
+                    target = start - previous + min(lastRowStart + column, previous - 1)
+                }
+            }
+        }
+        browser.select(flat[target])
+        return .handled
     }
 
     private func click(_ item: FileItem) {
@@ -194,12 +293,81 @@ private struct GridCell: View {
     }
 }
 
+/// Finds the NSTableView behind a SwiftUI Table (the one this anchor sits on).
+@MainActor final class TableAnchor {
+    weak var view: NSView?
+
+    func scroll(to row: Int) {
+        guard let table = findTable(), row < table.numberOfRows else { return }
+        table.scrollRowToVisible(row)
+        focus()
+    }
+
+    /// Gives the list keyboard focus (so arrows and type-select work right after a jump),
+    /// unless you're typing in a field.
+    func focus() {
+        guard let table = findTable(), let window = table.window, !(window.firstResponder is NSText) else { return }
+        window.makeFirstResponder(table)
+    }
+
+    private func findTable() -> NSTableView? {
+        guard let view, view.window != nil else { return nil }
+        let center = view.convert(NSPoint(x: view.bounds.midX, y: view.bounds.midY), to: nil)
+        var ancestor = view.superview
+        while let current = ancestor {
+            if let table = Self.tables(in: current).first(where: { table in
+                guard let scroll = table.enclosingScrollView else { return false }
+                return scroll.convert(scroll.bounds, to: nil).contains(center)
+            }) {
+                return table
+            }
+            ancestor = current.superview
+        }
+        return nil
+    }
+
+    private static func tables(in view: NSView) -> [NSTableView] {
+        if let table = view as? NSTableView { return [table] }
+        return view.subviews.flatMap(tables(in:))
+    }
+}
+
+private struct TableAnchorView: NSViewRepresentable {
+    let anchor: TableAnchor
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        anchor.view = view
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) { anchor.view = view }
+}
+
+/// Scrolls the list or grid to a newly selected item, once a freshly loaded folder has laid out.
+@MainActor private func scroll(_ proxy: ScrollViewProxy, to target: URL?, _ browser: BrowserModel) {
+    guard target != nil else { return }
+    proxy.scrollTo(target)
+    Task {
+        // Again once a freshly loaded folder has its real row heights.
+        try? await Task.sleep(for: .milliseconds(150))
+        proxy.scrollTo(target)
+        browser.scrollTarget = nil // so selecting the same item again scrolls again
+    }
+}
+
 private extension View {
     /// Space = Quick Look, Return = rename (like Finder).
     func fileKeyboardShortcuts(_ browser: BrowserModel) -> some View {
         self
             .onKeyPress(.space) {
-                browser.toggleQuickLook()
+                // Mid type-select, Space is part of the name ("my f…").
+                if browser.isTypeSelecting { browser.typeSelect(" ") } else { browser.toggleQuickLook() }
+                return .handled
+            }
+            .onKeyPress(characters: .alphanumerics.union(.punctuationCharacters).union(.symbols), phases: .down) { press in
+                guard press.modifiers.isDisjoint(with: [.command, .control, .option]) else { return .ignored }
+                browser.typeSelect(press.characters)
                 return .handled
             }
             .onKeyPress(.return) {

@@ -1,5 +1,6 @@
 import AppKit
 import ScoutCore
+import ServiceManagement
 import SwiftUI
 
 /// Settings, as a page inside Scout (⌘, or the gear in the sidebar).
@@ -9,6 +10,8 @@ struct SettingsView: View {
 
     @Environment(AppServices.self) private var services
     @AppStorage("appearance") private var appearance = AppAppearance.system.rawValue
+    @AppStorage(Transparency.amountKey) private var transparency = 0.0
+    @AppStorage(Transparency.blurKey) private var transparencyBlur = true
     @AppStorage("viewMode") private var viewMode = ViewMode.list.rawValue
     @AppStorage("foldersFirst") private var foldersFirst = true
     @AppStorage("showHidden") private var showHidden = false
@@ -17,12 +20,18 @@ struct SettingsView: View {
     @State private var isConfirmingClearHistory = false
     @State private var hasFullDiskAccess = Self.checkFullDiskAccess()
     @State private var copied: String?
+    @AppStorage("jumpHotKey") private var jumpHotKey = GlobalHotKey.Preset.optionSpace.rawValue
+    @State private var hotKeyTaken = false
+    @State private var isDefaultBrowser = DefaultFileBrowser.isScout
+    @State private var opensAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var loginItemNote: String?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 appearanceCard
                 browsingCard
+                systemCard
                 developerCard
                 searchCard
                 integrationsCard
@@ -56,6 +65,22 @@ struct SettingsView: View {
                 }
             }
             .padding(.vertical, 4)
+            Divider()
+            SettingRow("Transparency", detail: transparency == 0 ? "Solid. Slide to let your desktop show through."
+                       : "\(Int((transparency * 100).rounded()))%. Content cards stay a bit more solid so text stays readable.") {
+                HStack(spacing: 8) {
+                    Image(systemName: "square.fill").font(.system(size: 10)).foregroundStyle(.secondary)
+                    Slider(value: $transparency, in: 0...1, step: 0.05)
+                        .frame(width: 180)
+                    Image(systemName: "square.dashed").font(.system(size: 10)).foregroundStyle(.secondary)
+                }
+            }
+            Divider()
+            SettingRow("Blur what’s behind", detail: "Frosted glass instead of clear. Easier to read over a busy desktop.") {
+                Toggle("", isOn: $transparencyBlur)
+                    .toggleStyle(.switch).labelsHidden()
+                    .disabled(transparency == 0)
+            }
         }
     }
 
@@ -104,6 +129,56 @@ struct SettingsView: View {
                 .toggleStyle(.switch).labelsHidden()
             }
         }
+    }
+
+    private var systemCard: some View {
+        SettingsCard("Keyboard & System", symbol: "keyboard") {
+            SettingRow("Jump from anywhere", detail: hotKeyTaken
+                       ? "Another app already uses that shortcut. Pick a different one."
+                       : "Opens the ⌘K palette over any app. Press it again or Esc to go back.") {
+                Picker("", selection: Binding(get: { jumpHotKey }, set: { value in
+                    jumpHotKey = value
+                    let preset = GlobalHotKey.Preset(rawValue: value) ?? .off
+                    hotKeyTaken = !GlobalHotKey.shared.apply(preset)
+                })) {
+                    ForEach(GlobalHotKey.Preset.allCases) { preset in
+                        Text(preset.title).tag(preset.rawValue)
+                    }
+                }
+                .labelsHidden()
+                .fixedSize()
+            }
+            Divider()
+            SettingRow("Use Scout for “Show in Finder”",
+                       detail: "Other apps’ Show in Finder and Reveal open in Scout. Apps notice after they restart.") {
+                Toggle("", isOn: Binding(get: { isDefaultBrowser }, set: { on in
+                    DefaultFileBrowser.set(on)
+                    isDefaultBrowser = DefaultFileBrowser.isScout
+                }))
+                .toggleStyle(.switch).labelsHidden()
+            }
+            Divider()
+            SettingRow("Open at login", detail: loginItemNote ?? "Keeps the jump shortcut ready after a restart.") {
+                Toggle("", isOn: Binding(get: { opensAtLogin }, set: { on in
+                    do {
+                        if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+                        loginItemNote = nil
+                    } catch {
+                        loginItemNote = "macOS said no: \(error.localizedDescription)"
+                    }
+                    opensAtLogin = SMAppService.mainApp.status == .enabled
+                    if SMAppService.mainApp.status == .requiresApproval {
+                        loginItemNote = "Allow Scout in System Settings ▸ General ▸ Login Items."
+                    }
+                }))
+                .toggleStyle(.switch).labelsHidden()
+            }
+            Divider()
+            SettingRow("All keyboard shortcuts", detail: "⌘/ shows them anytime.") {
+                Button("Show") { window.isShortcutsOpen = true }
+            }
+        }
+        .onAppear { hotKeyTaken = GlobalHotKey.Preset.saved != .off && !GlobalHotKey.shared.isRegistered }
     }
 
     private var developerCard: some View {

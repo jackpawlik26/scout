@@ -229,7 +229,7 @@ struct CleanupView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 48)
-        .background(Color.canvas)
+        .background(CanvasFill())
         .overlay(alignment: .top) { Rectangle().fill(Color.hairline).frame(height: 1) }
     }
 

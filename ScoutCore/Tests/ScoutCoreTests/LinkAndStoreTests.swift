@@ -27,7 +27,7 @@ import Testing
         #expect(ScoutLink(url: URL(string: "scout://changes")!) == nil)
         for link in [ScoutLink.open(path: "/Users/jack/My Files & Stuff", newTab: true), .jump(query: "ib prep"), .jump(query: nil),
                      .workspace(name: "IB Recruiting"), .cleanup, .open(path: "/x", newTab: false, split: true),
-                     .packages, .settings, .changes(path: "~/Scout")] {
+                     .packages, .settings, .shortcuts, .changes(path: "~/Scout")] {
             #expect(ScoutLink(url: link.url) == link)
         }
     }

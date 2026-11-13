@@ -272,7 +272,7 @@ struct Card<Content: View>: View {
         VStack(alignment: .leading, spacing: spacing) { content }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.raised, in: RoundedRectangle(cornerRadius: 12))
+            .background(RaisedFill(shape: RoundedRectangle(cornerRadius: 12)))
             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.hairline))
     }
 }

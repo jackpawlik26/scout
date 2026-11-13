@@ -37,10 +37,81 @@ extension View {
     /// A rounded content card on the chrome.
     func canvasCard(radius: CGFloat = 12) -> some View {
         self
-            .background(Color.canvas)
+            .background(CanvasFill())
             .clipShape(RoundedRectangle(cornerRadius: radius))
             .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(Color.hairline))
             .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
+    }
+}
+
+// MARK: - Transparency
+
+/// Settings ▸ Appearance ▸ Transparency: how much of the desktop shows through
+/// (0 = solid), and whether it's blurred. Cards stay more solid than the frame so text reads.
+enum Transparency {
+    static let amountKey = "transparency"
+    static let blurKey = "transparencyBlur"
+
+    /// Opacity of the window frame (sidebar, gaps) for a transparency amount.
+    static func chromeOpacity(_ amount: Double) -> Double { 1 - amount * 0.92 }
+    /// Opacity of the content cards.
+    static func canvasOpacity(_ amount: Double) -> Double { 1 - amount * 0.7 }
+    /// Opacity of panels inside cards (they sit on a card that's already partly see-through).
+    static func raisedOpacity(_ amount: Double) -> Double { 1 - amount * 0.6 }
+}
+
+/// The window's background: solid chrome, or chrome over the (blurred) desktop.
+struct WindowBackdrop: View {
+    @AppStorage(Transparency.amountKey) private var amount = 0.0
+    @AppStorage(Transparency.blurKey) private var blur = true
+
+    var body: some View {
+        ZStack {
+            if amount > 0, blur { BehindWindowBlur() }
+            Color.chrome.opacity(Transparency.chromeOpacity(amount))
+        }
+    }
+}
+
+/// A content card's fill.
+struct CanvasFill: View {
+    @AppStorage(Transparency.amountKey) private var amount = 0.0
+
+    var body: some View {
+        Color.canvas.opacity(Transparency.canvasOpacity(amount))
+    }
+}
+
+/// A panel inside a card (info boxes, the search and workspace bars).
+struct RaisedFill<S: Shape>: View {
+    var shape: S
+    @AppStorage(Transparency.amountKey) private var amount = 0.0
+
+    var body: some View {
+        shape.fill(Color.raised.opacity(Transparency.raisedOpacity(amount)))
+    }
+}
+
+/// Blurs whatever is behind the window (the desktop, other apps).
+private struct BehindWindowBlur: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = .underWindowBackground
+        view.blendingMode = .behindWindow
+        view.state = .active // keep the blur when the window isn't frontmost
+        return view
+    }
+
+    func updateNSView(_ view: NSVisualEffectView, context: Context) {}
+}
+
+extension NSWindow {
+    /// See-through when transparency is on, a normal solid window otherwise.
+    func applyTransparency(_ amount: Double) {
+        let clear = amount > 0
+        isOpaque = !clear
+        backgroundColor = clear ? .clear : .windowBackgroundColor
+        invalidateShadow()
     }
 }
 

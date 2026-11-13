@@ -41,7 +41,7 @@ struct CommandPalette: View {
         ZStack(alignment: .top) {
             Color.black.opacity(0.12)
                 .ignoresSafeArea()
-                .onTapGesture { close() }
+                .onTapGesture { close(cancelled: true) }
 
             VStack(spacing: 0) {
                 searchField
@@ -64,7 +64,12 @@ struct CommandPalette: View {
             window.paletteInitialScope = nil
             isFieldFocused = true
         }
-        .onExitCommand { close() }
+        .onExitCommand { close(cancelled: true) }
+        // Esc, even while typing (the text field would otherwise swallow it).
+        .onWindowKey(.escape) {
+            close(cancelled: true)
+            return true
+        }
         .onChange(of: window.paletteInitialQuery) { _, newQuery in
             guard !newQuery.isEmpty else { return }
             query = newQuery
@@ -85,7 +90,6 @@ struct CommandPalette: View {
                 .focused($isFieldFocused)
                 .onKeyPress(.downArrow) { move(1); return .handled }
                 .onKeyPress(.upArrow) { move(-1); return .handled }
-                .onKeyPress(.escape) { close(); return .handled }
                 .onKeyPress(.tab) {
                     let all = SearchScope.allCases
                     scope = all[(all.firstIndex(of: scope)! + 1) % all.count]
@@ -293,9 +297,11 @@ struct CommandPalette: View {
         close()
     }
 
-    private func close() {
+    /// `cancelled`: dismissed without picking anything (Esc, clicking outside).
+    private func close(cancelled: Bool = false) {
         spotlight = nil
         window.isPaletteOpen = false
+        services.paletteClosed(cancelled: cancelled)
     }
 }
 

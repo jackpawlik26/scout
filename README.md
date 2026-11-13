@@ -22,6 +22,8 @@ Install to /Applications (also puts the `scout` CLI in ~/.local/bin): `./scripts
 
 ## Talking to Scout from elsewhere
 
+**Show in Finder:** with Settings ▸ Keyboard & System ▸ “Use Scout for Show in Finder” on, other apps’ Show in Finder / Reveal open in Scout (it sets the `NSFileViewer` default; apps pick it up when they restart).
+
 **Links:** any app can open `scout://` links:
 
 - `scout://open?path=~/Downloads`: open a folder (a file path reveals it)
@@ -32,6 +34,7 @@ Install to /Applications (also puts the `scout` CLI in ~/.local/bin): `./scripts
 - `scout://cleanup`: open Clean Up
 - `scout://packages`: open Packages (Homebrew, npm)
 - `scout://settings`: open Settings
+- `scout://shortcuts`: show the keyboard shortcuts
 - `scout://changes?path=~/Scout`: every changed file in a git repository
 
 **CLI:** `scout` ships inside Scout.app (`Contents/Helpers/scout`):
@@ -61,6 +64,7 @@ scout duplicates ~/Desktop   # list duplicate files (no folder = whole home)
 
 | Keys | Action |
 |---|---|
+| ⌥Space (anywhere) | Open the ⌘K palette from any app; again or Esc goes back (change it in Settings) |
 | ⌘K | Find any folder or file (folders ranked by use; files via Spotlight, names and contents) |
 | ⇧⌘F | Find files (⌘K starting on Files) |
 | In ⌘K: ⇥ / ⌘↵ / ⇧↵ | Cycle All/Folders/Files / new tab or show in Scout / all results in a tab |
@@ -69,7 +73,10 @@ scout duplicates ~/Desktop   # list duplicate files (no folder = whole home)
 | ⌘T / ⌘W | New tab / close tab |
 | ⇧⌘] / ⇧⌘[ | Next / previous tab |
 | ⌘[ / ⌘] / ⌘↑ | Back / forward / enclosing folder |
-| ⌘↓ or double-click | Open |
+| ⌘O, ⌘↓ or double-click | Open |
+| Type a name | Select the first match (like Finder) |
+| Arrow keys | Move the selection (list and icons) |
+| ⌘/ | All keyboard shortcuts |
 | Space or ⌘Y | Quick Look |
 | Return | Rename |
 | ⇧⌘N | New folder |
@@ -81,7 +88,7 @@ scout duplicates ~/Desktop   # list duplicate files (no folder = whole home)
 | F5 / F6 | Copy / move selection to the other pane |
 | ⌥⌘N / ⌃1–9 | New workspace / open workspace 1–9 |
 | ⇧⌘K / ⌥⌘P / ⌥⌘G | Clean Up / Packages / Git changes |
-| ⌘I / ⌃⌘S / ⌘, | Info panel / sidebar / Settings (appearance, defaults, terminal and editor) |
+| ⌘I / ⌃⌘S / ⌘, | Info panel / sidebar / Settings (appearance and transparency, defaults, terminal and editor) |
 | ⇧⌘. | Show hidden files |
 | ⌘R | Show in Finder |
 | ⌥⇧⌘T / ⌥⇧⌘E | Open in your terminal (Tern, Ghostty, iTerm, Terminal…) / code editor; pick them in Settings (⌘,) |

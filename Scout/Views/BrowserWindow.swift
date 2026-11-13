@@ -34,7 +34,8 @@ struct BrowserWindow: View {
         // scout:// links go to an existing window instead of opening a new one.
         .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
         .onOpenURL { url in
-            guard let link = ScoutLink(url: url) else { return }
+            // scout:// links, or folders/files opened with Scout (dropped on the Dock icon, `open -a Scout`).
+            guard let link = url.isFileURL ? .open(path: url.filePath, newTab: false) : ScoutLink(url: url) else { return }
             if let window { window.handle(link) } else { pendingLink = link }
         }
         .onChange(of: window?.current.location) { _, location in
@@ -48,6 +49,7 @@ struct BrowserWindow: View {
 struct BrowserContent: View {
     @Bindable var window: BrowserWindowModel
     @Environment(AppServices.self) private var services
+    @AppStorage(Transparency.amountKey) private var transparency = 0.0
     @State private var newWorkspaceName = ""
 
     var body: some View {
@@ -78,14 +80,27 @@ struct BrowserContent: View {
             }
             }
         }
-        .background(Color.chrome)
+        .background(WindowBackdrop())
         .ignoresSafeArea()
         .frame(minWidth: 780, minHeight: 480)
         .animation(.snappy(duration: 0.25), value: window.panes.count)
         .overlay {
             if window.isPaletteOpen {
                 CommandPalette(window: window)
+            } else if window.isShortcutsOpen {
+                ShortcutsView(window: window)
             }
+        }
+        .onNSWindow { nsWindow in
+            window.nsWindow = nsWindow
+            nsWindow.applyTransparency(transparency)
+        }
+        .onChange(of: transparency) { _, amount in window.nsWindow?.applyTransparency(amount) }
+        // ⌘↓ opens, like Finder (⌘O is in the File menu).
+        .onWindowKey(.downArrow, modifiers: .command) {
+            guard !isEditingText, !window.isPaletteOpen else { return false }
+            window.current.openSelection()
+            return true
         }
         .sheet(isPresented: $window.isGoToPathOpen) {
             GoToPathView(window: window)

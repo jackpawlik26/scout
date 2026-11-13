@@ -28,6 +28,11 @@ final class AppServices {
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private var sizeCache: [String: (size: FolderStats.Size, at: Date)] = [:]
     @ObservationIgnored private var mountObservers: [NSObjectProtocol] = []
+    @ObservationIgnored private var windowModels: [WeakWindow] = []
+    /// The palette was opened by the global shortcut from another app (so Esc goes back there).
+    @ObservationIgnored private var summonedByHotKey = false
+
+    private struct WeakWindow { weak var model: BrowserWindowModel? }
 
     init() {
         frecency = ScoutStore.loadHistory()
@@ -48,6 +53,52 @@ final class AppServices {
                 try? await Task.sleep(for: .seconds(30 * 60))
             }
         }
+    }
+
+    // MARK: - Windows, links from outside, the global shortcut
+
+    func register(_ window: BrowserWindowModel) {
+        windowModels.removeAll { $0.model == nil }
+        windowModels.append(WeakWindow(model: window))
+    }
+
+    /// The frontmost Scout window that's on screen (or minimized).
+    var frontWindow: BrowserWindowModel? {
+        let models = windowModels.compactMap(\.model).filter { $0.nsWindow != nil }
+        for window in NSApp.orderedWindows {
+            if let model = models.first(where: { $0.nsWindow === window }) { return model }
+        }
+        return models.first
+    }
+
+    /// Brings Scout forward and handles the link in its front window, or opens a window for it.
+    func route(_ link: ScoutLink) {
+        if let model = frontWindow, let window = model.nsWindow {
+            if window.isMiniaturized { window.deminiaturize(nil) }
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate()
+            model.handle(link)
+        } else {
+            // No window open: SwiftUI opens one and passes it the link.
+            NSWorkspace.shared.open(link.url)
+        }
+    }
+
+    /// The global shortcut: opens the jump palette over whatever you're doing; pressing it
+    /// again (or Esc) closes it and goes back to the app you were in.
+    func toggleJumpPalette() {
+        if NSApp.isActive, let model = frontWindow, model.nsWindow?.isKeyWindow == true, model.isPaletteOpen {
+            model.isPaletteOpen = false
+            paletteClosed(cancelled: true)
+            return
+        }
+        summonedByHotKey = !NSApp.isActive
+        route(.jump(query: nil))
+    }
+
+    func paletteClosed(cancelled: Bool) {
+        if cancelled, summonedByHotKey { NSApp.hide(nil) }
+        summonedByHotKey = false
     }
 
     // MARK: - Sidebar places
