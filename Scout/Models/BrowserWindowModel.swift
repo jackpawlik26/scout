@@ -173,6 +173,12 @@ final class BrowserWindowModel {
             }
         case .cleanup:
             current.showCleanup()
+        case .packages:
+            current.showPackages()
+        case .settings:
+            current.showSettings()
+        case .changes(let path):
+            current.showChanges(in: PathCompletion.expandTilde(path, home: services.homePath))
         case .jump(let query):
             paletteInitialQuery = query ?? ""
             isPaletteOpen = true

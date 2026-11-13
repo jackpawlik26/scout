@@ -15,8 +15,12 @@ struct SidebarView: View {
                 Image(nsImage: NSApp.applicationIconImage).resizable().interpolation(.high).frame(width: 24, height: 24)
                 Text("Scout").font(.system(size: 15, weight: .semibold, design: .rounded))
                 Spacer()
+                IconButton(symbol: "gearshape", isOn: browser.mode == .settings, help: "Settings (⌘,)") {
+                    browser.showSettings()
+                }
             }
             .padding(.leading, 16)
+            .padding(.trailing, 8)
             .padding(.top, 4)
             .padding(.bottom, 12)
 
@@ -98,6 +102,10 @@ struct SidebarView: View {
                             browser.showCleanup()
                         }
                         .help("Find space you can free up (⇧⌘K)")
+                        SidebarRow(title: "Packages", symbol: "shippingbox", isSelected: browser.mode == .packages) {
+                            browser.showPackages()
+                        }
+                        .help("Homebrew and npm: what’s installed and what’s outdated (⌥⌘P)")
                     }
                 }
                 .padding(.horizontal, 10)
@@ -120,7 +128,8 @@ struct SidebarView: View {
         .contextMenu {
             Button("Open in New Tab") { window.newTab(at: place.url) }
             Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([place.url]) }
-            Button("Open in Terminal") { browser.openInTerminal(place.url) }
+            Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser.openInTerminal(place.url) }
+            OpenInMenu(url: place.url)
             extraMenu()
         }
     }

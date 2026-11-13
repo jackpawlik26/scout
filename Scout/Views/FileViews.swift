@@ -24,6 +24,10 @@ struct FileTableView: View {
                     } else {
                         Text(item.name).lineLimit(1).truncationMode(.middle)
                     }
+                    if let state = browser.gitState(item) {
+                        Spacer(minLength: 4)
+                        GitBadge(state: state, isFolder: item.isNavigable)
+                    }
                 }
                 .opacity(item.isHidden ? 0.55 : 1)
             }
@@ -105,7 +109,7 @@ struct FileGridView: View {
 
     private func cells(_ items: [FileItem]) -> some View {
         ForEach(items) { item in
-            GridCell(item: item, isSelected: browser.selection.contains(item.id))
+            GridCell(item: item, isSelected: browser.selection.contains(item.id), gitState: browser.gitState(item))
                 .onTapGesture { click(item) }
                 .contextMenu {
                     FileContextMenu(window: window, browser: browser,
@@ -144,11 +148,15 @@ struct FileGridView: View {
 private struct GridCell: View {
     let item: FileItem
     let isSelected: Bool
+    var gitState: GitFileState?
     @State private var itemCount: Int?
 
     var body: some View {
         VStack(spacing: 4) {
             ThumbnailView(item: item, size: 64)
+                .overlay(alignment: .bottomTrailing) {
+                    if let gitState { GitBadge(state: gitState, isFolder: item.isNavigable).offset(x: 4, y: 2) }
+                }
                 .padding(6)
                 .background(isSelected ? Color.secondary.opacity(0.2) : .clear,
                             in: RoundedRectangle(cornerRadius: 8))
@@ -215,9 +223,13 @@ struct FileContextMenu: View {
                 Button("Paste") { browser.paste(move: false) }
                 Divider()
             }
-            Button("Open in Terminal") { browser.openInTerminal() }
+            Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser.openInTerminal() }
+            OpenInMenu(url: browser.location)
             Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([browser.location]) }
             Button("Copy Path") { copy(browser.location.filePath) }
+            if let page = browser.gitHubURL(for: browser.location, isFolder: true) {
+                Button("Open on GitHub") { NSWorkspace.shared.open(page) }
+            }
         } else {
             let items = items
             Button("Open") { browser.open(urls) }
@@ -252,6 +264,12 @@ struct FileContextMenu: View {
                 browser.copySelectionToPasteboard()
             }
             Button("Copy Path") { copy(items.map(\.path).joined(separator: "\n")) }
+            if browser.git != nil {
+                let relative = items.compactMap { browser.repoRelativePath($0.url) }
+                if !relative.isEmpty {
+                    Button("Copy Path in Repository") { copy(relative.joined(separator: "\n")) }
+                }
+            }
             Divider()
             WorkspaceMenu(window: window, browser: browser, paths: items.map(\.path))
             if window.isSplit, let other = window.otherPane?.current, other.isFolder {
@@ -265,8 +283,14 @@ struct FileContextMenu: View {
                 }
             }
             Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting(items.map(\.url)) }
-            if items.count == 1, let item = items.first, item.isNavigable {
-                Button("Open in Terminal") { browser.openInTerminal(item.url) }
+            if items.count == 1, let item = items.first {
+                if item.isNavigable {
+                    Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser.openInTerminal(item.url) }
+                }
+                OpenInMenu(url: item.url)
+                if let page = browser.gitHubURL(for: item.url, isFolder: item.isNavigable) {
+                    Button("Open on GitHub") { NSWorkspace.shared.open(page) }
+                }
             }
         }
     }

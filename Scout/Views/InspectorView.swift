@@ -33,12 +33,19 @@ struct InspectorView: View {
                     FolderSummary(browser: browser, title: "\(selected.count) items selected",
                                   icon: nil, items: selected)
                 } else if browser.isFolder {
-                    FolderSummary(browser: browser, title: browser.title,
-                                  icon: IconCache.icon(forPath: browser.location.filePath), items: browser.items)
+                    VStack(alignment: .leading, spacing: 14) {
+                        FolderSummary(browser: browser, title: browser.title,
+                                      icon: IconCache.icon(forPath: browser.location.filePath), items: browser.items)
+                        if let git = browser.git {
+                            GitCard(browser: browser, git: git)
+                        }
+                    }
                 } else if browser.workspaceID != nil {
                     FolderSummary(browser: browser, title: browser.title, icon: nil, items: browser.items)
                 } else {
-                    Text(browser.mode == .cleanup ? "Clean Up shows what each item is right in the list." : "Select an item to see its details.")
+                    Text(browser.mode == .settings ? "Settings apply to every Scout window."
+                         : browser.isToolPage ? "\(browser.title) shows what each item is right in the list."
+                         : "Select an item to see its details.")
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 40)
@@ -90,6 +97,11 @@ private struct ItemInspector: View {
                 Spacer()
             }
             .controlSize(.regular)
+
+
+            if let git = browser.git {
+                GitCard(browser: browser, git: git, item: item)
+            }
         }
         .task(id: item.id) {
             folderSize = nil

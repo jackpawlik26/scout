@@ -10,6 +10,12 @@ struct ScoutCommands: Commands {
     private var browser: BrowserModel? { window?.current }
 
     var body: some Commands {
+        // Settings is a page inside the window, not a separate window.
+        CommandGroup(replacing: .appSettings) {
+            Button("Settings…") { browser?.showSettings() }
+                .keyboardShortcut(",")
+        }
+
         CommandGroup(after: .newItem) {
             Button("New Tab") { window?.newTab() }
                 .keyboardShortcut("t")
@@ -26,8 +32,10 @@ struct ScoutCommands: Commands {
             .keyboardShortcut("i")
             Button("Show in Finder") { browser?.showInFinder() }
                 .keyboardShortcut("r")
-            Button("Open in Terminal") { browser?.openInTerminal() }
+            Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser?.openInTerminal() }
                 .keyboardShortcut("t", modifiers: [.command, .option, .shift])
+            Button("Open in \(DevApp.preferredEditor?.name ?? "Editor")") { browser?.openInEditor() }
+                .keyboardShortcut("e", modifiers: [.command, .option, .shift])
             Divider()
             Button("Move to Trash") { trashOrDeleteText() }
                 .keyboardShortcut(.delete, modifiers: .command)
@@ -137,6 +145,11 @@ struct ScoutCommands: Commands {
                 Divider()
                 Button("Clean Up") { browser?.showCleanup() }
                     .keyboardShortcut("k", modifiers: [.command, .shift])
+                Button("Packages") { browser?.showPackages() }
+                    .keyboardShortcut("p", modifiers: [.command, .option])
+                Button("Git Changes") { browser?.showChanges() }
+                    .keyboardShortcut("g", modifiers: [.command, .option])
+                    .disabled(browser?.git == nil)
                 Divider()
                 Button("New Workspace…") { window.newWorkspacePaths = browser?.selectedItems.map(\.path) ?? [] }
                     .keyboardShortcut("n", modifiers: [.command, .option])

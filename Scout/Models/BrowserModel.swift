@@ -34,6 +34,12 @@ enum BrowserMode: Equatable {
     case workspace(UUID)
     /// The Clean Up page.
     case cleanup
+    /// Every changed file in a git repository (the repository's root path).
+    case changes(String)
+    /// Installed Homebrew and npm packages.
+    case packages
+    /// Scout's settings.
+    case settings
 }
 
 /// A stop in a tab's Back/Forward history.
@@ -60,8 +66,9 @@ final class BrowserModel: Identifiable {
         didSet { refreshDisplayed() }
     }
     var filterText = "" { didSet { refreshDisplayed() } }
-    var foldersFirst = true { didSet { refreshDisplayed() } }
-    var showHidden = false { didSet { Task { await load(recordVisit: false) } } }
+    /// New tabs start from Settings' choices; the View menu changes one tab.
+    var foldersFirst = UserDefaults.standard.object(forKey: "foldersFirst") as? Bool ?? true { didSet { refreshDisplayed() } }
+    var showHidden = UserDefaults.standard.bool(forKey: "showHidden") { didSet { Task { await load(recordVisit: false) } } }
     /// Remembered across tabs and launches, like Finder.
     var viewMode: ViewMode = ViewMode(rawValue: UserDefaults.standard.string(forKey: "viewMode") ?? "") ?? .list {
         didSet { UserDefaults.standard.set(viewMode.rawValue, forKey: "viewMode") }
@@ -91,6 +98,8 @@ final class BrowserModel: Identifiable {
     /// folder (used for "this folder" searches and for going back up).
     private(set) var mode: BrowserMode = .folder
     private(set) var isSearching = false
+    /// Git status when this folder is inside a repository.
+    private(set) var git: GitRunner.Snapshot?
 
     var search: SavedSearch? {
         if case .search(let saved) = mode { return saved }
@@ -107,8 +116,17 @@ final class BrowserModel: Identifiable {
     /// Showing a real folder's contents (so New Folder, Paste, drops etc. apply).
     var isFolder: Bool { mode == .folder }
 
+    /// The git repository whose changes this tab lists.
+    var changesRoot: String? {
+        if case .changes(let root) = mode { return root }
+        return nil
+    }
+
+    /// Clean Up and Packages: pages with their own layout instead of a file list.
+    var isToolPage: Bool { mode == .cleanup || mode == .packages || mode == .settings }
+
     /// Items come from many folders, so views show where each one lives.
-    var showsLocations: Bool { search != nil || workspaceID != nil }
+    var showsLocations: Bool { search != nil || workspaceID != nil || changesRoot != nil }
 
     @ObservationIgnored let services: AppServices
     /// The pane (column) this tab lives in.
@@ -122,6 +140,7 @@ final class BrowserModel: Identifiable {
     @ObservationIgnored private var spotlight: SpotlightSearch?
     /// The folder sort order, kept while a search is showing.
     @ObservationIgnored private var folderSortOrder = defaultSortOrder
+    @ObservationIgnored private var gitTask: Task<Void, Never>?
 
     init(location: URL, services: AppServices) {
         self.location = .folder(location.filePath)
@@ -134,6 +153,9 @@ final class BrowserModel: Identifiable {
         case .search(let saved): return saved.name
         case .workspace: return workspace?.name ?? "Workspace"
         case .cleanup: return "Clean Up"
+        case .packages: return "Packages"
+        case .settings: return "Settings"
+        case .changes(let root): return "Changes in " + FileManager.default.displayName(atPath: root)
         case .folder: break
         }
         return location.filePath == "/" ? (AppServices.volumeName(location) ?? "/")
@@ -200,6 +222,29 @@ final class BrowserModel: Identifiable {
         guard mode != .cleanup else { return }
         pushHistory()
         show(HistoryEntry(location: location, mode: .cleanup))
+    }
+
+    func showSettings() {
+        guard mode != .settings else { return }
+        pushHistory()
+        show(HistoryEntry(location: location, mode: .settings))
+    }
+
+    func showPackages() {
+        guard mode != .packages else { return }
+        pushHistory()
+        show(HistoryEntry(location: location, mode: .packages))
+    }
+
+    /// Every changed file in the repository containing `path` (default: this folder).
+    func showChanges(in path: String? = nil) {
+        guard let root = Git.repositoryRoot(containing: path ?? location.filePath) else {
+            alertMessage = "“\(PathDisplay.display(path ?? location.filePath, home: services.homePath))” isn’t in a git repository."
+            return
+        }
+        guard changesRoot != root else { return }
+        pushHistory()
+        show(HistoryEntry(location: isFolder ? location : .folder(root), mode: .changes(root)))
     }
 
     func goBack() {
@@ -269,6 +314,7 @@ final class BrowserModel: Identifiable {
     func load(recordVisit: Bool) async {
         loadGeneration += 1
         let generation = loadGeneration
+        if !isFolder { refreshGit() } // clears it
         switch mode {
         case .search(let saved):
             startSearch(saved, generation: generation)
@@ -276,11 +322,19 @@ final class BrowserModel: Identifiable {
         case .workspace:
             loadWorkspace()
             return
-        case .cleanup:
+        case .cleanup, .packages, .settings:
             spotlight = nil
             watcher = nil
             items = []
             return
+        case .changes:
+            spotlight = nil
+            watcher = nil
+            isSearching = false
+            loadError = nil
+            needsPermission = false
+            if git?.status.root == changesRoot { items = changedItems() }
+            return // refreshGit (above) fills in the rest
         case .folder:
             break
         }
@@ -299,6 +353,7 @@ final class BrowserModel: Identifiable {
             freeSpace = try? target.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
                 .volumeAvailableCapacityForImportantUsage
             if recordVisit { services.recordVisit(target) }
+            refreshGit()
             // Drop selections that no longer exist.
             let present = Set(result.map(\.id))
             if !selection.isSubset(of: present) { selection = selection.intersection(present) }
@@ -572,9 +627,76 @@ final class BrowserModel: Identifiable {
         NSWorkspace.shared.activateFileViewerSelecting(urls)
     }
 
+    /// Opens a folder in your terminal (Tern, Ghostty, iTerm… or Terminal).
     func openInTerminal(_ folder: URL? = nil) {
         let target = folder ?? location
-        let terminal = URL(filePath: "/System/Applications/Utilities/Terminal.app")
-        NSWorkspace.shared.open([target], withApplicationAt: terminal, configuration: NSWorkspace.OpenConfiguration())
+        if let terminal = DevApp.preferredTerminal {
+            terminal.open(target)
+        } else {
+            let terminal = URL(filePath: "/System/Applications/Utilities/Terminal.app")
+            NSWorkspace.shared.open([target], withApplicationAt: terminal, configuration: NSWorkspace.OpenConfiguration())
+        }
+    }
+
+    /// Opens the selection (or this folder) in your code editor.
+    func openInEditor(_ url: URL? = nil) {
+        guard let editor = DevApp.preferredEditor else {
+            alertMessage = "Scout didn’t find a code editor (Cursor, VS Code, Zed, Xcode…)."
+            return
+        }
+        editor.open(url ?? (selectedItems.count == 1 ? selectedItems[0].url : location))
+    }
+
+    // MARK: - Git
+
+    /// Re-reads git status (after loading a folder, or when you come back to Scout).
+    func refreshGit() {
+        gitTask?.cancel()
+        let path = changesRoot ?? (isFolder ? location.filePath : nil)
+        guard let path, let root = Git.repositoryRoot(containing: path) else {
+            if git != nil { git = nil }
+            return
+        }
+        gitTask = Task {
+            let snapshot = await Self.readGit(root: root)
+            guard !Task.isCancelled else { return }
+            git = snapshot
+            if changesRoot != nil { items = changedItems() }
+        }
+    }
+
+    /// The Changes page: changed files that still exist (deleted ones are counted in the header),
+    /// conflicts first, then modified, added, untracked.
+    private func changedItems() -> [FileItem] {
+        guard let status = git?.status else { return [] }
+        return status.changes
+            .sorted { $0.value != $1.value ? $0.value > $1.value : $0.key.localizedStandardCompare($1.key) == .orderedAscending }
+            .compactMap { relative, _ in
+                let path = status.root + "/" + (relative.hasSuffix("/") ? String(relative.dropLast()) : relative)
+                return LocalFileSource.item(for: URL(filePath: path))
+            }
+    }
+
+    @concurrent nonisolated private static func readGit(root: String) async -> GitRunner.Snapshot? {
+        GitRunner.snapshot(root: root)
+    }
+
+    func gitState(_ item: FileItem) -> GitFileState? {
+        git?.status.state(for: item.path, isFolder: item.isNavigable)
+    }
+
+    /// The repository's GitHub page, if its remote is on GitHub.
+    var gitHubRepo: URL? { git?.remote.flatMap(Git.gitHubURL(fromRemote:)) }
+
+    /// The GitHub page for a file or folder in this repository.
+    func gitHubURL(for url: URL, isFolder: Bool) -> URL? {
+        guard let git, let repo = gitHubRepo, let relative = git.status.relativePath(url.filePath) else { return nil }
+        return Git.gitHubURL(repo: repo, ref: git.status.branch ?? git.status.commit ?? "HEAD",
+                             relativePath: relative, isFolder: isFolder)
+    }
+
+    /// Path relative to the repository root ("Sources/App/main.swift").
+    func repoRelativePath(_ url: URL) -> String? {
+        git?.status.relativePath(url.filePath).map { $0.isEmpty ? "." : $0 }
     }
 }

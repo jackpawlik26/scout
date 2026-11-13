@@ -10,6 +10,7 @@ let usage = """
                                            List matching folders, best first (no query = most used)
       scout open <path> [--new-tab]        Open a folder, or reveal a file, in Scout
       scout index                          Rebuild the folder index now
+      scout duplicates [folder…]           List duplicate files (over 1 MB), biggest waste first
     """
 
 struct RankedOutput: Encodable {
@@ -94,6 +95,21 @@ case "index":
     let folders = FolderIndexer.scan(roots: ScoutStore.defaultIndexRoots(home: home), home: home)
     try ScoutStore.saveFolders(folders)
     print("Indexed \(folders.count.formatted()) folders in \(String(format: "%.1f", Date().timeIntervalSince(start)))s")
+
+case "duplicates", "dupes":
+    let start = Date()
+    let roots = args.isEmpty ? CleanupScanner.duplicateRoots(home: home)
+        : args.map { URL.folder(PathCompletion.expandTilde($0, home: home)) }
+    let groups = DuplicateFinder.find(in: roots)
+    for group in groups {
+        print("\(ByteCountFormatter.string(fromByteCount: group.wasted, countStyle: .file)) wasted")
+        for (index, path) in group.paths.enumerated() {
+            print("  \(index == 0 ? "keep" : "    ") \(PathDisplay.display(path, home: home))")
+        }
+    }
+    let total = groups.reduce(Int64(0)) { $0 + $1.wasted }
+    print("\(groups.count) groups, \(ByteCountFormatter.string(fromByteCount: total, countStyle: .file)) wasted, "
+        + "\(String(format: "%.1f", Date().timeIntervalSince(start)))s")
 
 case "help", "-h", "--help":
     print(usage)

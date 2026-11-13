@@ -19,9 +19,11 @@ else
 fi
 
 osascript -e 'tell application "Scout" to quit' 2>/dev/null || true
+# Wait (up to 5s) for it to finish quitting, or reopening it fails.
+for _ in {1..50}; do pgrep -xq Scout || break; sleep 0.1; done
 rm -rf /Applications/Scout.app
 cp -R "$APP" /Applications/Scout.app
-open /Applications/Scout.app
+open /Applications/Scout.app || { sleep 1; open /Applications/Scout.app; } || true
 
 # Put the `scout` command on your PATH.
 mkdir -p ~/.local/bin

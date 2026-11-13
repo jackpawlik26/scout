@@ -8,11 +8,17 @@ import Foundation
 ///     scout://jump?query=taxes                   open the ⌘K palette, optionally pre-filled
 ///     scout://workspace?name=Taxes               open a workspace by name
 ///     scout://cleanup                            open Clean Up
+///     scout://packages                           open Packages (Homebrew, npm)
+///     scout://settings                           open Settings
+///     scout://changes?path=~/Scout               every changed file in a git repository
 public enum ScoutLink: Equatable, Sendable {
     case open(path: String, newTab: Bool, split: Bool = false)
     case jump(query: String?)
     case workspace(name: String)
     case cleanup
+    case packages
+    case settings
+    case changes(path: String)
 
     public static let scheme = "scout"
 
@@ -35,6 +41,13 @@ public enum ScoutLink: Equatable, Sendable {
             self = .workspace(name: name)
         case "cleanup":
             self = .cleanup
+        case "packages":
+            self = .packages
+        case "settings", "preferences":
+            self = .settings
+        case "changes":
+            guard let path = query["path"], !path.isEmpty else { return nil }
+            self = .changes(path: path)
         default:
             return nil
         }
@@ -57,6 +70,13 @@ public enum ScoutLink: Equatable, Sendable {
             components.queryItems = [URLQueryItem(name: "name", value: name)]
         case .cleanup:
             components.host = "cleanup"
+        case .packages:
+            components.host = "packages"
+        case .settings:
+            components.host = "settings"
+        case .changes(let path):
+            components.host = "changes"
+            components.queryItems = [URLQueryItem(name: "path", value: path)]
         }
         return components.url!
     }

@@ -2,7 +2,7 @@ import Foundation
 
 /// What Clean Up looks for. Each kind says why its items are safe (or worth a look).
 public enum CleanupKind: String, CaseIterable, Sendable, Identifiable {
-    case devCaches, installers, oldDownloads, largeFiles
+    case devCaches, installers, oldDownloads, largeFiles, duplicates
 
     public var id: Self { self }
 
@@ -12,6 +12,7 @@ public enum CleanupKind: String, CaseIterable, Sendable, Identifiable {
         case .installers: "Installers in Downloads"
         case .oldDownloads: "Old downloads"
         case .largeFiles: "Large files"
+        case .duplicates: "Duplicates"
         }
     }
 
@@ -21,6 +22,7 @@ public enum CleanupKind: String, CaseIterable, Sendable, Identifiable {
         case .installers: "Disk images and installer packages. Once an app is installed, these aren't needed."
         case .oldDownloads: "Added to Downloads and not changed in over 90 days."
         case .largeFiles: "Files over 500 MB anywhere in your home folder. Worth a look, not necessarily junk."
+        case .duplicates: "Extra copies of files over 1 MB with exactly the same contents. Scout keeps the original and lists the rest."
         }
     }
 
@@ -30,6 +32,7 @@ public enum CleanupKind: String, CaseIterable, Sendable, Identifiable {
         case .installers: "shippingbox"
         case .oldDownloads: "clock.arrow.circlepath"
         case .largeFiles: "externaldrive.badge.exclamationmark"
+        case .duplicates: "square.on.square"
         }
     }
 
@@ -108,6 +111,30 @@ public enum CleanupScanner {
                                detail: "Last changed \(touched.formatted(date: .abbreviated, time: .omitted))")
         }
         .sorted { $0.bytes > $1.bytes }
+    }
+
+    /// Folders in your home worth checking for duplicates: everything except Library,
+    /// Applications and hidden folders (cloud drives live in Library, so they're skipped).
+    public static func duplicateRoots(home: String) -> [URL] {
+        let skip: Set<String> = ["Library", "Applications", "Public"]
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: home)) ?? []
+        return names.filter { !$0.hasPrefix(".") && !skip.contains($0) }
+            .map { URL(filePath: home).appending(path: $0) }
+            .filter { url in
+                var isDir: ObjCBool = false
+                return FileManager.default.fileExists(atPath: url.filePath, isDirectory: &isDir) && isDir.boolValue
+            }
+    }
+
+    /// Every copy except the one to keep, each pointing at the kept original.
+    public static func duplicateItems(_ groups: [DuplicateGroup], home: String) -> [CleanupItem] {
+        groups.flatMap { group in
+            group.paths.dropFirst().map { path in
+                CleanupItem(path: path, name: (path as NSString).lastPathComponent, bytes: group.size,
+                            detail: "Same as " + PathDisplay.display(group.paths[0], home: home))
+            }
+        }
+        .sorted { $0.bytes != $1.bytes ? $0.bytes > $1.bytes : $0.path < $1.path }
     }
 
     private static func topLevel(of folder: URL) -> [FileItem] {

@@ -30,6 +30,9 @@ Install to /Applications (also puts the `scout` CLI in ~/.local/bin): `./scripts
 - `scout://open?path=~/Downloads&split=1`: open in the other pane
 - `scout://workspace?name=Taxes`: open a workspace
 - `scout://cleanup`: open Clean Up
+- `scout://packages`: open Packages (Homebrew, npm)
+- `scout://settings`: open Settings
+- `scout://changes?path=~/Scout`: every changed file in a git repository
 
 **CLI:** `scout` ships inside Scout.app (`Contents/Helpers/scout`):
 
@@ -38,6 +41,7 @@ cd "$(scout jump ib)"        # cd to the best match, like zoxide
 scout rank proj --json       # ranked matches (same ranking as ⌘K)
 scout open . --new-tab       # open the current folder in Scout
 scout index                  # rebuild the folder index
+scout duplicates ~/Desktop   # list duplicate files (no folder = whole home)
 ```
 
 **Shared files** in `~/Library/Application Support/Scout/`: `folders.txt` (the index, one path per line) and `history.json` (visits, ISO 8601 dates).
@@ -76,11 +80,11 @@ scout index                  # rebuild the folder index
 | ⌘D / ⌘U / ⌥⇥ | Split view / swap panes / switch pane |
 | F5 / F6 | Copy / move selection to the other pane |
 | ⌥⌘N / ⌃1–9 | New workspace / open workspace 1–9 |
-| ⇧⌘K | Clean Up |
-| ⌘I / ⌃⌘S | Info panel / sidebar |
+| ⇧⌘K / ⌥⌘P / ⌥⌘G | Clean Up / Packages / Git changes |
+| ⌘I / ⌃⌘S / ⌘, | Info panel / sidebar / Settings (appearance, defaults, terminal and editor) |
 | ⇧⌘. | Show hidden files |
 | ⌘R | Show in Finder |
-| ⌥⇧⌘T | Open in Terminal |
+| ⌥⇧⌘T / ⌥⇧⌘E | Open in your terminal (Tern, Ghostty, iTerm, Terminal…) / code editor; pick them in Settings (⌘,) |
 | ⇧⌘H ⇧⌘D ⇧⌘O ⌥⌘L ⇧⌘A ⇧⌘I | Home, Desktop, Documents, Downloads, Applications, iCloud Drive |
 
 ## Roadmap
@@ -88,6 +92,6 @@ scout index                  # rebuild the folder index
 1. ✅ Browser basics: sidebar, tabs, list/icon views, Quick Look, file operations with undo, live updates
 2. ✅ Finding: ⌘K for files too (Spotlight), kind/date/folder filters, live results tabs, saved searches
 3. ✅ Split panes (⌘D, F5/F6, drag between panes) and workspaces (folders from anywhere on one page)
-4. ✅ Clean Up: dev caches, installers, old downloads, large files, Trash (all to Trash with Undo). Still to do: duplicates
-5. Dev tools: Git status, editors, installed packages
+4. ✅ Clean Up: dev caches, installers, old downloads, large files, duplicates, Trash (all to Trash with Undo)
+5. ✅ Dev tools: Git branch chip and per-file badges, Git card in the info panel, Open on GitHub, Open In terminals/editors, repo-wide Changes view, Packages page (Homebrew, casks, npm: sizes, updates, upgrade commands)
 6. Later: Scout server on a home machine over Tailscale, iPhone app

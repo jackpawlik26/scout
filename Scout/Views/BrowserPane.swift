@@ -29,19 +29,26 @@ struct BrowserPane: View {
             if let workspace = browser.workspace {
                 workspaceHeader(workspace)
             }
+            if browser.changesRoot != nil {
+                changesHeader
+            }
             if isFilterShown || !browser.filterText.isEmpty {
                 filterBar
             }
             Rectangle().fill(Color.hairline).frame(height: 1)
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            if browser.mode != .cleanup { footer }
+            if !browser.isToolPage { footer }
         }
         .navigationTitle(browser.title)
         .quickLookPreview($browser.previewURL, in: browser.displayedItems.map(\.url))
         .onAppear { browser.undoManager = undoManager }
         .onChange(of: undoManager) { _, manager in browser.undoManager = manager }
         .onChange(of: window.filterFocusRequest) { showFilter() }
+        // Commits, checkouts and edits made elsewhere show up when you come back.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            browser.refreshGit()
+        }
         .onChange(of: browser.renaming) { _, item in
             if let item { renameText = item.name }
         }
@@ -117,7 +124,10 @@ struct BrowserPane: View {
     /// Header controls when there's room.
     private var fullControls: some View {
         HStack(spacing: 10) {
-            if browser.mode != .cleanup {
+            if let git = browser.git {
+                GitChip(browser: browser, git: git)
+            }
+            if !browser.isToolPage {
                 HStack(spacing: 0) {
                     IconButton(symbol: "list.bullet", isOn: browser.viewMode == .list, help: "List (⌘1)") {
                         browser.viewMode = .list
@@ -149,7 +159,7 @@ struct BrowserPane: View {
     private var compactControls: some View {
         HStack(spacing: 4) {
             Menu {
-                if browser.mode != .cleanup {
+                if !browser.isToolPage {
                     Picker("View", selection: $browser.viewMode) {
                         Label("as List", systemImage: "list.bullet").tag(ViewMode.list)
                         Label("as Icons", systemImage: "square.grid.2x2").tag(ViewMode.icons)
@@ -157,6 +167,10 @@ struct BrowserPane: View {
                     .pickerStyle(.inline)
                     Menu("Sort By") { SortMenuItems(browser: browser) }
                     Button("Filter…") { showFilter() }
+                    Divider()
+                }
+                if let git = browser.git {
+                    Menu("Git: \(git.status.headName)") { GitMenuItems(browser: browser, git: git) }
                     Divider()
                 }
                 Toggle("Info Panel", isOn: Binding(
@@ -189,7 +203,9 @@ struct BrowserPane: View {
                 switch browser.mode {
                 case .search: Text("Search")
                 case .workspace: Text("Workspace")
-                case .cleanup: Text("Tools")
+                case .cleanup, .packages: Text("Tools")
+                case .settings: Text("Scout")
+                case .changes: Text("Git")
                 case .folder:
                     ForEach(Array(parentCrumbs.enumerated()), id: \.offset) { index, url in
                         if index > 0 {
@@ -229,6 +245,9 @@ struct BrowserPane: View {
         case .search: "magnifyingglass"
         case .workspace: browser.workspace?.symbol ?? "square.stack.3d.up"
         case .cleanup: "sparkles"
+        case .packages: "shippingbox"
+        case .settings: "gearshape"
+        case .changes: "arrow.triangle.branch"
         }
     }
 
@@ -322,6 +341,34 @@ struct BrowserPane: View {
         .padding(.bottom, 10)
     }
 
+    /// Above the Changes list: what's there, and the repository's actions.
+    private var changesHeader: some View {
+        HStack(spacing: 8) {
+            if let status = browser.git?.status {
+                let deleted = status.changes.values.filter { $0 == .deleted }.count
+                Text(status.changeCount == 0 ? "Nothing changed on \(status.headName)"
+                     : "\(status.changeCount) change\(status.changeCount == 1 ? "" : "s") on \(status.headName)")
+                    .fontWeight(.medium)
+                if deleted > 0 {
+                    Text("· \(deleted) deleted (not shown)").foregroundStyle(.secondary)
+                }
+            } else {
+                ProgressView().controlSize(.small)
+            }
+            Spacer()
+            Button("Refresh") { browser.refreshGit() }
+            if let root = browser.changesRoot {
+                Button("Open Repository") { browser.go(to: .folder(root)) }
+            }
+        }
+        .font(.system(size: 13))
+        .padding(.horizontal, 12)
+        .frame(height: 38)
+        .background(RoundedRectangle(cornerRadius: 9).fill(Color.raised))
+        .padding(.horizontal, 12)
+        .padding(.bottom, 10)
+    }
+
     private func workspaceHeader(_ workspace: Workspace) -> some View {
         HStack(spacing: 8) {
             Text("\(workspace.paths.count) item\(workspace.paths.count == 1 ? "" : "s") from anywhere")
@@ -369,6 +416,10 @@ struct BrowserPane: View {
     @ViewBuilder private var content: some View {
         if browser.mode == .cleanup {
             CleanupView(browser: browser)
+        } else if browser.mode == .packages {
+            PackagesView(browser: browser)
+        } else if browser.mode == .settings {
+            SettingsView(window: window, browser: browser)
         } else if let error = browser.loadError {
             ContentUnavailableView {
                 Label("Can’t Open This Folder", systemImage: "lock.fill")

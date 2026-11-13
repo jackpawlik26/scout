@@ -285,6 +285,7 @@ struct CleanupView: View {
             group.addTask { (.devCaches, Self.scanDevCaches(home: home)) }
             group.addTask { (.installers, Self.scanInstallers(home: home)) }
             group.addTask { (.oldDownloads, Self.scanOldDownloads(home: home)) }
+            group.addTask { (.duplicates, Self.scanDuplicates(home: home)) }
             for await (kind, items) in group {
                 finish(kind, with: items)
             }
@@ -312,6 +313,11 @@ struct CleanupView: View {
 
     nonisolated private static func scanOldDownloads(home: String) -> [CleanupItem] {
         CleanupScanner.scanOldDownloads(in: URL.folder(home + "/Downloads"), sizeOf: size)
+    }
+
+    nonisolated private static func scanDuplicates(home: String) -> [CleanupItem] {
+        let groups = DuplicateFinder.find(in: CleanupScanner.duplicateRoots(home: home))
+        return CleanupScanner.duplicateItems(groups, home: home)
     }
 
     @concurrent nonisolated private static func measureTrash(home: String) async -> TrashInfo {

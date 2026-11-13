@@ -194,6 +194,12 @@ final class AppServices {
         scheduleSave()
     }
 
+    /// Forgets every visit (⌘K ranking and the Frequent list start over).
+    func clearHistory() {
+        frecency = FrecencyLog()
+        scheduleSave()
+    }
+
     func forget(_ path: String) {
         frecency.forget(path)
         scheduleSave()
