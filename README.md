@@ -94,6 +94,10 @@ scout duplicates ~/Desktop   # list duplicate files (no folder = whole home)
 | ⌃⌘A / ⇧⌘R / ⌥⌘I | Make Alias / AirDrop / Finder's Get Info (plus Duplicate and Share in the right-click menu) |
 | Right-click ▸ Quick Actions | Convert or resize images, combine PDFs (originals kept) |
 | Drag onto a folder | Moves into it; hover a second to open it and drop deeper |
+| Menu bar 🔭 | Jump, latest downloads, favorites, workspaces, Recents, Clean Up, Shelf (turn off in Settings) |
+| Shortcuts app / Siri | Open in Scout, Open Workspace, Jump, Recents, Clean Up, Tidy Downloads |
+| Right-click ▸ Customize | Folder color and symbol, nickname, Pin to Top (Scout-only) |
+| Settings ▸ Keyboard Shortcuts | Change any of 50 shortcuts; clashes are resolved for you |
 | ⌥⌘R | Recents: files opened or downloaded in the last 30 days, grouped by day |
 | ⌥⌘T | Tidy Folder: plan, then move loose files into folders by kind (⌘Z undoes) |
 | Right-click ▸ Tags | Finder-compatible colored tags; sidebar Tags lists everything with a tag |

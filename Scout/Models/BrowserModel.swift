@@ -619,6 +619,9 @@ final class BrowserModel: Identifiable {
 
     // MARK: - Tags
 
+    /// The item getting a nickname (drives the Nickname dialog).
+    var nicknaming: FileItem?
+
     /// Items waiting for a name in the New Tag dialog.
     var newTagItems: [FileItem]?
 
@@ -722,11 +725,16 @@ final class BrowserModel: Identifiable {
             depth = depths
             return
         }
-        list = withChildren(arrange(list), depth: 0, into: &depths)
+        list = arrange(list)
+        if isFolder { list = services.customizations.pinnedFirst(list, in: location.filePath) }
+        list = withChildren(list, depth: 0, into: &depths)
         displayedItems = list
         displayedGroups = [ItemGroup(title: "", items: list)]
         depth = depths
     }
+
+    /// Re-sorts after pins or nicknames change.
+    func refresh() { refreshDisplayed() }
 
     /// Folders first (when on), as in the folder itself.
     private func arrange(_ list: [FileItem]) -> [FileItem] {

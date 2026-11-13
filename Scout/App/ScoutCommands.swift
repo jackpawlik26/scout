@@ -21,35 +21,35 @@ struct ScoutCommands: Commands {
 
         CommandGroup(after: .newItem) {
             Button("New Tab") { window?.newTab() }
-                .keyboardShortcut("t")
+                .customizableShortcut(.newTab)
             Button("New Folder") { browser?.newFolder() }
-                .keyboardShortcut("n", modifiers: [.command, .shift])
+                .customizableShortcut(.newFolder)
             Button("New Text File") { browser?.newFile(.text) }
-                .keyboardShortcut("n", modifiers: [.command, .control])
+                .customizableShortcut(.newTextFile)
             Button("New Markdown File") { browser?.newFile(.markdown) }
             Button("Tidy Folder…") { browser?.beginTidy() }
-                .keyboardShortcut("t", modifiers: [.command, .option])
+                .customizableShortcut(.tidy)
                 .disabled(browser?.isFolder != true)
             Divider()
             Button("Open") { browser?.openSelection() }
-                .keyboardShortcut("o")
+                .customizableShortcut(.open)
             Button("Quick Look") { browser?.toggleQuickLook() }
-                .keyboardShortcut("y")
+                .customizableShortcut(.quickLook)
             Button(window?.isInspectorShown == true ? "Hide Info Panel" : "Show Info Panel") {
                 window?.isInspectorShown.toggle()
             }
-            .keyboardShortcut("i")
+            .customizableShortcut(.infoPanel)
             Button("Show in Finder") { browser?.showInFinder() }
-                .keyboardShortcut("r")
+                .customizableShortcut(.showInFinder)
             Button("Get Info (Finder)") { browser?.showFinderInfo() }
-                .keyboardShortcut("i", modifiers: [.command, .option])
+                .customizableShortcut(.getInfo)
             Button("Duplicate") { browser?.duplicateSelection() }
                 .disabled(browser?.selectedItems.isEmpty ?? true)
             Button("Make Alias") { browser?.makeAliases() }
-                .keyboardShortcut("a", modifiers: [.command, .control])
+                .customizableShortcut(.makeAlias)
                 .disabled(browser?.selectedItems.isEmpty ?? true)
             Button("AirDrop…") { browser?.airDropSelection() }
-                .keyboardShortcut("r", modifiers: [.command, .shift])
+                .customizableShortcut(.airDrop)
                 .disabled(browser?.selectedItems.isEmpty ?? true)
             Divider()
             Button("Rename…") { _ = browser?.beginRename() }
@@ -58,26 +58,26 @@ struct ScoutCommands: Commands {
             Button("Extract Here") { browser?.extractSelection() }
                 .disabled(!(browser?.canExtractSelection ?? false))
             Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser?.openInTerminal() }
-                .keyboardShortcut("t", modifiers: [.command, .option, .shift])
+                .customizableShortcut(.terminal)
             Button("Open in \(DevApp.preferredEditor?.name ?? "Editor")") { browser?.openInEditor() }
-                .keyboardShortcut("e", modifiers: [.command, .option, .shift])
+                .customizableShortcut(.editor)
             Divider()
             Button("Move to Trash") { trashOrDeleteText() }
-                .keyboardShortcut(.delete, modifiers: .command)
+                .customizableShortcut(.trash)
             Divider()
             Button("Close Tab") { window?.closeCurrentTab() }
-                .keyboardShortcut("w")
+                .customizableShortcut(.closeTab)
         }
 
         CommandGroup(after: .pasteboard) {
             Divider()
             Button("Copy Path") { browser?.copyPaths() }
-                .keyboardShortcut("c", modifiers: [.command, .option])
+                .customizableShortcut(.copyPath)
             Button("Move Copied Items Here") { browser?.paste(move: true) }
-                .keyboardShortcut("v", modifiers: [.command, .option])
+                .customizableShortcut(.moveHere)
             Divider()
             Button("Filter This Folder") { window?.filterFocusRequest += 1 }
-                .keyboardShortcut("f")
+                .customizableShortcut(.filter)
         }
 
         CommandGroup(before: .toolbar) {
@@ -94,12 +94,12 @@ struct ScoutCommands: Commands {
             }
             Divider()
             Button(window?.isSplit == true ? "Close Split View" : "Split View") { window?.toggleSplit() }
-                .keyboardShortcut("d")
+                .customizableShortcut(.splitView)
             Button("Swap Panes") { window?.swapPanes() }
-                .keyboardShortcut("u")
+                .customizableShortcut(.swapPanes)
                 .disabled(window?.isSplit != true)
             Button("Switch to Other Pane") { window?.focusOtherPane() }
-                .keyboardShortcut(.tab, modifiers: .option)
+                .customizableShortcut(.otherPane)
                 .disabled(window?.isSplit != true)
             Button("Copy to Other Pane") { window?.transferToOtherPane(move: false) }
                 .keyboardShortcut(KeyEquivalent(Character(UnicodeScalar(NSF5FunctionKey)!)), modifiers: [])
@@ -111,21 +111,21 @@ struct ScoutCommands: Commands {
             Button(window?.isSidebarShown == false ? "Show Sidebar" : "Hide Sidebar") {
                 withAnimation(.snappy(duration: 0.25)) { window?.isSidebarShown.toggle() }
             }
-            .keyboardShortcut("s", modifiers: [.command, .control])
+            .customizableShortcut(.sidebar)
             Divider()
             Button("as List") { browser?.viewMode = .list }
-                .keyboardShortcut("1")
+                .customizableShortcut(.listView)
             Button("as Icons") { browser?.viewMode = .icons }
-                .keyboardShortcut("2")
+                .customizableShortcut(.iconView)
             Button("as Columns") { browser?.viewMode = .columns }
-                .keyboardShortcut("3")
+                .customizableShortcut(.columnView)
             Button("Bigger Icons") { iconSize = min(160, iconSize + 16) }
-                .keyboardShortcut("=")
+                .customizableShortcut(.biggerIcons)
             Button("Smaller Icons") { iconSize = max(32, iconSize - 16) }
-                .keyboardShortcut("-")
+                .customizableShortcut(.smallerIcons)
             Toggle("Column Headers", isOn: $columnHeaders)
             Button("Show Shelf") { openWindow(id: "shelf") }
-                .keyboardShortcut("s", modifiers: [.command, .option])
+                .customizableShortcut(.shelf)
             Divider()
             Menu("Group By") {
                 ForEach(GroupBy.folderChoices) { group in
@@ -149,15 +149,15 @@ struct ScoutCommands: Commands {
             Button(browser?.showHidden == true ? "Hide Hidden Files" : "Show Hidden Files") {
                 browser?.showHidden.toggle()
             }
-            .keyboardShortcut(".", modifiers: [.command, .shift])
+            .customizableShortcut(.hiddenFiles)
             Button(browser?.foldersFirst == true ? "Mix Folders with Files" : "Keep Folders on Top") {
                 browser?.foldersFirst.toggle()
             }
             Divider()
             Button("Show Next Tab") { window?.selectTab(offset: 1) }
-                .keyboardShortcut("]", modifiers: [.command, .shift])
+                .customizableShortcut(.nextTab)
             Button("Show Previous Tab") { window?.selectTab(offset: -1) }
-                .keyboardShortcut("[", modifiers: [.command, .shift])
+                .customizableShortcut(.previousTab)
             Divider()
         }
 
@@ -166,62 +166,62 @@ struct ScoutCommands: Commands {
                 window?.isPaletteOpen = false
                 window?.isShortcutsOpen.toggle()
             }
-            .keyboardShortcut("/")
+            .customizableShortcut(.shortcutsSheet)
         }
 
         CommandMenu("Go") {
             Button("Back") { browser?.goBack() }
-                .keyboardShortcut("[")
+                .customizableShortcut(.back)
             Button("Forward") { browser?.goForward() }
-                .keyboardShortcut("]")
+                .customizableShortcut(.forward)
             Button("Enclosing Folder") { browser?.goUp() }
-                .keyboardShortcut(.upArrow, modifiers: .command)
+                .customizableShortcut(.enclosingFolder)
             Divider()
             Button("Jump to Folder…") { window?.isPaletteOpen = true }
-                .keyboardShortcut("k")
+                .customizableShortcut(.jump)
             Button("Find Files…") {
                 window?.paletteInitialScope = .files
                 window?.isPaletteOpen = true
             }
-            .keyboardShortcut("f", modifiers: [.command, .shift])
+            .customizableShortcut(.findFiles)
             Button("Go to Path…") { window?.isGoToPathOpen = true }
-                .keyboardShortcut("l")
+                .customizableShortcut(.goToPath)
             Divider()
             if let window {
                 let services = window.services
                 Button("Recents") { browser?.showRecents() }
-                    .keyboardShortcut("r", modifiers: [.command, .option])
+                    .customizableShortcut(.recents)
                 Button("Home") { browser?.go(to: services.home) }
-                    .keyboardShortcut("h", modifiers: [.command, .shift])
+                    .customizableShortcut(.home)
                 Button("Desktop") { browser?.go(to: services.home.appending(path: "Desktop")) }
-                    .keyboardShortcut("d", modifiers: [.command, .shift])
+                    .customizableShortcut(.desktop)
                 Button("Documents") { browser?.go(to: services.home.appending(path: "Documents")) }
-                    .keyboardShortcut("o", modifiers: [.command, .shift])
+                    .customizableShortcut(.documents)
                 Button("Downloads") { browser?.go(to: services.home.appending(path: "Downloads")) }
-                    .keyboardShortcut("l", modifiers: [.command, .option])
+                    .customizableShortcut(.downloads)
                 Button("Applications") { browser?.go(to: .folder("/Applications")) }
-                    .keyboardShortcut("a", modifiers: [.command, .shift])
+                    .customizableShortcut(.applications)
                 if let iCloud = services.iCloudDrive {
                     Button("iCloud Drive") { browser?.go(to: iCloud) }
-                        .keyboardShortcut("i", modifiers: [.command, .shift])
+                        .customizableShortcut(.iCloud)
                 }
                 Button("Add to Favorites") {
                     guard let browser else { return }
                     let folders = browser.selectedItems.filter(\.isNavigable).map(\.path)
                     services.addFavorites(folders.isEmpty && browser.isFolder ? [browser.location.filePath] : folders)
                 }
-                .keyboardShortcut("t", modifiers: [.command, .control])
+                .customizableShortcut(.addFavorites)
                 Divider()
                 Button("Clean Up") { browser?.showCleanup() }
-                    .keyboardShortcut("k", modifiers: [.command, .shift])
+                    .customizableShortcut(.cleanUp)
                 Button("Packages") { browser?.showPackages() }
-                    .keyboardShortcut("p", modifiers: [.command, .option])
+                    .customizableShortcut(.packages)
                 Button("Git Changes") { browser?.showChanges() }
-                    .keyboardShortcut("g", modifiers: [.command, .option])
+                    .customizableShortcut(.gitChanges)
                     .disabled(browser?.git == nil)
                 Divider()
                 Button("New Workspace…") { window.newWorkspacePaths = browser?.selectedItems.map(\.path) ?? [] }
-                    .keyboardShortcut("n", modifiers: [.command, .option])
+                    .customizableShortcut(.newWorkspace)
                 ForEach(Array(services.workspaces.prefix(9).enumerated()), id: \.element.id) { index, workspace in
                     Button(workspace.name) { browser?.showWorkspace(workspace.id) }
                         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .control)

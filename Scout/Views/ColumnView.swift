@@ -190,6 +190,7 @@ struct ColumnBrowserView: View {
 
 private struct ColumnRow: View {
     let item: FileItem
+    @Environment(AppServices.self) private var services: AppServices?
     let isSelected: Bool
     let isActive: Bool
     let gitState: GitFileState?
@@ -197,7 +198,7 @@ private struct ColumnRow: View {
     var body: some View {
         HStack(spacing: 7) {
             FileIconView(item: item, size: 16)
-            Text(item.name).font(.system(size: 12.5)).lineLimit(1).truncationMode(.middle)
+            Text(services?.displayName(item) ?? item.name).font(.system(size: 12.5)).lineLimit(1).truncationMode(.middle)
             Spacer(minLength: 4)
             if let gitState { GitBadge(state: gitState, isFolder: item.isNavigable) }
             if item.isNavigable {

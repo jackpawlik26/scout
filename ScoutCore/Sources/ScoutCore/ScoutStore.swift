@@ -14,6 +14,19 @@ public enum ScoutStore {
     public static var savedSearchesURL: URL { directory.appending(path: "saved-searches.json") }
     public static var workspacesURL: URL { directory.appending(path: "workspaces.json") }
     public static var favoritesURL: URL { directory.appending(path: "favorites.json") }
+    public static var customizationsURL: URL { directory.appending(path: "customizations.json") }
+
+    public static func loadCustomizations(from url: URL = customizationsURL) -> Customizations {
+        guard let data = try? Data(contentsOf: url) else { return Customizations() }
+        return (try? JSONDecoder().decode(Customizations.self, from: data)) ?? Customizations()
+    }
+
+    public static func saveCustomizations(_ value: Customizations, to url: URL = customizationsURL) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        try encoder.encode(value).write(to: url, options: .atomic)
+    }
 
     /// Pinned sidebar favorites (paths, in order). Nil until you change them.
     public static func loadFavorites(from url: URL = favoritesURL) -> [String]? {

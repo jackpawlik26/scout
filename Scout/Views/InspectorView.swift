@@ -71,9 +71,12 @@ private struct ItemInspector: View {
                 .id(item.id)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(item.name)
+                Text(browser.services.displayName(item))
                     .font(.title3.weight(.semibold))
                     .textSelection(.enabled)
+                if browser.services.displayName(item) != item.name {
+                    Text("On disk: \(item.name)").font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                }
                 Text(item.isNavigable ? "Folder" : item.kind)
                     .foregroundStyle(.secondary)
             }

@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 /// scrollable PDFs and playable media (via Quick Look), or a thumbnail for the rest.
 struct PreviewPane: View {
     let item: FileItem
+    @State private var isEditing = false
 
     enum Style { case markdown, code, text, quickLook, thumbnail }
 
@@ -38,6 +39,17 @@ struct PreviewPane: View {
                 .frame(height: 300)
                 .background(RaisedFill(shape: RoundedRectangle(cornerRadius: 10)))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(alignment: .topTrailing) {
+                    if Self.style(for: item) != .code {
+                        Button("Edit") { isEditing = true }
+                            .controlSize(.small)
+                            .padding(8)
+                            .help("Edit this file (⌘S saves)")
+                    }
+                }
+                .sheet(isPresented: $isEditing) {
+                    TextFileEditor(item: item, isMarkdown: Self.style(for: item) == .markdown)
+                }
         case .quickLook:
             QuickLookPreview(url: item.url)
                 .frame(height: 300)
@@ -105,15 +117,105 @@ private struct TextPreview: View {
     }
 }
 
+/// Edits a markdown or text file, with a live preview for markdown. Saving checks the file
+/// wasn't changed somewhere else in the meantime.
+private struct TextFileEditor: View {
+    let item: FileItem
+    let isMarkdown: Bool
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @State private var original = ""
+    @State private var loadedDate: Date?
+    @State private var problem: String?
+    @State private var confirmOverwrite = false
+
+    private var isChanged: Bool { text != original }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(item.name).font(.headline)
+                if isChanged { Text("Edited").font(.caption).foregroundStyle(.secondary) }
+                Spacer()
+                Button("Cancel", role: .cancel) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Save") { save(force: false) }
+                    .keyboardShortcut("s")
+                    .disabled(!isChanged)
+            }
+            .padding(12)
+            Divider()
+            HStack(spacing: 0) {
+                TextEditor(text: $text)
+                    .font(.system(size: 12.5, design: .monospaced))
+                    .scrollContentBackground(.hidden)
+                    .padding(8)
+                if isMarkdown {
+                    Divider()
+                    ScrollView {
+                        MarkdownLines(lines: text.components(separatedBy: .newlines), width: 340)
+                            .padding(14)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(width: 370)
+                }
+            }
+            if let problem {
+                Text(problem).font(.callout).foregroundStyle(.red).padding(8)
+            }
+        }
+        .frame(width: isMarkdown ? 860 : 620, height: 560)
+        .onWindowKey(.escape) {
+            dismiss()
+            return true
+        }
+        .task {
+            guard let data = try? Data(contentsOf: item.url) else {
+                problem = "Couldn’t read this file."
+                return
+            }
+            text = String(decoding: data, as: UTF8.self)
+            original = text
+            loadedDate = Self.modified(item.url)
+        }
+        .alert("“\(item.name)” changed somewhere else", isPresented: $confirmOverwrite) {
+            Button("Overwrite", role: .destructive) { save(force: true) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Another app saved it after you started editing. Overwrite it with your version?")
+        }
+    }
+
+    private static func modified(_ url: URL) -> Date? {
+        try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+    }
+
+    private func save(force: Bool) {
+        if !force, let loadedDate, let now = Self.modified(item.url), now > loadedDate.addingTimeInterval(0.5) {
+            confirmOverwrite = true
+            return
+        }
+        do {
+            try Data(text.utf8).write(to: item.url, options: .atomic)
+            original = text
+            loadedDate = Self.modified(item.url)
+            dismiss()
+        } catch {
+            problem = "Couldn’t save: \(error.localizedDescription)"
+        }
+    }
+}
+
 /// Markdown, rendered a line at a time: headings, bullets, quotes, code blocks, inline styles.
 private struct MarkdownLines: View {
     let lines: [String]
+    var width: CGFloat = 260
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in block }
         }
-        .frame(maxWidth: 260, alignment: .leading)
+        .frame(maxWidth: width, alignment: .leading)
         .textSelection(.enabled)
     }
 

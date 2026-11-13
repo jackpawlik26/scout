@@ -17,6 +17,7 @@ struct BrowserPane: View {
     @State private var isRenamingWorkspace = false
     @State private var workspaceName = ""
     @State private var newTagName = ""
+    @State private var nickname = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -89,6 +90,20 @@ struct BrowserPane: View {
         .sheet(item: $browser.conflict) { prompt in
             ConflictView(prompt: prompt)
                 .interactiveDismissDisabled()
+        }
+        .alert("Nickname", isPresented: Binding(get: { browser.nicknaming != nil }, set: { if !$0 { browser.nicknaming = nil } }),
+               presenting: browser.nicknaming) { item in
+            TextField(item.name, text: $nickname)
+            Button("Save") {
+                let name = nickname.trimmingCharacters(in: .whitespaces)
+                services.customize(item.path) { $0.nickname = name.isEmpty ? nil : name }
+                browser.refresh()
+                nickname = ""
+            }
+            .keyboardShortcut(.defaultAction)
+            Button("Cancel", role: .cancel) { nickname = "" }
+        } message: { item in
+            Text("Shown in Scout instead of “\(item.name)”. The name on disk doesn’t change.")
         }
         .alert("New Tag", isPresented: newTagBinding) {
             TextField("Name", text: $newTagName)

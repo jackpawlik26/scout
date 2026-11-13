@@ -56,14 +56,18 @@ struct FileTableView: View {
                     if browser.showsLocations {
                         // Search results: show where each one lives.
                         VStack(alignment: .leading, spacing: 0) {
-                            Text(item.name).lineLimit(1).truncationMode(.middle)
+                            Text(browser.services.displayName(item)).lineLimit(1).truncationMode(.middle)
                             Text(PathDisplay.display(item.url.deletingLastPathComponent().filePath,
                                                      home: browser.services.homePath))
                                 .font(.caption2).foregroundStyle(.secondary)
                                 .lineLimit(1).truncationMode(.head)
                         }
                     } else {
-                        Text(item.name).lineLimit(1).truncationMode(.middle)
+                        Text(browser.services.displayName(item)).lineLimit(1).truncationMode(.middle)
+                        if browser.isFolder, browser.services.customizations.isPinned(item.path) {
+                            Image(systemName: "pin.fill").font(.system(size: 9)).foregroundStyle(.secondary)
+                                .help("Pinned to the top")
+                        }
                     }
                     TagDots(tags: item.tags)
                     CloudBadge(state: item.cloud)
@@ -326,6 +330,7 @@ private struct GridCell: View {
     var iconSize: CGFloat = 64
     var width: CGFloat = 112
     @State private var itemCount: Int?
+    @Environment(AppServices.self) private var services: AppServices?
 
     var body: some View {
         VStack(spacing: 4) {
@@ -339,7 +344,7 @@ private struct GridCell: View {
             HStack(spacing: 4) {
                 TagDots(tags: item.tags, size: 8)
                 CloudBadge(state: item.cloud)
-                Text(item.name)
+                Text(services?.displayName(item) ?? item.name)
             }
                 .font(.callout)
                 .lineLimit(2)
@@ -641,6 +646,7 @@ struct FileContextMenu: View {
             }
             Divider()
             TagsMenu(browser: browser, items: items)
+            CustomizeMenu(browser: browser, items: items)
             Button("Add to Shelf") {
                 browser.services.addToShelf(items.map(\.url))
                 openWindow(id: "shelf")
@@ -720,6 +726,53 @@ private struct OpenWithMenu: View {
     }
 }
 
+
+/// Right-click ▸ Customize: folder color and symbol, nickname, pin to top. Scout-only.
+private struct CustomizeMenu: View {
+    let browser: BrowserModel
+    let items: [FileItem]
+
+    var body: some View {
+        let services = browser.services
+        let folders = items.filter(\.isNavigable)
+        Menu("Customize") {
+            if !folders.isEmpty {
+                Menu("Folder Color") {
+                    ForEach(ItemStyle.colors, id: \.self) { color in
+                        Button(color.capitalized) { for folder in folders { services.customize(folder.path) { $0.color = color } } }
+                    }
+                    Divider()
+                    Button("Default") { for folder in folders { services.customize(folder.path) { $0.color = nil } } }
+                }
+                Menu("Folder Symbol") {
+                    ForEach(ItemStyle.symbols, id: \.self) { symbol in
+                        Button { for folder in folders { services.customize(folder.path) { $0.symbol = symbol } } } label: {
+                            Label(symbol, systemImage: symbol)
+                        }
+                    }
+                    Divider()
+                    Button("None") { for folder in folders { services.customize(folder.path) { $0.symbol = nil } } }
+                }
+            }
+            if items.count == 1, let item = items.first {
+                Button("Nickname…") { browser.nicknaming = item }
+                if services.customizations.style(for: item.path)?.nickname != nil {
+                    Button("Remove Nickname") {
+                        services.customize(item.path) { $0.nickname = nil }
+                        browser.refresh()
+                    }
+                }
+            }
+            if browser.isFolder {
+                let pinned = items.allSatisfy { services.customizations.isPinned($0.path) }
+                Button(pinned ? "Unpin" : "Pin to Top") {
+                    for item in items where services.customizations.isPinned(item.path) == pinned { services.togglePin(item.path) }
+                    browser.refresh()
+                }
+            }
+        }
+    }
+}
 
 /// Image and PDF actions that fit the selection. Results land next to the originals.
 private struct QuickActionsMenu: View {

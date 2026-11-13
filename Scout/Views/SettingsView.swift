@@ -17,6 +17,7 @@ struct SettingsView: View {
     @AppStorage("foldersFirst") private var foldersFirst = true
     @AppStorage("showHidden") private var showHidden = false
     @AppStorage("folderSizes") private var folderSizes = true
+    @AppStorage("menuBarIcon") private var showsMenuBarIcon = true
     @AppStorage("terminalApp") private var terminalApp = ""
     @AppStorage("editorApp") private var editorApp = ""
     @State private var isConfirmingClearHistory = false
@@ -34,6 +35,9 @@ struct SettingsView: View {
                 appearanceCard
                 browsingCard
                 systemCard
+                SettingsCard("Keyboard Shortcuts", symbol: "command") {
+                    ShortcutRecorderList()
+                }
                 developerCard
                 searchCard
                 integrationsCard
@@ -193,6 +197,10 @@ struct SettingsView: View {
                     isDefaultBrowser = DefaultFileBrowser.isScout
                 }))
                 .toggleStyle(.switch).labelsHidden()
+            }
+            Divider()
+            SettingRow("Menu bar icon", detail: "Latest downloads, favorites, workspaces and Jump, from the menu bar.") {
+                Toggle("", isOn: $showsMenuBarIcon).toggleStyle(.switch).labelsHidden()
             }
             Divider()
             SettingRow("Open at login", detail: loginItemNote ?? "Keeps the jump shortcut ready after a restart.") {

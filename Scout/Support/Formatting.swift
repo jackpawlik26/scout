@@ -74,12 +74,70 @@ enum IconCache {
 struct FileIconView: View {
     let item: FileItem
     var size: CGFloat = 16
+    @Environment(AppServices.self) private var services: AppServices?
 
     var body: some View {
-        Image(nsImage: IconCache.icon(for: item))
-            .resizable()
-            .interpolation(.high)
-            .frame(width: size, height: size)
+        if let style = services?.folderStyle(for: item) {
+            StyledFolderIcon(style: style, size: size)
+        } else {
+            Image(nsImage: IconCache.icon(for: item))
+                .resizable()
+                .interpolation(.high)
+                .frame(width: size, height: size)
+        }
+    }
+}
+
+extension AppServices {
+    /// A folder's color/symbol, if you've set one.
+    func folderStyle(for item: FileItem) -> ItemStyle? {
+        guard item.isNavigable, let style = customizations.style(for: item.path),
+              style.color != nil || style.symbol != nil else { return nil }
+        return style
+    }
+}
+
+extension ItemStyle {
+    static func swiftUIColor(_ name: String?) -> Color {
+        switch name {
+        case "red": .red
+        case "orange": .orange
+        case "yellow": .yellow
+        case "green": .green
+        case "mint": .mint
+        case "teal": .teal
+        case "blue": .blue
+        case "indigo": .indigo
+        case "purple": .purple
+        case "pink": .pink
+        case "gray": .gray
+        default: Color(red: 0.42, green: 0.66, blue: 0.95) // Finder-ish folder blue
+        }
+    }
+}
+
+/// A colored folder with an optional symbol on it.
+struct StyledFolderIcon: View {
+    let style: ItemStyle
+    let size: CGFloat
+
+    var body: some View {
+        let color = ItemStyle.swiftUIColor(style.color)
+        ZStack {
+            Image(systemName: "folder.fill")
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(color.gradient)
+            if let symbol = style.symbol {
+                Image(systemName: symbol)
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(.white.opacity(0.92))
+                    .frame(width: size * 0.36, height: size * 0.36)
+                    .offset(y: size * 0.06)
+            }
+        }
+        .frame(width: size, height: size)
     }
 }
 
@@ -88,10 +146,13 @@ struct ThumbnailView: View {
     let item: FileItem
     let size: CGFloat
     @State private var thumbnail: NSImage?
+    @Environment(AppServices.self) private var services: AppServices?
 
     var body: some View {
         Group {
-            if let thumbnail {
+            if let style = services?.folderStyle(for: item) {
+                StyledFolderIcon(style: style, size: size)
+            } else if let thumbnail {
                 // Real previews get rounded corners and a soft shadow so they read as objects.
                 Image(nsImage: thumbnail)
                     .resizable()

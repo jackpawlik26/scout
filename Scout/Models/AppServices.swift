@@ -45,6 +45,24 @@ final class AppServices {
         UserDefaults.standard.set(customTags.map { "\($0.name)\n\($0.color)" }, forKey: "customTags")
     }
 
+    /// Folder colors and symbols, nicknames and pinned items (customizations.json).
+    private(set) var customizations = ScoutStore.loadCustomizations()
+
+    func customize(_ path: String, _ change: (inout ItemStyle) -> Void) {
+        customizations.update(path, change)
+        try? ScoutStore.saveCustomizations(customizations)
+    }
+
+    func togglePin(_ path: String) {
+        customizations.togglePin(path)
+        try? ScoutStore.saveCustomizations(customizations)
+    }
+
+    /// The nickname if you gave one, else the real name.
+    func displayName(_ item: FileItem) -> String {
+        customizations.style(for: item.path)?.nickname.flatMap { $0.isEmpty ? nil : $0 } ?? item.name
+    }
+
     /// Files collected on the Shelf (⌥⌘S).
     private(set) var shelf: [URL] = []
 

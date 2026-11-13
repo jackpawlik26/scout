@@ -4,6 +4,7 @@ import SwiftUI
 struct ScoutApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
     @State private var services = AppServices()
+    @AppStorage("menuBarIcon") private var showsMenuBarIcon = true
 
     var body: some Scene {
         WindowGroup(id: "browser") {
@@ -15,6 +16,11 @@ struct ScoutApp: App {
         // Scout draws its own header; no system title bar or toolbar.
         .windowStyle(.hiddenTitleBar)
         .commands { ScoutCommands() }
+
+        MenuBarExtra("Scout", systemImage: "binoculars.fill", isInserted: $showsMenuBarIcon) {
+            MenuBarMenu()
+                .environment(services)
+        }
 
         Window("Shelf", id: "shelf") {
             ShelfView()
