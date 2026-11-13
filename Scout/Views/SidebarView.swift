@@ -10,24 +10,14 @@ struct SidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Top row: the window's traffic lights sit at the left (centered 20pt down),
-            // the sidebar toggle lines up with them on the right.
-            HStack(spacing: 0) {
-                WindowDragArea()
-                IconButton(symbol: "sidebar.left", help: "Hide Sidebar (⌃⌘S)") {
-                    withAnimation(.snappy(duration: 0.25)) { window.isSidebarShown = false }
-                }
-            }
-            .frame(height: Layout.titleRowHeight)
-            .padding(.trailing, 10)
-
             HStack(spacing: 8) {
-                Image("ScoutGlyph").resizable().interpolation(.high).frame(width: 18, height: 18)
+                // The real app icon, so the sidebar always matches the Dock.
+                Image(nsImage: NSApp.applicationIconImage).resizable().interpolation(.high).frame(width: 24, height: 24)
                 Text("Scout").font(.system(size: 15, weight: .semibold, design: .rounded))
                 Spacer()
             }
-            .padding(.leading, 19)
-            .padding(.top, 6)
+            .padding(.leading, 16)
+            .padding(.top, 4)
             .padding(.bottom, 12)
 
             SidebarSearchButton { window.isPaletteOpen = true }

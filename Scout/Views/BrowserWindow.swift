@@ -52,25 +52,15 @@ struct BrowserContent: View {
 
     var body: some View {
         let browser = window.current
-        HStack(spacing: 0) {
+        VStack(spacing: 0) {
+            titleBand
+            HStack(spacing: 0) {
             if window.isSidebarShown {
                 SidebarView(window: window, browser: browser)
-                    .frame(width: 236)
+                    .frame(width: Layout.sidebarWidth)
                     .transition(.move(edge: .leading).combined(with: .opacity))
             }
             VStack(spacing: 0) {
-                if !window.isSidebarShown {
-                    // No sidebar: the traffic lights and the "show sidebar" button get
-                    // their own strip of chrome instead of sitting on top of the card.
-                    HStack(spacing: 4) {
-                        Color.clear.frame(width: Layout.trafficLightsWidth)
-                        IconButton(symbol: "sidebar.left", help: "Show Sidebar (⌃⌘S)") {
-                            withAnimation(.snappy(duration: 0.25)) { window.isSidebarShown = true }
-                        }
-                        WindowDragArea()
-                    }
-                    .frame(height: Layout.titleRowHeight)
-                }
                 HStack(spacing: Layout.gutter) {
                     ForEach(window.panes) { pane in
                         PaneCard(window: window, pane: pane)
@@ -82,10 +72,10 @@ struct BrowserContent: View {
                             .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
                 }
-                .padding(.top, window.isSidebarShown ? Layout.gutter : 0)
                 .padding(.bottom, Layout.gutter)
                 .padding(.trailing, Layout.gutter)
                 .padding(.leading, window.isSidebarShown ? 0 : Layout.gutter)
+            }
             }
         }
         .background(Color.chrome)
@@ -117,6 +107,15 @@ struct BrowserContent: View {
             Text("Gather folders and files from anywhere onto one page. Nothing gets moved.")
         }
         .focusedSceneValue(\.browserWindow, window)
+    }
+
+    /// The top 32pt: macOS's title-bar zone, where the traffic lights live. Clicks
+    /// here drag the window, so nothing interactive goes in it, except the sidebar
+    /// toggle, which macOS hosts in the title bar itself (`SidebarToggleAccessory`).
+    private var titleBand: some View {
+        WindowDragArea()
+            .frame(height: Layout.titleRowHeight)
+            .background(SidebarToggleAccessory(window: window))
     }
 
     private var newWorkspaceBinding: Binding<Bool> {

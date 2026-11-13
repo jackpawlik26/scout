@@ -45,12 +45,13 @@ extension View {
 }
 
 enum Layout {
-    /// Height of the row that holds the traffic lights. macOS centers them about
-    /// 20pt from the top in a hidden-title-bar window, so controls in this row
-    /// (40pt tall) line up with them.
-    static let titleRowHeight: CGFloat = 40
+    /// Height of the row that holds the traffic lights. In a hidden-title-bar window
+    /// macOS centers them 16pt from the top (measured: the close button spans
+    /// 9–23pt), so 28pt controls centered in a 32pt row line up with them.
+    static let titleRowHeight: CGFloat = 32
     /// Room the traffic lights take from the window's left edge.
     static let trafficLightsWidth: CGFloat = 78
+    static let sidebarWidth: CGFloat = 236
     /// Gap around the floating cards.
     static let gutter: CGFloat = 8
 }
@@ -121,6 +122,23 @@ struct KeyCap: View {
             .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.06)))
             .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Color.hairline))
     }
+}
+
+/// A SwiftUI host whose clicks are clicks, never window drags. Scout's window has
+/// no visible title bar, but macOS still treats the top 32pt as one: a click there
+/// drags the window if the view under it allows it.
+final class ClickableHostingView<Content: View>: NSHostingView<Content> {
+    required init(rootView: Content) {
+        super.init(rootView: rootView)
+        // Sitting in the title-bar zone, it would otherwise inset its content
+        // below the title bar (pushing the button down out of line).
+        safeAreaRegions = []
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("not used") }
+
+    override var mouseDownCanMoveWindow: Bool { false }
 }
 
 /// Lets an empty area drag the window around (we draw our own title bar).
