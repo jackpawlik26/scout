@@ -234,11 +234,13 @@ public enum CommandRunner {
     /// `allowFailure` keeps the output of tools that exit non-zero to report something
     /// (`npm outdated` exits 1 when anything is outdated).
     public static func run(_ executable: String, _ arguments: [String], timeout: TimeInterval = 10,
-                           environment extra: [String: String] = [:], allowFailure: Bool = false) -> String? {
+                           environment extra: [String: String] = [:], allowFailure: Bool = false,
+                           directory: URL? = nil) -> String? {
         guard FileManager.default.isExecutableFile(atPath: executable) else { return nil }
         let process = Process()
         process.executableURL = URL(filePath: executable)
         process.arguments = arguments
+        if let directory { process.currentDirectoryURL = directory }
         var environment = ProcessInfo.processInfo.environment
         // Apps launched from the Dock get a bare PATH; tools like npm need to find node.
         let toolDir = (executable as NSString).deletingLastPathComponent

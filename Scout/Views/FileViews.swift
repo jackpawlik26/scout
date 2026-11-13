@@ -388,6 +388,11 @@ struct FileContextMenu: View {
         if urls.isEmpty {
             if browser.isFolder {
                 Button("New Folder") { browser.newFolder() }
+                Menu("New File") {
+                    ForEach(BrowserModel.NewFileKind.allCases, id: \.self) { kind in
+                        Button(kind.title) { browser.newFile(kind) }
+                    }
+                }
                 Button("Paste") { browser.paste(move: false) }
                 Divider()
             }
@@ -417,11 +422,20 @@ struct FileContextMenu: View {
                 browser.toggleQuickLook()
             }
             Divider()
-            Button("Rename…") {
+            Button(items.count == 1 ? "Rename…" : "Rename \(items.count) Items…") {
                 browser.selection = urls
                 _ = browser.beginRename()
             }
-            .disabled(items.count != 1)
+            Button(items.count == 1 ? "Compress “\(items[0].name)”" : "Compress \(items.count) Items") {
+                browser.selection = urls
+                browser.compressSelection()
+            }
+            if items.contains(where: { Archiver.canExtract($0.url) }) {
+                Button("Extract Here") {
+                    browser.selection = urls
+                    browser.extractSelection()
+                }
+            }
             Button("Move to Trash") {
                 browser.selection = urls
                 browser.trashSelection()

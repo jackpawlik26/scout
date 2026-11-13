@@ -87,6 +87,10 @@ final class BrowserModel: Identifiable {
     var scrollTarget: URL?
     /// The item being renamed (drives the rename dialog).
     var renaming: FileItem?
+    /// Items being renamed together (drives the Rename Items sheet).
+    var batchRenaming: [FileItem]?
+    /// Something slow in progress ("Compressing…"), shown in the footer.
+    private(set) var activity: String?
     var alertMessage: String?
 
     private(set) var loadError: String?
@@ -510,10 +514,136 @@ final class BrowserModel: Identifiable {
 
     // MARK: - Changing files
 
+    /// Return / Rename…: one item gets the quick dialog, several get Rename Items.
     func beginRename() -> Bool {
-        guard selectedItems.count == 1 else { return false }
-        renaming = selectedItems[0]
+        let items = selectedItems
+        if items.count == 1 {
+            renaming = items[0]
+        } else if items.count > 1 {
+            batchRenaming = items
+        } else {
+            return false
+        }
         return true
+    }
+
+    /// Renames many items at once (⌘Z undoes all of them). Goes through temporary names
+    /// first so swaps like a→b, b→a work.
+    func applyBatchRename(_ changes: [(item: FileItem, newName: String)]) {
+        let changes = changes.filter { $0.item.name != $0.newName }
+        guard !changes.isEmpty else { return }
+        let fm = FileManager.default
+        var staged: [(original: URL, temp: URL, final: URL)] = []
+        var errors: [String] = []
+        for change in changes {
+            let temp = change.item.url.deletingLastPathComponent().appending(path: ".scout-rename-\(UUID().uuidString)")
+            do {
+                try fm.moveItem(at: change.item.url, to: temp)
+                staged.append((change.item.url, temp, change.item.url.deletingLastPathComponent().appending(path: change.newName)))
+            } catch {
+                errors.append(error.localizedDescription)
+            }
+        }
+        var moves: [(URL, URL)] = []
+        for entry in staged {
+            do {
+                try fm.moveItem(at: entry.temp, to: entry.final)
+                moves.append((entry.original, entry.final))
+            } catch {
+                try? fm.moveItem(at: entry.temp, to: entry.original) // put it back
+                errors.append(error.localizedDescription)
+            }
+        }
+        registerUndoMoves(moves, name: "Rename \(moves.count) Items")
+        if !errors.isEmpty { alertMessage = errors.joined(separator: "\n") }
+        let renamed = Set(moves.map(\.1.filePath))
+        Task {
+            await reload()
+            selection = Set(items.filter { renamed.contains($0.path) }.map(\.id))
+        }
+    }
+
+    // MARK: - Archives and new files
+
+    /// Zips the selection next to it ("Report.zip", or "Archive.zip" for several).
+    func compressSelection() {
+        let urls = selectedItems.map(\.url)
+        guard !urls.isEmpty else { return }
+        runActivity(urls.count == 1 ? "Compressing “\(urls[0].lastPathComponent)”…" : "Compressing \(urls.count) items…") {
+            try await Self.compress(urls)
+        }
+    }
+
+    /// Extracts the selected archives next to themselves.
+    func extractSelection() {
+        let archives = selectedItems.map(\.url).filter(Archiver.canExtract)
+        guard !archives.isEmpty else { return }
+        runActivity(archives.count == 1 ? "Extracting “\(archives[0].lastPathComponent)”…" : "Extracting \(archives.count) archives…") {
+            var last: URL?
+            for archive in archives { last = try await Self.extract(archive) }
+            return last
+        }
+    }
+
+    var canExtractSelection: Bool { selectedItems.contains { Archiver.canExtract($0.url) } }
+
+    /// Runs slow work off the main thread, then selects what it made. ⌘Z moves it to the Trash.
+    private func runActivity(_ title: String, _ work: @escaping () async throws -> URL?) {
+        activity = title
+        Task {
+            do {
+                if let made = try await work() {
+                    if let undoManager {
+                        undoManager.registerUndo(withTarget: self) { model in
+                            MainActor.assumeIsolated { _ = try? model.services.fileSource.trash(made) }
+                        }
+                        undoManager.setActionName(title.hasPrefix("Compress") ? "Compress" : "Extract")
+                    }
+                    pendingSelection = made.filePath
+                }
+            } catch {
+                alertMessage = error.localizedDescription
+            }
+            activity = nil
+            await reload()
+        }
+    }
+
+    @concurrent nonisolated private static func compress(_ urls: [URL]) async throws -> URL? {
+        try Archiver.compress(urls)
+    }
+
+    @concurrent nonisolated private static func extract(_ url: URL) async throws -> URL? {
+        try Archiver.extract(url)
+    }
+
+    enum NewFileKind: String, CaseIterable {
+        case text, markdown
+        var name: String { self == .text ? "untitled.txt" : "untitled.md" }
+        var title: String { self == .text ? "Text File" : "Markdown File" }
+    }
+
+    /// An empty text or markdown file, ready to rename.
+    func newFile(_ kind: NewFileKind) {
+        guard isFolder else { return }
+        let url = LocalFileSource.availableURL(in: location, preferredName: kind.name, isDirectory: false, style: .numbered)
+        guard FileManager.default.createFile(atPath: url.filePath, contents: Data()) else {
+            alertMessage = "Couldn’t create a file here."
+            return
+        }
+        if let undoManager {
+            undoManager.registerUndo(withTarget: self) { model in
+                MainActor.assumeIsolated { _ = try? model.services.fileSource.trash(url) }
+            }
+            undoManager.setActionName("New \(kind.title)")
+        }
+        Task {
+            await reload()
+            if let item = items.first(where: { $0.path == url.filePath }) {
+                select(item)
+                renaming = item
+            }
+        }
     }
 
     func rename(_ item: FileItem, to newName: String) {

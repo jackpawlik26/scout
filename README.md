@@ -79,9 +79,11 @@ scout duplicates ~/Desktop   # list duplicate files (no folder = whole home)
 | ⌘/ | All keyboard shortcuts |
 | Space or ⌘Y | Quick Look |
 | Return | Rename |
-| ⇧⌘N | New folder |
+| ⇧⌘N / ⌃⌘N | New folder / new text file (File ▸ New Markdown File too) |
+| Return with several selected | Rename Items: find & replace, prefix/suffix, numbering, letter case, live preview |
 | ⌘⌫ | Move to Trash (⌘Z undoes) |
 | ⌘C / ⌘V / ⌥⌘V | Copy / paste / move here |
+| Right-click ▸ Compress / Extract Here | Zip items; unzip .zip, .tar(.gz/.bz2/.xz), .7z |
 | ⌥⌘C | Copy path |
 | ⌘1 / ⌘2 | List / icons |
 | ⌘D / ⌘U / ⌥⇥ | Split view / swap panes / switch pane |

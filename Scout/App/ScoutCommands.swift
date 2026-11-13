@@ -21,6 +21,9 @@ struct ScoutCommands: Commands {
                 .keyboardShortcut("t")
             Button("New Folder") { browser?.newFolder() }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
+            Button("New Text File") { browser?.newFile(.text) }
+                .keyboardShortcut("n", modifiers: [.command, .control])
+            Button("New Markdown File") { browser?.newFile(.markdown) }
             Divider()
             Button("Open") { browser?.openSelection() }
                 .keyboardShortcut("o")
@@ -32,6 +35,12 @@ struct ScoutCommands: Commands {
             .keyboardShortcut("i")
             Button("Show in Finder") { browser?.showInFinder() }
                 .keyboardShortcut("r")
+            Divider()
+            Button("Rename…") { _ = browser?.beginRename() }
+            Button("Compress") { browser?.compressSelection() }
+                .disabled(browser?.selectedItems.isEmpty ?? true)
+            Button("Extract Here") { browser?.extractSelection() }
+                .disabled(!(browser?.canExtractSelection ?? false))
             Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser?.openInTerminal() }
                 .keyboardShortcut("t", modifiers: [.command, .option, .shift])
             Button("Open in \(DevApp.preferredEditor?.name ?? "Editor")") { browser?.openInEditor() }

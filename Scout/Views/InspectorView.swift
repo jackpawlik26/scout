@@ -67,10 +67,8 @@ private struct ItemInspector: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            ThumbnailView(item: item, size: 180)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .onTapGesture(count: 2) { browser.open([item.id]) }
+            PreviewPane(item: item)
+                .id(item.id)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.name)

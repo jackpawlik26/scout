@@ -85,6 +85,9 @@ struct BrowserPane: View {
             .keyboardShortcut(.defaultAction)
             Button("Cancel", role: .cancel) {}
         }
+        .sheet(item: batchRenameBinding) { batch in
+            BatchRenameView(browser: browser, items: batch.items)
+        }
         .alert("Scout", isPresented: alertBinding) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -478,7 +481,12 @@ struct BrowserPane: View {
         HStack(spacing: 6) {
             Text(summary)
             Spacer()
-            if browser.isLoading { ProgressView().controlSize(.mini) }
+            if let activity = browser.activity {
+                ProgressView().controlSize(.mini)
+                Text(activity)
+            } else if browser.isLoading {
+                ProgressView().controlSize(.mini)
+            }
             if let free = browser.freeSpace, browser.isFolder {
                 Text("\(Format.bytes(free)) free")
             }
@@ -500,6 +508,15 @@ struct BrowserPane: View {
 
     private var renameBinding: Binding<Bool> {
         Binding(get: { browser.renaming != nil }, set: { if !$0 { browser.renaming = nil } })
+    }
+
+    private struct Batch: Identifiable {
+        let items: [FileItem]
+        var id: [URL] { items.map(\.id) }
+    }
+
+    private var batchRenameBinding: Binding<Batch?> {
+        Binding(get: { browser.batchRenaming.map(Batch.init) }, set: { if $0 == nil { browser.batchRenaming = nil } })
     }
 
     private var alertBinding: Binding<Bool> {
