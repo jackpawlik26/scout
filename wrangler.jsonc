@@ -1,0 +1,10 @@
+{
+  // The landing page and changelog (site/), served as static files by a Cloudflare Worker.
+  // Deploy with scripts/deploy-site.sh.
+  "name": "scout",
+  "compatibility_date": "2026-11-13",
+  "assets": {
+    "directory": "site",
+    "html_handling": "auto-trailing-slash"
+  }
+}
