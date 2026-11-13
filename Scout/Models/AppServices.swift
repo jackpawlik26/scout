@@ -111,6 +111,22 @@ final class AppServices {
 
     // MARK: - Windows, links from outside, the global shortcut
 
+    /// macOS only restores windows after a quit when "Close windows when quitting an app" is off
+    /// (it's on by default), so Scout keeps the last window's tabs and split itself, like Finder.
+    private static let sessionKey = "lastSession"
+    @ObservationIgnored private var launchSessionTaken = false
+
+    /// The saved session, handed to the first window of this launch only.
+    func takeLaunchSession() -> WindowSession? {
+        guard !launchSessionTaken else { return nil }
+        launchSessionTaken = true
+        return WindowSession(encoded: UserDefaults.standard.string(forKey: Self.sessionKey) ?? "")
+    }
+
+    func saveSession(_ session: WindowSession) {
+        UserDefaults.standard.set(session.encoded, forKey: Self.sessionKey)
+    }
+
     func register(_ window: BrowserWindowModel) {
         windowModels.removeAll { $0.model == nil }
         windowModels.append(WeakWindow(model: window))

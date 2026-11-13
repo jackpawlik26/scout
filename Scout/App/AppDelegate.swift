@@ -36,7 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             pending.append(url)
             return
         }
-        services.route(.open(path: url.filePath, newTab: false))
+        services.route(.open(path: url.filePath, newTab: true))
     }
 
     /// File URLs in an Apple Event's direct object (one item or a list).

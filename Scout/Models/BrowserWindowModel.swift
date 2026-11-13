@@ -21,7 +21,30 @@ final class PaneModel: Identifiable {
         first.pane = self
     }
 
+    /// Reopens saved tabs (skipping folders that are gone); nil when none survive.
+    init?(services: AppServices, saved: WindowSession.Pane) {
+        self.services = services
+        let fm = FileManager.default
+        let restored: [BrowserModel] = saved.tabs.compactMap { tab in
+            guard fm.fileExists(atPath: tab.path) else { return nil }
+            let model = BrowserModel(location: .folder(tab.path), services: services)
+            if let mode = ViewMode(rawValue: tab.viewMode) { model.viewMode = mode }
+            model.restore(tab.mode)
+            return model
+        }
+        guard !restored.isEmpty else { return nil }
+        tabs = restored
+        selectedTabID = restored[min(max(saved.selected, 0), restored.count - 1)].id
+        for tab in restored { tab.pane = self }
+    }
+
     var current: BrowserModel { tabs.first { $0.id == selectedTabID } ?? tabs[0] }
+
+    var saved: WindowSession.Pane {
+        WindowSession.Pane(
+            tabs: tabs.map { WindowSession.Tab(path: $0.location.filePath, mode: $0.mode, viewMode: $0.viewMode.rawValue) },
+            selected: tabs.firstIndex { $0.id == selectedTabID } ?? 0)
+    }
 
     func newTab(at url: URL? = nil) {
         let tab = BrowserModel(location: url ?? current.location, services: services)
@@ -74,6 +97,8 @@ final class BrowserWindowModel {
     var filterFocusRequest = 0
     /// Paths for a workspace being created (drives the "New Workspace" dialog).
     var newWorkspacePaths: [String]?
+    /// Items waiting for a destination: the palette is picking a folder to move or copy them to.
+    var destinationRequest: DestinationRequest?
 
     init(services: AppServices, start: URL) {
         self.services = services
@@ -82,6 +107,22 @@ final class BrowserWindowModel {
         panes = [first]
         first.window = self
         services.register(self)
+    }
+
+    /// Reopens a window's tabs and split from last time; nil if none of its folders still exist.
+    init?(services: AppServices, session: WindowSession) {
+        self.services = services
+        let restored = session.panes.prefix(2).compactMap { PaneModel(services: services, saved: $0) }
+        guard !restored.isEmpty else { return nil }
+        panes = restored
+        focusedPaneID = restored[min(max(session.focused, 0), restored.count - 1)].id
+        for pane in restored { pane.window = self }
+        services.register(self)
+    }
+
+    /// Everything needed to reopen this window as it is: each pane's tabs and the split.
+    var session: WindowSession {
+        WindowSession(panes: panes.map(\.saved), focused: panes.firstIndex { $0.id == focusedPaneID } ?? 0)
     }
 
     var focusedPane: PaneModel { panes.first { $0.id == focusedPaneID } ?? panes[0] }
@@ -109,6 +150,19 @@ final class BrowserWindowModel {
         } else {
             NSApp.keyWindow?.performClose(nil)
         }
+    }
+
+    /// For folders opened from other apps: reuse a tab already showing it, or a fresh untouched
+    /// home tab; otherwise open a new tab (the caller then navigates it).
+    private func showInTab(_ folder: URL) {
+        let pane = focusedPane
+        if let existing = pane.tabs.first(where: { $0.isFolder && $0.location.filePath == folder.filePath }) {
+            pane.selectedTabID = existing.id
+            return
+        }
+        let tab = pane.current
+        let untouched = tab.isFolder && tab.backStack.isEmpty && tab.location.filePath == services.home.filePath
+        if !untouched { newTab(at: folder) }
     }
 
     // MARK: - Split view
@@ -150,6 +204,38 @@ final class BrowserWindowModel {
         current.transfer(urls, into: target.location, move: move)
     }
 
+    // MARK: - Move to… / Copy to…
+
+    /// ⇧⌘M / ⌥⇧⌘M: pick a destination in the palette for the selected items.
+    func beginMoveTo(copy: Bool) {
+        let urls = current.selectedItems.map(\.url)
+        guard !urls.isEmpty else {
+            current.alertMessage = "Select the files or folders to \(copy ? "copy" : "move") first."
+            return
+        }
+        destinationRequest = DestinationRequest(urls: urls, copy: copy)
+        isPaletteOpen = true
+    }
+
+    /// Moves or copies the waiting items into `folder`. Returns an error message instead when it can't.
+    func finishMoveTo(_ folder: URL, copy: Bool, follow: Bool) -> String? {
+        guard let request = destinationRequest else { return nil }
+        let target = folder.filePath
+        if let inside = request.urls.first(where: { target == $0.filePath || target.hasPrefix($0.filePath + "/") }) {
+            return "Can’t put “\(inside.lastPathComponent)” inside itself."
+        }
+        if !copy, request.urls.allSatisfy({ $0.deletingLastPathComponent().filePath == target }) {
+            return "They’re already in “\(folder.lastPathComponent)”."
+        }
+        destinationRequest = nil
+        RecentDestinations.add(target)
+        current.transfer(request.urls, into: .folder(target), move: !copy)
+        if follow {
+            current.go(to: .folder(target), select: request.urls.count == 1 ? URL.folder(target).appending(path: request.urls[0].lastPathComponent) : nil)
+        }
+        return nil
+    }
+
     // MARK: - Links
 
     /// Handles a `scout://` link from Raycast, Terminal or another app.
@@ -168,7 +254,7 @@ final class BrowserWindowModel {
             if inOtherPane {
                 if !isSplit { toggleSplit() } else { focusOtherPane() }
             }
-            if inNewTab { newTab(at: folder) }
+            if inNewTab { showInTab(folder) }
             current.go(to: folder, select: isFolder ? nil : url)
         case .workspace(let name):
             if let workspace = services.workspaces.first(where: { $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame }) {
@@ -204,6 +290,64 @@ final class BrowserWindowModel {
             paletteInitialQuery = query ?? ""
             isPaletteOpen = true
         }
+    }
+}
+
+/// Files waiting for Move to… / Copy to… to pick a folder.
+struct DestinationRequest {
+    var urls: [URL]
+    var copy: Bool
+
+    var summary: String {
+        urls.count == 1 ? "“\(urls[0].lastPathComponent)”" : "\(urls.count) items"
+    }
+}
+
+/// Folders you recently moved or copied things to, offered first next time.
+enum RecentDestinations {
+    private static let key = "recentDestinations"
+
+    static var paths: [String] {
+        (UserDefaults.standard.stringArray(forKey: key) ?? []).filter { FileManager.default.fileExists(atPath: $0) }
+    }
+
+    static func add(_ path: String) {
+        var list = UserDefaults.standard.stringArray(forKey: key) ?? []
+        list.removeAll { $0 == path }
+        list.insert(path, at: 0)
+        UserDefaults.standard.set(Array(list.prefix(8)), forKey: key)
+    }
+}
+
+/// A window's tabs and split view, saved so they come back after quitting (like Finder).
+struct WindowSession: Codable, Equatable {
+    struct Tab: Codable, Equatable {
+        var path: String
+        var mode: BrowserMode
+        var viewMode: String
+    }
+
+    struct Pane: Codable, Equatable {
+        var tabs: [Tab]
+        var selected: Int
+    }
+
+    var panes: [Pane]
+    var focused: Int
+
+    var encoded: String {
+        (try? JSONEncoder().encode(self)).flatMap { String(data: $0, encoding: .utf8) } ?? ""
+    }
+
+    init(panes: [Pane], focused: Int) {
+        self.panes = panes
+        self.focused = focused
+    }
+
+    init?(encoded: String) {
+        guard !encoded.isEmpty, let data = encoded.data(using: .utf8),
+              let session = try? JSONDecoder().decode(WindowSession.self, from: data) else { return nil }
+        self = session
     }
 }
 

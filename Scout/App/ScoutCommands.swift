@@ -43,6 +43,12 @@ struct ScoutCommands: Commands {
                 .customizableShortcut(.showInFinder)
             Button("Get Info (Finder)") { browser?.showFinderInfo() }
                 .customizableShortcut(.getInfo)
+            Button("Move To…") { window?.beginMoveTo(copy: false) }
+                .customizableShortcut(.moveTo)
+                .disabled(browser?.selectedItems.isEmpty ?? true)
+            Button("Copy To…") { window?.beginMoveTo(copy: true) }
+                .customizableShortcut(.copyTo)
+                .disabled(browser?.selectedItems.isEmpty ?? true)
             Button("Duplicate") { browser?.duplicateSelection() }
                 .disabled(browser?.selectedItems.isEmpty ?? true)
             Button("Make Alias") { browser?.makeAliases() }

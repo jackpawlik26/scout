@@ -21,6 +21,9 @@ struct CommandPalette: View {
     @State private var isSearchingFiles = false
     @State private var spotlight: SpotlightSearch?
     @State private var selectedIndex = 0
+    /// Move to… / Copy to…: the palette picks a folder for these items instead of opening things.
+    @State private var destination: DestinationRequest?
+    @State private var destinationError: String?
     @FocusState private var isFieldFocused: Bool
 
     private var spec: SearchSpec {
@@ -44,9 +47,16 @@ struct CommandPalette: View {
                 .onTapGesture { close(cancelled: true) }
 
             VStack(spacing: 0) {
+                if let destination {
+                    DestinationHeader(request: destination, error: destinationError) { copy in
+                        self.destination?.copy = copy
+                    }
+                }
                 searchField
-                FilterBar(scope: $scope, kind: $kind, date: $date, inThisFolder: $inThisFolder,
-                          folderName: window.current.location.lastPathComponent)
+                if destination == nil {
+                    FilterBar(scope: $scope, kind: $kind, date: $date, inThisFolder: $inThisFolder,
+                              folderName: window.current.location.lastPathComponent)
+                }
                 Divider()
                 resultsList
                 Divider()
@@ -62,6 +72,10 @@ struct CommandPalette: View {
             if let initialScope = window.paletteInitialScope { scope = initialScope }
             window.paletteInitialQuery = ""
             window.paletteInitialScope = nil
+            if let request = window.destinationRequest {
+                destination = request
+                scope = .folders
+            }
             isFieldFocused = true
         }
         .onExitCommand { close(cancelled: true) }
@@ -76,6 +90,7 @@ struct CommandPalette: View {
             window.paletteInitialQuery = ""
         }
         .task(id: spec) { await search(spec) }
+        .onChange(of: query) { destinationError = nil }
         .onChange(of: services.isIndexing) { Task { await searchFolders(spec) } }
     }
 
@@ -91,6 +106,10 @@ struct CommandPalette: View {
                 .onKeyPress(.downArrow) { move(1); return .handled }
                 .onKeyPress(.upArrow) { move(-1); return .handled }
                 .onKeyPress(.tab) {
+                    if destination != nil {
+                        destination?.copy.toggle()
+                        return .handled
+                    }
                     let all = SearchScope.allCases
                     scope = all[(all.firstIndex(of: scope)! + 1) % all.count]
                     return .handled
@@ -109,7 +128,8 @@ struct CommandPalette: View {
     }
 
     private var placeholder: String {
-        switch scope {
+        if destination != nil { return "Type a folder name or path…" }
+        return switch scope {
         case .all: "Find a folder or file…"
         case .folders: "Jump to a folder…"
         case .files: "Find a file by name or contents…"
@@ -156,6 +176,7 @@ struct CommandPalette: View {
     }
 
     private var emptyMessage: String {
+        if destination != nil, spec.isEmpty { return "Type to find a folder." }
         if spec.isEmpty {
             return scope == .files ? "Type to search files, or pick a kind or date above." : "Folders you open will show up here."
         }
@@ -166,6 +187,11 @@ struct CommandPalette: View {
 
     private func sectionHeader(at index: Int, in rows: [PaletteItem]) -> String? {
         let current = rows[index]
+        if destination != nil, spec.isEmpty {
+            let suggested = destinationSuggestions.count
+            if index == 0 { return suggested > 0 ? "Suggested" : "Most Used" }
+            return index == suggested ? "Most Used" : nil
+        }
         if index > 0, rows[index - 1].isFile == current.isFile { return nil }
         if current.isFile { return "Files" }
         return spec.isEmpty ? "Most Used" : "Folders"
@@ -173,7 +199,12 @@ struct CommandPalette: View {
 
     private var footer: some View {
         HStack(spacing: 14) {
-            if let selected {
+            if let destination {
+                let verb = destination.copy ? "copy" : "move"
+                hint("↵", "\(verb) here")
+                hint("⌘↵", "\(verb) and go there")
+                hint("⇥", destination.copy ? "move instead" : "copy instead")
+            } else if let selected {
                 if selected.isFile {
                     hint("↵", "open")
                     hint("⌘↵", "show in Scout")
@@ -182,8 +213,10 @@ struct CommandPalette: View {
                     hint("⌘↵", "new tab")
                 }
             }
-            if !spec.isEmpty { hint("⇧↵", "all results") }
-            hint("⇥", "scope")
+            if destination == nil {
+                if !spec.isEmpty { hint("⇧↵", "all results") }
+                hint("⇥", "scope")
+            }
             Spacer()
             Text(services.isIndexing ? "Indexing folders…" : "\(services.folders.count.formatted()) folders indexed")
         }
@@ -234,7 +267,14 @@ struct CommandPalette: View {
             return
         }
         if spec.isEmpty {
-            folders = FolderRanker.rank(query: "", folders: [], frecency: services.frecency, home: home)
+            let ranked = FolderRanker.rank(query: "", folders: [], frecency: services.frecency, home: home)
+            if destination != nil {
+                let suggested = destinationSuggestions
+                let taken = Set(suggested.map(\.folder.path))
+                folders = suggested + ranked.filter { !taken.contains($0.folder.path) }
+            } else {
+                folders = ranked
+            }
             return
         }
         let index = services.folders
@@ -268,7 +308,40 @@ struct CommandPalette: View {
         selectedIndex = (selectedIndex + delta + count) % count
     }
 
+    /// For Move to…: the other pane's folder, then recent destinations.
+    private var destinationSuggestions: [RankedFolder] {
+        guard let destination else { return [] }
+        let home = services.homePath
+        var paths: [String] = []
+        if let other = window.otherPane?.current, other.isFolder { paths.append(other.location.filePath) }
+        paths += RecentDestinations.paths
+        let sources = Set(destination.urls.map { $0.deletingLastPathComponent().filePath })
+        var seen = Set<String>()
+        return paths.filter { path in
+            // Moving into the folder they're already in does nothing.
+            guard seen.insert(path).inserted, destination.copy || !(sources.count == 1 && sources.contains(path)) else { return false }
+            return true
+        }
+        .prefix(5)
+        .map { RankedFolder(folder: IndexedFolder(path: $0, home: home), score: 0, nameIndices: []) }
+    }
+
     private func activate(modifiers: EventModifiers) {
+        if let destination {
+            guard let selected, !selected.isFile else { return }
+            let folder = URL.folder(selected.path)
+            guard FileManager.default.fileExists(atPath: selected.path) else {
+                services.forget(selected.path)
+                destinationError = "“\(selected.path)” no longer exists."
+                return
+            }
+            if let error = window.finishMoveTo(folder, copy: destination.copy, follow: modifiers.contains(.command)) {
+                destinationError = error
+            } else {
+                close()
+            }
+            return
+        }
         if modifiers.contains(.shift) {
             showAllResults()
             return
@@ -300,6 +373,7 @@ struct CommandPalette: View {
     /// `cancelled`: dismissed without picking anything (Esc, clicking outside).
     private func close(cancelled: Bool = false) {
         spotlight = nil
+        window.destinationRequest = nil
         window.isPaletteOpen = false
         services.paletteClosed(cancelled: cancelled)
     }
@@ -392,6 +466,36 @@ private struct PaletteRow: View {
             output += piece
         }
         return output
+    }
+}
+
+// MARK: - Move to… header
+
+/// "Move 3 items to…" with a Move / Copy switch (⇥ flips it).
+private struct DestinationHeader: View {
+    let request: DestinationRequest
+    let error: String?
+    let setCopy: (Bool) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: request.copy ? "doc.on.doc" : "arrow.right.doc.on.clipboard")
+                    .foregroundStyle(Color.accentColor)
+                Text("\(request.copy ? "Copy" : "Move") \(request.summary) to…")
+                    .font(.callout.weight(.semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer()
+                Chip(title: "Move", isOn: !request.copy) { setCopy(false) }
+                Chip(title: "Copy", isOn: request.copy) { setCopy(true) }
+            }
+            if let error {
+                Text(error).font(.caption).foregroundStyle(.red)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 12)
     }
 }
 

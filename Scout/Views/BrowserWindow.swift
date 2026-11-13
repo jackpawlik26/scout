@@ -5,6 +5,8 @@ import SwiftUI
 struct BrowserWindow: View {
     @Environment(AppServices.self) private var services
     @SceneStorage("scout.location") private var savedLocation = ""
+    /// Tabs and split view, so they come back after a restart.
+    @SceneStorage("scout.session") private var savedSession = ""
     @State private var window: BrowserWindowModel?
     /// A link that arrived before this window finished setting up.
     @State private var pendingLink: ScoutLink?
@@ -24,7 +26,10 @@ struct BrowserWindow: View {
             if !savedLocation.isEmpty, FileManager.default.fileExists(atPath: savedLocation) {
                 start = .folder(savedLocation)
             }
-            let model = BrowserWindowModel(services: services, start: start)
+            // This window's own saved state if macOS restored it, else the last session (first window only).
+            let session = WindowSession(encoded: savedSession) ?? services.takeLaunchSession()
+            let model = session.flatMap { BrowserWindowModel(services: services, session: $0) }
+                ?? BrowserWindowModel(services: services, start: start)
             window = model
             if let pendingLink {
                 model.handle(pendingLink)
@@ -35,11 +40,17 @@ struct BrowserWindow: View {
         .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
         .onOpenURL { url in
             // scout:// links, or folders/files opened with Scout (dropped on the Dock icon, `open -a Scout`).
-            guard let link = url.isFileURL ? .open(path: url.filePath, newTab: false) : ScoutLink(url: url) else { return }
+            // Opened from outside: a new tab, so it doesn't replace what you were looking at.
+            guard let link = url.isFileURL ? .open(path: url.filePath, newTab: true) : ScoutLink(url: url) else { return }
             if let window { window.handle(link) } else { pendingLink = link }
         }
         .onChange(of: window?.current.location) { _, location in
             if let location { savedLocation = location.filePath }
+        }
+        .onChange(of: window?.session) { _, session in
+            guard let session else { return }
+            savedSession = session.encoded
+            services.saveSession(session)
         }
     }
 }

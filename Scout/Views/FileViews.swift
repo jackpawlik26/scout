@@ -583,7 +583,7 @@ struct FileContextMenu: View {
             }
             Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser.openInTerminal() }
             OpenInMenu(url: browser.location)
-            Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([browser.location]) }
+            Button("Show in Finder") { FinderBridge.reveal([browser.location]) }
             Button("Copy Path") { copy(browser.location.filePath) }
             if let page = browser.gitHubURL(for: browser.location, isFolder: true) {
                 Button("Open on GitHub") { NSWorkspace.shared.open(page) }
@@ -656,6 +656,14 @@ struct FileContextMenu: View {
                 Button("Add to Favorites") { browser.services.addFavorites(unpinned.map(\.path)) }
             }
             WorkspaceMenu(window: window, browser: browser, paths: items.map(\.path))
+            Button("Move To…") {
+                browser.selection = urls
+                window.beginMoveTo(copy: false)
+            }
+            Button("Copy To…") {
+                browser.selection = urls
+                window.beginMoveTo(copy: true)
+            }
             if window.isSplit, let other = window.otherPane?.current, other.isFolder {
                 Button("Copy to Other Pane") {
                     browser.selection = urls
@@ -666,7 +674,7 @@ struct FileContextMenu: View {
                     browser.transfer(items.map(\.url), into: other.location, move: true)
                 }
             }
-            Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting(items.map(\.url)) }
+            Button("Show in Finder") { FinderBridge.reveal(items.map(\.url)) }
             Divider()
             Button("Duplicate") {
                 browser.selection = urls

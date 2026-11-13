@@ -4,13 +4,15 @@ import SwiftUI
 
 /// Commands whose keyboard shortcut you can change in Settings ▸ Keyboard Shortcuts.
 enum ScoutShortcut: String, CaseIterable, Identifiable {
-    case newTab, newFolder, newTextFile, tidy, open, quickLook, infoPanel, showInFinder, getInfo, makeAlias, airDrop, terminal, editor, trash, closeTab, copyPath, moveHere, filter, splitView, swapPanes, otherPane, sidebar, listView, iconView, columnView, biggerIcons, smallerIcons, shelf, hiddenFiles, nextTab, previousTab, shortcutsSheet, back, forward, enclosingFolder, jump, findFiles, goToPath, recents, home, desktop, documents, downloads, applications, iCloud, addFavorites, cleanUp, packages, gitChanges, newWorkspace
+    case newTab, moveTo, copyTo, newFolder, newTextFile, tidy, open, quickLook, infoPanel, showInFinder, getInfo, makeAlias, airDrop, terminal, editor, trash, closeTab, copyPath, moveHere, filter, splitView, swapPanes, otherPane, sidebar, listView, iconView, columnView, biggerIcons, smallerIcons, shelf, hiddenFiles, nextTab, previousTab, shortcutsSheet, back, forward, enclosingFolder, jump, findFiles, goToPath, recents, home, desktop, documents, downloads, applications, iCloud, addFavorites, cleanUp, packages, gitChanges, newWorkspace
 
     var id: Self { self }
 
     var title: String {
         switch self {
         case .newTab: "New Tab"
+        case .moveTo: "Move To…"
+        case .copyTo: "Copy To…"
         case .newFolder: "New Folder"
         case .newTextFile: "New Text File"
         case .tidy: "Tidy Folder"
@@ -66,6 +68,8 @@ enum ScoutShortcut: String, CaseIterable, Identifiable {
     var defaultShortcut: KeyboardShortcut {
         switch self {
         case .newTab: KeyboardShortcut(KeyEquivalent("t"), modifiers: .command)
+        case .moveTo: KeyboardShortcut(KeyEquivalent("m"), modifiers: [.command, .shift])
+        case .copyTo: KeyboardShortcut(KeyEquivalent("m"), modifiers: [.command, .option, .shift])
         case .newFolder: KeyboardShortcut(KeyEquivalent("n"), modifiers: [.command, .shift])
         case .newTextFile: KeyboardShortcut(KeyEquivalent("n"), modifiers: [.command, .control])
         case .tidy: KeyboardShortcut(KeyEquivalent("t"), modifiers: [.command, .option])

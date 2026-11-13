@@ -39,6 +39,7 @@ struct ShortcutsView: View {
                 ("Return", "Rename"),
                 ("⇧⌘N", "New folder"),
                 ("⌘C  ⌘V  ⌥⌘V", "Copy, paste, move here"),
+                ("⇧⌘M  ⌥⇧⌘M", "Move to…, copy to…"),
                 ("⌃⌘A  ⇧⌘R", "Make alias, AirDrop"),
                 ("⌥⌘C", "Copy path"),
                 ("⌘⌫", "Move to Trash (⌘Z undoes)"),

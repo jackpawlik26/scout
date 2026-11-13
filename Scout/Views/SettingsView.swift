@@ -26,6 +26,8 @@ struct SettingsView: View {
     @AppStorage("jumpHotKey") private var jumpHotKey = GlobalHotKey.Preset.optionSpace.rawValue
     @State private var hotKeyTaken = false
     @State private var isDefaultBrowser = DefaultFileBrowser.isScout
+    @State private var opensFolders = FolderHandler.isScout
+    @State private var folderHandlerNote: String?
     @State private var opensAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginItemNote: String?
 
@@ -195,6 +197,22 @@ struct SettingsView: View {
                 Toggle("", isOn: Binding(get: { isDefaultBrowser }, set: { on in
                     DefaultFileBrowser.set(on)
                     isDefaultBrowser = DefaultFileBrowser.isScout
+                }))
+                .toggleStyle(.switch).labelsHidden()
+            }
+            Divider()
+            SettingRow("Open folders in Scout",
+                       detail: folderHandlerNote ?? "Folders opened from Spotlight, Terminal’s open command, downloads and other apps show up here. Finder keeps the Desktop and Open/Save dialogs.") {
+                Toggle("", isOn: Binding(get: { opensFolders }, set: { on in
+                    Task {
+                        do {
+                            try await FolderHandler.set(on)
+                            folderHandlerNote = nil
+                        } catch {
+                            folderHandlerNote = "macOS said no: \(error.localizedDescription)"
+                        }
+                        opensFolders = FolderHandler.isScout
+                    }
                 }))
                 .toggleStyle(.switch).labelsHidden()
             }

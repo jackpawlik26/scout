@@ -29,6 +29,12 @@ targets:
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # Lets Scout be the default app for folders (Settings ▸ Open folders in Scout).
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Folder
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.folder]
         CFBundleURLTypes:
           - CFBundleURLName: com.jackpawlik.scout
             CFBundleURLSchemes: [scout]

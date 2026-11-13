@@ -30,7 +30,7 @@ enum SortField: String, CaseIterable, Identifiable {
 }
 
 /// What a tab is showing.
-enum BrowserMode: Equatable {
+enum BrowserMode: Equatable, Codable {
     /// A folder's contents (the usual case).
     case folder
     /// Live Spotlight results.
@@ -310,6 +310,21 @@ final class BrowserModel: Identifiable {
         }
         pushHistory()
         show(HistoryEntry(location: target), select: child)
+    }
+
+    /// Puts a reopened tab back on what it was showing (search, workspace, Clean Up…).
+    func restore(_ mode: BrowserMode) {
+        switch mode {
+        case .folder: break
+        case .search(let saved): showSearch(saved)
+        case .workspace(let id): if services.workspace(id) != nil { showWorkspace(id) }
+        case .cleanup: showCleanup()
+        case .changes(let root): if FileManager.default.fileExists(atPath: root) { showChanges(in: root) }
+        case .packages: showPackages()
+        case .settings: showSettings()
+        case .recents: showRecents()
+        case .tag(let name): showTag(name)
+        }
     }
 
     /// Shows live Spotlight results in this tab.
@@ -1372,7 +1387,7 @@ final class BrowserModel: Identifiable {
 
     func showInFinder() {
         let urls = selectedItems.isEmpty ? [location] : selectedItems.map(\.url)
-        NSWorkspace.shared.activateFileViewerSelecting(urls)
+        FinderBridge.reveal(urls)
     }
 
     /// Opens a folder in your terminal (Tern, Ghostty, iTerm… or Terminal).

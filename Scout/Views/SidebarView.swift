@@ -199,7 +199,7 @@ struct SidebarView: View {
         }
         .contextMenu {
             Button("Open in New Tab") { window.newTab(at: place.url) }
-            Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([place.url]) }
+            Button("Show in Finder") { FinderBridge.reveal([place.url]) }
             Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser.openInTerminal(place.url) }
             OpenInMenu(url: place.url)
             extraMenu()

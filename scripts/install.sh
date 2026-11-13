@@ -25,6 +25,10 @@ for _ in {1..50}; do pgrep -xq Scout || break; sleep 0.1; done
 pgrep -xq Scout && pkill -x Scout && sleep 0.5
 rm -rf /Applications/Scout.app
 cp -R "$APP" /Applications/Scout.app
+# Only the installed copy should open folders and scout:// links: forget the build copies.
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+for copy in build/Build/Products/*/Scout.app; do "$LSREGISTER" -u "$copy" 2>/dev/null || true; done
+"$LSREGISTER" -f /Applications/Scout.app 2>/dev/null || true
 open /Applications/Scout.app || { sleep 1; open /Applications/Scout.app; } || true
 
 # Put the `scout` command on your PATH.

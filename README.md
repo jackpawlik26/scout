@@ -22,7 +22,11 @@ Install to /Applications (also puts the `scout` CLI in ~/.local/bin): `./scripts
 
 ## Talking to Scout from elsewhere
 
-**Show in Finder:** with Settings ▸ Keyboard & System ▸ “Use Scout for Show in Finder” on, other apps’ Show in Finder / Reveal open in Scout (it sets the `NSFileViewer` default; apps pick it up when they restart).
+**Show in Finder:** with Settings ▸ Keyboard & System ▸ “Use Scout for Show in Finder” on, other apps’ Show in Finder / Reveal open in Scout (it sets the `NSFileViewer` default; apps pick it up when they restart). Scout’s own Show in Finder (⌘R) always goes to Finder.
+
+**Open folders in Scout:** the switch below it makes Scout the default app for folders, so folders opened from Spotlight, `open ~/Downloads`, a browser’s downloads or other apps open in Scout, as a new tab. Finder still owns the Desktop and the system Open/Save dialogs.
+
+**Tabs come back:** Scout reopens with the tabs and split view you had when you quit, even with macOS’s “Close windows when quitting an app” on.
 
 **Links:** any app can open `scout://` links:
 
@@ -85,6 +89,7 @@ scout duplicates ~/Desktop   # list duplicate files (no folder = whole home)
 | Return with several selected | Rename Items: find & replace, prefix/suffix, numbering, letter case, live preview |
 | ⌘⌫ | Move to Trash (⌘Z undoes) |
 | ⌘C / ⌘V / ⌥⌘V | Copy / paste / move here |
+| ⇧⌘M / ⌥⇧⌘M | Move to… / Copy to…: type a few letters of the destination in the palette, ↵ (⌘↵ also goes there, ⇥ switches move/copy) |
 | Right-click ▸ Compress / Extract Here | Zip items; unzip .zip, .tar(.gz/.bz2/.xz), .7z |
 | ⌥⌘C | Copy path |
 | ⌘1 / ⌘2 / ⌘3 | List / icons / columns (→ ← move through columns; in the list, → ← open and close folders in place, ⌥ for everything inside) |
