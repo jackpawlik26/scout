@@ -5,7 +5,10 @@ import SwiftUI
 /// The menu bar. Every shortcut lives here so it shows up in the menus.
 struct ScoutCommands: Commands {
     @FocusedValue(\.browserWindow) private var window
+    @Environment(\.openWindow) private var openWindow
     @AppStorage("appearance") private var appearance = AppAppearance.system.rawValue
+    @AppStorage("iconSize") private var iconSize = 64.0
+    @AppStorage("columnHeaders") private var columnHeaders = true
 
     private var browser: BrowserModel? { window?.current }
 
@@ -38,6 +41,16 @@ struct ScoutCommands: Commands {
             .keyboardShortcut("i")
             Button("Show in Finder") { browser?.showInFinder() }
                 .keyboardShortcut("r")
+            Button("Get Info (Finder)") { browser?.showFinderInfo() }
+                .keyboardShortcut("i", modifiers: [.command, .option])
+            Button("Duplicate") { browser?.duplicateSelection() }
+                .disabled(browser?.selectedItems.isEmpty ?? true)
+            Button("Make Alias") { browser?.makeAliases() }
+                .keyboardShortcut("a", modifiers: [.command, .control])
+                .disabled(browser?.selectedItems.isEmpty ?? true)
+            Button("AirDrop…") { browser?.airDropSelection() }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
+                .disabled(browser?.selectedItems.isEmpty ?? true)
             Divider()
             Button("Rename…") { _ = browser?.beginRename() }
             Button("Compress") { browser?.compressSelection() }
@@ -106,6 +119,13 @@ struct ScoutCommands: Commands {
                 .keyboardShortcut("2")
             Button("as Columns") { browser?.viewMode = .columns }
                 .keyboardShortcut("3")
+            Button("Bigger Icons") { iconSize = min(160, iconSize + 16) }
+                .keyboardShortcut("=")
+            Button("Smaller Icons") { iconSize = max(32, iconSize - 16) }
+                .keyboardShortcut("-")
+            Toggle("Column Headers", isOn: $columnHeaders)
+            Button("Show Shelf") { openWindow(id: "shelf") }
+                .keyboardShortcut("s", modifiers: [.command, .option])
             Divider()
             Menu("Group By") {
                 ForEach(GroupBy.folderChoices) { group in

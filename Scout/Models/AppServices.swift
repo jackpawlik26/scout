@@ -7,6 +7,8 @@ struct Place: Identifiable, Hashable {
     let url: URL
     let name: String
     let symbol: String
+    /// External drives, disk images and network shares show an eject button.
+    var isEjectable = false
     var id: String { url.filePath }
 }
 
@@ -42,6 +44,16 @@ final class AppServices {
         customTags = (customTags + new).filter { seen.insert($0.name).inserted }.sorted { $0.name < $1.name }
         UserDefaults.standard.set(customTags.map { "\($0.name)\n\($0.color)" }, forKey: "customTags")
     }
+
+    /// Files collected on the Shelf (⌥⌘S).
+    private(set) var shelf: [URL] = []
+
+    func addToShelf(_ urls: [URL]) {
+        for url in urls where !shelf.contains(url) { shelf.append(url) }
+    }
+
+    func removeFromShelf(_ url: URL) { shelf.removeAll { $0 == url } }
+    func clearShelf() { shelf = [] }
 
     func begin(_ transfer: Transfer) { transfers.append(transfer) }
     func end(_ transfer: Transfer) { transfers.removeAll { $0.id == transfer.id } }
@@ -198,7 +210,25 @@ final class AppServices {
         if let iCloudDrive { result.append(Place(url: iCloudDrive, name: "iCloud Drive", symbol: "icloud")) }
         result += cloudStorage
         result += volumes
+        result.append(Place(url: home.appending(path: ".Trash", directoryHint: .isDirectory), name: "Trash", symbol: "trash"))
         return result
+    }
+
+    /// Unmounts a drive or share (it disappears from the sidebar when macOS confirms).
+    func eject(_ place: Place) throws {
+        try NSWorkspace.shared.unmountAndEjectDevice(at: place.url)
+    }
+
+    /// Permanently deletes what's in the Trash. Returns how many items couldn't be removed.
+    @discardableResult
+    func emptyTrash() -> Int {
+        let trash = home.appending(path: ".Trash")
+        let items = (try? FileManager.default.contentsOfDirectory(at: trash, includingPropertiesForKeys: nil)) ?? []
+        var failed = 0
+        for item in items {
+            do { try FileManager.default.removeItem(at: item) } catch { failed += 1 }
+        }
+        return failed
     }
 
     /// Most-used folders that aren't already favorites.
@@ -211,13 +241,16 @@ final class AppServices {
     }
 
     func refreshVolumes() {
-        let keys: [URLResourceKey] = [.volumeIsBrowsableKey, .volumeIsRootFileSystemKey, .volumeIsInternalKey]
+        let keys: [URLResourceKey] = [.volumeIsBrowsableKey, .volumeIsRootFileSystemKey, .volumeIsInternalKey,
+                                      .volumeIsEjectableKey, .volumeIsRemovableKey, .volumeIsLocalKey]
         let urls = FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: keys, options: [.skipHiddenVolumes]) ?? []
         volumes = urls.compactMap { url in
             guard let v = try? url.resourceValues(forKeys: Set(keys)),
                   v.volumeIsBrowsable == true, v.volumeIsRootFileSystem != true else { return nil }
-            let symbol = v.volumeIsInternal == true ? "internaldrive" : "externaldrive"
-            return Place(url: .folder(url.filePath), name: Self.volumeName(url) ?? url.lastPathComponent, symbol: symbol)
+            let symbol = v.volumeIsLocal == false ? "server.rack" : v.volumeIsInternal == true ? "internaldrive" : "externaldrive"
+            let ejectable = v.volumeIsEjectable == true || v.volumeIsRemovable == true || v.volumeIsInternal != true
+            return Place(url: .folder(url.filePath), name: Self.volumeName(url) ?? url.lastPathComponent, symbol: symbol,
+                         isEjectable: ejectable)
         }
     }
 

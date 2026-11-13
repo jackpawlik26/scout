@@ -1,4 +1,5 @@
 import AppKit
+import CoreServices
 import ScoutCore
 import SwiftUI
 
@@ -286,6 +287,11 @@ struct CleanupView: View {
             group.addTask { (.installers, Self.scanInstallers(home: home)) }
             group.addTask { (.oldDownloads, Self.scanOldDownloads(home: home)) }
             group.addTask { (.duplicates, Self.scanDuplicates(home: home)) }
+            group.addTask { (.oldNodeModules, CleanupScanner.scanOldNodeModules(home: home, sizeOf: Self.size)) }
+            group.addTask { (.screenRecordings, CleanupScanner.scanScreenRecordings(home: home)) }
+            group.addTask { (.mailAttachments, CleanupScanner.scanMailAttachments(home: home)) }
+            group.addTask { (.appLeftovers, CleanupScanner.scanAppLeftovers(home: home, isInstalled: Self.isInstalled, sizeOf: Self.size)) }
+            group.addTask { (.unusedApps, CleanupScanner.scanUnusedApps(lastUsed: Self.lastUsed, sizeOf: Self.size)) }
             for await (kind, items) in group {
                 finish(kind, with: items)
             }
@@ -313,6 +319,16 @@ struct CleanupView: View {
 
     nonisolated private static func scanOldDownloads(home: String) -> [CleanupItem] {
         CleanupScanner.scanOldDownloads(in: URL.folder(home + "/Downloads"), sizeOf: size)
+    }
+
+    nonisolated private static func isInstalled(_ bundleID: String) -> Bool {
+        NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) != nil
+    }
+
+    /// When an app was last opened, from Spotlight.
+    nonisolated private static func lastUsed(_ app: URL) -> Date? {
+        guard let item = MDItemCreateWithURL(nil, app as CFURL) else { return nil }
+        return MDItemCopyAttribute(item, kMDItemLastUsedDate) as? Date
     }
 
     nonisolated private static func scanDuplicates(home: String) -> [CleanupItem] {

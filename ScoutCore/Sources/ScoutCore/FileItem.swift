@@ -29,6 +29,8 @@ public struct FileItem: Identifiable, Hashable, Sendable {
     public var lastOpened: Date?
     /// Finder tags (colored labels).
     public var tags: [FileTag] = []
+    /// For iCloud / OneDrive / other cloud files: whether it's on this Mac.
+    public var cloud: CloudState?
 
     public init(
         url: URL,
@@ -68,6 +70,15 @@ public struct FileItem: Identifiable, Hashable, Sendable {
     public var modifiedSortKey: Date { dateModified ?? .distantPast }
     public var createdSortKey: Date { dateCreated ?? .distantPast }
     public var addedSortKey: Date { dateAdded ?? .distantPast }
+}
+
+/// Where a cloud file's contents are.
+public enum CloudState: Sendable, Hashable {
+    /// Only in the cloud (downloads when opened).
+    case online
+    case downloading
+    /// On this Mac.
+    case downloaded
 }
 
 public extension URL {

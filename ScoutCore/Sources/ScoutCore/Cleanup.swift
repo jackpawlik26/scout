@@ -2,7 +2,8 @@ import Foundation
 
 /// What Clean Up looks for. Each kind says why its items are safe (or worth a look).
 public enum CleanupKind: String, CaseIterable, Sendable, Identifiable {
-    case devCaches, installers, oldDownloads, largeFiles, duplicates
+    case devCaches, installers, oldDownloads, largeFiles, duplicates,
+         oldNodeModules, screenRecordings, mailAttachments, appLeftovers, unusedApps
 
     public var id: Self { self }
 
@@ -13,6 +14,11 @@ public enum CleanupKind: String, CaseIterable, Sendable, Identifiable {
         case .oldDownloads: "Old downloads"
         case .largeFiles: "Large files"
         case .duplicates: "Duplicates"
+        case .oldNodeModules: "Old node_modules"
+        case .screenRecordings: "Screen recordings"
+        case .mailAttachments: "Mail attachments"
+        case .appLeftovers: "Leftovers from deleted apps"
+        case .unusedApps: "Apps you don’t use"
         }
     }
 
@@ -23,6 +29,11 @@ public enum CleanupKind: String, CaseIterable, Sendable, Identifiable {
         case .oldDownloads: "Added to Downloads and not changed in over 90 days."
         case .largeFiles: "Files over 500 MB anywhere in your home folder. Worth a look, not necessarily junk."
         case .duplicates: "Extra copies of files over 1 MB with exactly the same contents. Scout keeps the original and lists the rest."
+        case .oldNodeModules: "Dependencies in projects untouched for 6 months. “npm install” brings them back."
+        case .screenRecordings: "Screen recordings over 30 days old on your Desktop and in Movies, Documents and Downloads."
+        case .mailAttachments: "Attachments Mail saved when you opened them. The originals stay in your email."
+        case .appLeftovers: "Data and caches from apps that aren’t installed anymore."
+        case .unusedApps: "Apps not opened in 6 months (Apple’s own apps aren’t listed)."
         }
     }
 
@@ -33,6 +44,11 @@ public enum CleanupKind: String, CaseIterable, Sendable, Identifiable {
         case .oldDownloads: "clock.arrow.circlepath"
         case .largeFiles: "externaldrive.badge.exclamationmark"
         case .duplicates: "square.on.square"
+        case .oldNodeModules: "shippingbox"
+        case .screenRecordings: "record.circle"
+        case .mailAttachments: "paperclip"
+        case .appLeftovers: "puzzlepiece.extension"
+        case .unusedApps: "app.dashed"
         }
     }
 
@@ -135,6 +151,103 @@ public enum CleanupScanner {
             }
         }
         .sorted { $0.bytes != $1.bytes ? $0.bytes > $1.bytes : $0.path < $1.path }
+    }
+
+    /// node_modules folders (up to 5 levels into your folders) whose project hasn't changed in `days`.
+    public static func scanOldNodeModules(home: String, now: Date = .now, days: Int = 180,
+                                          sizeOf: (URL) -> Int64) -> [CleanupItem] {
+        let cutoff = now.addingTimeInterval(-Double(days) * 86_400)
+        var found: [CleanupItem] = []
+        let keys: [URLResourceKey] = [.isDirectoryKey, .contentModificationDateKey, .isPackageKey]
+        for root in duplicateRoots(home: home) {
+            guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: keys,
+                                                                  options: [.skipsHiddenFiles, .skipsPackageDescendants]) else { continue }
+            for case let url as URL in enumerator {
+                guard (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { continue }
+                if enumerator.level > 5 { enumerator.skipDescendants(); continue }
+                guard url.lastPathComponent == "node_modules" else { continue }
+                enumerator.skipDescendants()
+                let project = url.deletingLastPathComponent()
+                let touched = [project.appending(path: "package.json"), project.appending(path: "package-lock.json"), url]
+                    .compactMap { try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate }
+                    .max() ?? .distantPast
+                guard touched < cutoff else { continue }
+                found.append(CleanupItem(path: url.filePath, name: project.lastPathComponent + "/node_modules",
+                                         bytes: sizeOf(url),
+                                         detail: "Project last changed \(touched.formatted(date: .abbreviated, time: .omitted))"))
+            }
+        }
+        return found.filter { $0.bytes > 1_000_000 }.sorted { $0.bytes > $1.bytes }
+    }
+
+    /// "Screen Recording …" videos older than `days` in the usual places.
+    public static func scanScreenRecordings(home: String, now: Date = .now, days: Int = 30) -> [CleanupItem] {
+        let cutoff = now.addingTimeInterval(-Double(days) * 86_400)
+        let videoExtensions: Set<String> = ["mov", "mp4", "m4v"]
+        return ["Desktop", "Movies", "Documents", "Downloads"].flatMap { folder in
+            topLevel(of: URL.folder(home + "/" + folder)).compactMap { item -> CleanupItem? in
+                let lower = item.name.lowercased()
+                guard !item.isDirectory, videoExtensions.contains(item.url.pathExtension.lowercased()),
+                      lower.hasPrefix("screen recording") || lower.hasPrefix("cleanshot") || lower.hasPrefix("screen shot"),
+                      let date = item.dateCreated ?? item.dateModified, date < cutoff else { return nil }
+                return CleanupItem(path: item.path, name: item.name, bytes: item.size ?? 0,
+                                   detail: "Recorded \(date.formatted(date: .abbreviated, time: .omitted)) · ~/\(folder)")
+            }
+        }
+        .sorted { $0.bytes > $1.bytes }
+    }
+
+    /// Files Mail saved from attachments you opened.
+    public static func scanMailAttachments(home: String) -> [CleanupItem] {
+        let folders = [home + "/Library/Containers/com.apple.mail/Data/Library/Mail Downloads", home + "/Library/Mail Downloads"]
+        return folders.flatMap { folder in
+            ((try? FileManager.default.contentsOfDirectory(at: URL.folder(folder), includingPropertiesForKeys: nil,
+                                                           options: [.skipsHiddenFiles])) ?? []).compactMap { url -> CleanupItem? in
+                let bytes = FolderStats.size(of: url, fileLimit: 50_000).bytes
+                guard bytes > 0 else { return nil }
+                let name = (try? FileManager.default.contentsOfDirectory(atPath: url.filePath).first) ?? url.lastPathComponent
+                return CleanupItem(path: url.filePath, name: name, bytes: bytes, detail: "Mail Downloads")
+            }
+        }
+        .sorted { $0.bytes > $1.bytes }
+    }
+
+    /// Sandboxed app data and caches named after apps that aren't installed. Apple's are skipped.
+    public static func scanAppLeftovers(home: String, isInstalled: (String) -> Bool, sizeOf: (URL) -> Int64) -> [CleanupItem] {
+        let places = [("Library/Containers", "App data"), ("Library/Caches", "Cache")]
+        var items: [CleanupItem] = []
+        for (relative, label) in places {
+            let folder = URL.folder(home + "/" + relative)
+            let names = (try? FileManager.default.contentsOfDirectory(atPath: folder.filePath)) ?? []
+            for name in names {
+                // Only reverse-DNS names (com.vendor.App) can be matched to an app reliably.
+                let parts = name.split(separator: ".")
+                guard parts.count >= 3, !name.hasPrefix("com.apple."), !name.hasPrefix("."),
+                      !isInstalled(name) else { continue }
+                let url = folder.appending(path: name)
+                let bytes = sizeOf(url)
+                guard bytes > 1_000_000 else { continue }
+                items.append(CleanupItem(path: url.filePath, name: name, bytes: bytes, detail: "\(label) · ~/\(relative)"))
+            }
+        }
+        return items.sorted { $0.bytes > $1.bytes }
+    }
+
+    /// Apps in /Applications not opened in `days` (never-opened ones count too). Apple's are skipped.
+    public static func scanUnusedApps(now: Date = .now, days: Int = 180, lastUsed: (URL) -> Date?,
+                                      sizeOf: (URL) -> Int64) -> [CleanupItem] {
+        let cutoff = now.addingTimeInterval(-Double(days) * 86_400)
+        let apps = (try? FileManager.default.contentsOfDirectory(at: URL.folder("/Applications"), includingPropertiesForKeys: nil)) ?? []
+        return apps.compactMap { app -> CleanupItem? in
+            guard app.pathExtension == "app",
+                  let bundleID = Bundle(url: app)?.bundleIdentifier, !bundleID.hasPrefix("com.apple.") else { return nil }
+            let used = lastUsed(app)
+            guard (used ?? .distantPast) < cutoff else { return nil }
+            let detail = used.map { "Last opened \($0.formatted(date: .abbreviated, time: .omitted))" } ?? "Never opened"
+            return CleanupItem(path: app.filePath, name: app.deletingPathExtension().lastPathComponent, bytes: sizeOf(app),
+                               detail: detail)
+        }
+        .sorted { $0.bytes > $1.bytes }
     }
 
     private static func topLevel(of folder: URL) -> [FileItem] {

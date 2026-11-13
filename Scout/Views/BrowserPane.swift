@@ -519,6 +519,9 @@ struct BrowserPane: View {
             } else if browser.isLoading {
                 ProgressView().controlSize(.mini)
             }
+            if browser.viewMode == .icons, !browser.isToolPage {
+                IconSizeSlider()
+            }
             if let free = browser.freeSpace, browser.isFolder {
                 Text("\(Format.bytes(free)) free")
             }
@@ -586,6 +589,21 @@ private struct CrumbButton: View {
 }
 
 /// Sort options (replaces column headers).
+/// Footer slider for icon size (⌘+ / ⌘− too).
+private struct IconSizeSlider: View {
+    @AppStorage("iconSize") private var iconSize = 64.0
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "square.grid.3x3").font(.system(size: 9))
+            Slider(value: $iconSize, in: 32...160, step: 8).frame(width: 90).controlSize(.mini)
+            Image(systemName: "square.grid.2x2").font(.system(size: 11))
+        }
+        .padding(.trailing, 8)
+        .help("Icon size (⌘+ / ⌘−)")
+    }
+}
+
 private struct SortMenu: View {
     @Bindable var browser: BrowserModel
 

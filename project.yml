@@ -32,6 +32,7 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: com.jackpawlik.scout
             CFBundleURLSchemes: [scout]
+        NSAppleEventsUsageDescription: Scout asks Finder to open its Get Info window for the items you choose.
     settings:
       base:
         PRODUCT_NAME: Scout

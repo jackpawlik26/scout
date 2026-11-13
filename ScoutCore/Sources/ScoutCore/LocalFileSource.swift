@@ -9,6 +9,7 @@ public struct LocalFileSource: FileSource {
         .nameKey, .isDirectoryKey, .isPackageKey, .isHiddenKey, .isSymbolicLinkKey,
         .fileSizeKey, .contentModificationDateKey, .creationDateKey, .addedToDirectoryDateKey,
         .localizedTypeDescriptionKey, .contentTypeKey, .tagNamesKey,
+        .isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey, .ubiquitousItemIsDownloadingKey,
     ]
 
     public func contents(of folder: URL, includeHidden: Bool) async throws -> [FileItem] {
@@ -45,6 +46,13 @@ public struct LocalFileSource: FileSource {
         #if canImport(Darwin)
         if v.tagNames?.isEmpty == false { item.tags = Tags.read(url) }
         #endif
+        if v.isUbiquitousItem == true {
+            if v.ubiquitousItemIsDownloading == true {
+                item.cloud = .downloading
+            } else if let status = v.ubiquitousItemDownloadingStatus {
+                item.cloud = status == .notDownloaded ? .online : .downloaded
+            }
+        }
         return item
     }
 

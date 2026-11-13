@@ -89,6 +89,11 @@ scout duplicates ~/Desktop   # list duplicate files (no folder = whole home)
 | ⌥⌘C | Copy path |
 | ⌘1 / ⌘2 / ⌘3 | List / icons / columns (→ ← move through columns; in the list, → ← open and close folders in place, ⌥ for everything inside) |
 | ⌃⌘0–8 | Group by none / name / kind / size / date added / modified / created / tags |
+| ⌘+ / ⌘− | Bigger / smaller icons (slider in the footer); right-click list headers to add Kind or Tags columns |
+| ⌥⌘S | Shelf: collect files from anywhere, then Copy Here / Move Here |
+| ⌃⌘A / ⇧⌘R / ⌥⌘I | Make Alias / AirDrop / Finder's Get Info (plus Duplicate and Share in the right-click menu) |
+| Right-click ▸ Quick Actions | Convert or resize images, combine PDFs (originals kept) |
+| Drag onto a folder | Moves into it; hover a second to open it and drop deeper |
 | ⌥⌘R | Recents: files opened or downloaded in the last 30 days, grouped by day |
 | ⌥⌘T | Tidy Folder: plan, then move loose files into folders by kind (⌘Z undoes) |
 | Right-click ▸ Tags | Finder-compatible colored tags; sidebar Tags lists everything with a tag |

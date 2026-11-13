@@ -72,7 +72,10 @@ final class BrowserModel: Identifiable {
 
     /// Empty = keep the incoming order (search results arrive best-first).
     var sortOrder = defaultSortOrder {
-        didSet { refreshDisplayed() }
+        didSet {
+            refreshDisplayed()
+            rememberFolderView() // header clicks too
+        }
     }
     var filterText = "" { didSet { refreshDisplayed() } }
     /// New tabs start from Settings' choices; the View menu changes one tab.
@@ -865,6 +868,88 @@ final class BrowserModel: Identifiable {
         }
     }
 
+    // MARK: - Cloud files
+
+    /// Downloads online-only cloud files now (iCloud, OneDrive…).
+    func downloadCloudItems(_ items: [FileItem]) {
+        for item in items where item.cloud == .online {
+            do { try FileManager.default.startDownloadingUbiquitousItem(at: item.url) } catch {
+                alertMessage = "Couldn’t download “\(item.name)”: \(error.localizedDescription)"
+            }
+        }
+        Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            await reload()
+        }
+    }
+
+    /// Frees the space a cloud file takes on this Mac; it stays in the cloud.
+    func removeCloudDownloads(_ items: [FileItem]) {
+        for item in items where item.cloud == .downloaded {
+            do { try FileManager.default.evictUbiquitousItem(at: item.url) } catch {
+                alertMessage = "Couldn’t remove the download of “\(item.name)”: \(error.localizedDescription)"
+            }
+        }
+        Task { await reload() }
+    }
+
+    // MARK: - Finder basics
+
+    /// "report copy.pdf" next to each selected item.
+    func duplicateSelection() {
+        let urls = selectedItems.map(\.url)
+        guard !urls.isEmpty else { return }
+        transfer(urls, into: urls[0].deletingLastPathComponent(), move: false)
+    }
+
+    /// Finder aliases ("report alias") next to each selected item.
+    func makeAliases() {
+        var made: [URL] = []
+        for item in selectedItems {
+            do {
+                let data = try item.url.bookmarkData(options: .suitableForBookmarkFile, includingResourceValuesForKeys: nil,
+                                                     relativeTo: nil)
+                let alias = LocalFileSource.availableURL(in: item.url.deletingLastPathComponent(),
+                                                         preferredName: item.name + " alias", isDirectory: false, style: .numbered)
+                try URL.writeBookmarkData(data, to: alias)
+                made.append(alias)
+            } catch {
+                alertMessage = "Couldn’t make an alias of “\(item.name)”: \(error.localizedDescription)"
+            }
+        }
+        if let undoManager, !made.isEmpty {
+            undoManager.registerUndo(withTarget: self) { model in
+                MainActor.assumeIsolated { for url in made { _ = try? model.services.fileSource.trash(url) } }
+            }
+            undoManager.setActionName("Make Alias")
+        }
+        Task {
+            await reload()
+            if let first = made.first { selectPath(first.filePath) }
+        }
+    }
+
+    func airDropSelection() {
+        let urls = selectedItems.map(\.url)
+        guard !urls.isEmpty, let service = NSSharingService(named: .sendViaAirDrop) else { return }
+        service.perform(withItems: urls)
+    }
+
+    /// Opens Finder's own Get Info window (sharing, permissions, "Open with" for all…).
+    func showFinderInfo() {
+        let urls = selectedItems.isEmpty ? [location] : selectedItems.map(\.url)
+        for url in urls {
+            let path = url.filePath.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+            let script = "tell application \"Finder\"\nactivate\nopen information window of (POSIX file \"\(path)\" as alias)\nend tell"
+            var error: NSDictionary?
+            NSAppleScript(source: script)?.executeAndReturnError(&error)
+            if let error {
+                alertMessage = "Finder didn’t open Get Info: \(error[NSAppleScript.errorMessage] as? String ?? "permission needed"). Allow Scout to control Finder in System Settings ▸ Privacy & Security ▸ Automation."
+                return
+            }
+        }
+    }
+
     // MARK: - Tidy Folder
 
     /// Plans moving this folder's loose files into folders by kind; shows the plan first.
@@ -938,6 +1023,40 @@ final class BrowserModel: Identifiable {
     }
 
     var canExtractSelection: Bool { selectedItems.contains { Archiver.canExtract($0.url) } }
+
+    // MARK: - Quick actions (images, PDFs)
+
+    var selectedImages: [URL] { selectedItems.map(\.url).filter(QuickActions.isImage) }
+    var selectedPDFs: [URL] { selectedItems.map(\.url).filter(QuickActions.isPDF) }
+
+    func convertImages(to format: QuickActions.ImageFormat) {
+        let images = selectedImages
+        guard !images.isEmpty else { return }
+        runActivity("Converting \(images.count == 1 ? "“\(images[0].lastPathComponent)”" : "\(images.count) images") to \(format.title)…") {
+            try await Self.inBackground { try images.map { try QuickActions.convert($0, to: format) }.last }
+        }
+    }
+
+    func resizeImages(maxPixels: Int) {
+        let images = selectedImages
+        guard !images.isEmpty else { return }
+        runActivity("Resizing \(images.count == 1 ? "“\(images[0].lastPathComponent)”" : "\(images.count) images")…") {
+            try await Self.inBackground { try images.map { try QuickActions.resize($0, maxPixels: maxPixels) }.last }
+        }
+    }
+
+    /// Joins the selected PDFs (in list order) into "Combined.pdf".
+    func combinePDFs() {
+        let pdfs = selectedPDFs
+        guard pdfs.count > 1 else { return }
+        runActivity("Combining \(pdfs.count) PDFs…") {
+            try await Self.inBackground { try QuickActions.combinePDFs(pdfs) }
+        }
+    }
+
+    @concurrent nonisolated private static func inBackground(_ work: @Sendable () throws -> URL?) async throws -> URL? {
+        try work()
+    }
 
     /// Runs slow work off the main thread, then selects what it made. ⌘Z moves it to the Trash.
     private func runActivity(_ title: String, _ work: @escaping () async throws -> URL?) {
@@ -1080,15 +1199,19 @@ final class BrowserModel: Identifiable {
     /// Files dropped onto this tab: move within a disk, copy across disks (like
     /// Finder); holding ⌥ always copies.
     @discardableResult
-    func receiveDrop(_ urls: [URL]) -> Bool {
-        guard isFolder, !urls.isEmpty else { return false }
+    func receiveDrop(_ urls: [URL], into folder: URL? = nil) -> Bool {
+        let target = folder ?? location
+        guard folder != nil || isFolder else { return false }
+        // Not into itself or something inside itself.
+        let urls = urls.filter { $0.filePath != target.filePath && !target.filePath.hasPrefix($0.filePath + "/") }
+        guard !urls.isEmpty else { return false }
         let forceCopy = NSEvent.modifierFlags.contains(.option)
-        let destinationVolume = try? location.resourceValues(forKeys: [.volumeIdentifierKey]).volumeIdentifier as? NSObject
+        let destinationVolume = try? target.resourceValues(forKeys: [.volumeIdentifierKey]).volumeIdentifier as? NSObject
         let sameVolume = urls.allSatisfy { url in
             let volume = try? url.resourceValues(forKeys: [.volumeIdentifierKey]).volumeIdentifier as? NSObject
             return volume != nil && volume == destinationVolume
         }
-        transfer(urls, into: location, move: sameVolume && !forceCopy)
+        transfer(urls, into: target, move: sameVolume && !forceCopy)
         return true
     }
 

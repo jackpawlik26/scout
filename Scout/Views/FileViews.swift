@@ -8,6 +8,18 @@ struct FileTableView: View {
     @Bindable var browser: BrowserModel
 
     @State private var anchor = TableAnchor()
+    /// Which columns show (right-click a header to change), remembered per window.
+    @SceneStorage("scout.listColumns") private var columns = TableColumnCustomization<FileItem>()
+    @AppStorage("columnHeaders") private var showHeaders = true
+
+    /// The date column sorts by the date it shows.
+    private var dateComparator: KeyPathComparator<FileItem> {
+        switch browser.shownDate {
+        case .added: KeyPathComparator(\FileItem.addedSortKey)
+        case .created: KeyPathComparator(\FileItem.createdSortKey)
+        default: KeyPathComparator(\FileItem.modifiedSortKey)
+        }
+    }
 
     var body: some View {
         table
@@ -33,7 +45,7 @@ struct FileTableView: View {
     }
 
     private var table: some View {
-        Table(of: FileItem.self, selection: $browser.selection, sortOrder: $browser.sortOrder) {
+        Table(of: FileItem.self, selection: $browser.selection, sortOrder: $browser.sortOrder, columnCustomization: $columns) {
             TableColumn("Name", value: \.name, comparator: .localizedStandard) { item in
                 HStack(spacing: 8) {
                     if browser.isFolder {
@@ -54,19 +66,43 @@ struct FileTableView: View {
                         Text(item.name).lineLimit(1).truncationMode(.middle)
                     }
                     TagDots(tags: item.tags)
+                    CloudBadge(state: item.cloud)
                     if let state = browser.gitState(item) {
                         Spacer(minLength: 4)
                         GitBadge(state: state, isFolder: item.isNavigable)
                     }
                 }
                 .opacity(item.isHidden ? 0.55 : 1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .folderDropTarget(item, browser: browser)
             }
             .width(min: 120, ideal: 150)
+            .customizationID("name")
+            .disabledCustomizationBehavior(.visibility)
 
-            TableColumn("Date Modified", value: \.modifiedSortKey) { item in
+            TableColumn(Text(browser.groupBy == .dateOpened ? "Date Last Opened" : browser.shownDate.title),
+                        sortUsing: dateComparator) { item in
                 FittingDate(date: browser.date(of: item)).foregroundStyle(.secondary)
             }
             .width(min: 76, ideal: 120)
+            .customizationID("date")
+
+            TableColumn("Kind", value: \.kind, comparator: .localizedStandard) { item in
+                Text(item.isNavigable ? "Folder" : item.kind).foregroundStyle(.secondary).lineLimit(1)
+            }
+            .width(min: 60, ideal: 110)
+            .customizationID("kind")
+            .defaultVisibility(.hidden)
+
+            TableColumn("Tags") { item in
+                HStack(spacing: 4) {
+                    TagDots(tags: item.tags)
+                    Text(item.tags.map(\.name).joined(separator: ", ")).foregroundStyle(.secondary).lineLimit(1)
+                }
+            }
+            .width(min: 50, ideal: 90)
+            .customizationID("tags")
+            .defaultVisibility(.hidden)
 
             TableColumn("Size", value: \.sizeSortKey) { item in
                 Text(Format.size(item))
@@ -75,6 +111,7 @@ struct FileTableView: View {
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .width(min: 52, ideal: 64)
+            .customizationID("size")
         } rows: {
             if browser.groupBy == .none {
                 ForEach(browser.displayedItems) { item in
@@ -113,7 +150,7 @@ struct FileTableView: View {
             return .handled
         }
         .tableStyle(.inset(alternatesRowBackgrounds: false))
-        .tableColumnHeaders(.hidden)
+        .tableColumnHeaders(showHeaders ? .visible : .hidden)
         .scrollContentBackground(.hidden)
         .fileKeyboardShortcuts(browser)
         .onCopyCommand {
@@ -132,7 +169,8 @@ struct FileGridView: View {
 
     @State private var width: CGFloat = 0
 
-    static let cellWidth: CGFloat = 112
+    @AppStorage("iconSize") private var iconSize = 64.0
+    private var cellWidth: CGFloat { max(96, iconSize + 48) }
     static let spacing: CGFloat = 6
     static let padding: CGFloat = 16
 
@@ -151,13 +189,13 @@ struct FileGridView: View {
     }
 
     private var columnCount: Int {
-        max(1, Int((width - Self.padding * 2 + Self.spacing) / (Self.cellWidth + Self.spacing)))
+        max(1, Int((width - Self.padding * 2 + Self.spacing) / (cellWidth + Self.spacing)))
     }
 
     var body: some View {
         ScrollViewReader { proxy in
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: Self.cellWidth, maximum: 140), spacing: Self.spacing)], spacing: 16) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: cellWidth, maximum: cellWidth + 28), spacing: Self.spacing)], spacing: 16) {
                 ForEach(groups) { group in
                     if group.title.isEmpty {
                         cells(group.items)
@@ -194,13 +232,15 @@ struct FileGridView: View {
 
     private func cells(_ items: [FileItem]) -> some View {
         ForEach(items) { item in
-            GridCell(item: item, isSelected: browser.selection.contains(item.id), gitState: browser.gitState(item))
+            GridCell(item: item, isSelected: browser.selection.contains(item.id), gitState: browser.gitState(item),
+                     iconSize: iconSize, width: cellWidth)
                 .onTapGesture { click(item) }
                 .contextMenu {
                     FileContextMenu(window: window, browser: browser,
                                     urls: browser.selection.contains(item.id) ? browser.selection : [item.id])
                 }
                 .onDrag { NSItemProvider(contentsOf: item.url) ?? NSItemProvider() }
+                .folderDropTarget(item, browser: browser)
         }
     }
 
@@ -283,11 +323,13 @@ private struct GridCell: View {
     let item: FileItem
     let isSelected: Bool
     var gitState: GitFileState?
+    var iconSize: CGFloat = 64
+    var width: CGFloat = 112
     @State private var itemCount: Int?
 
     var body: some View {
         VStack(spacing: 4) {
-            ThumbnailView(item: item, size: 64)
+            ThumbnailView(item: item, size: iconSize)
                 .overlay(alignment: .bottomTrailing) {
                     if let gitState { GitBadge(state: gitState, isFolder: item.isNavigable).offset(x: 4, y: 2) }
                 }
@@ -296,6 +338,7 @@ private struct GridCell: View {
                             in: RoundedRectangle(cornerRadius: 8))
             HStack(spacing: 4) {
                 TagDots(tags: item.tags, size: 8)
+                CloudBadge(state: item.cloud)
                 Text(item.name)
             }
                 .font(.callout)
@@ -311,7 +354,7 @@ private struct GridCell: View {
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
         }
-        .frame(width: 112)
+        .frame(width: width)
         .task(id: item.id) {
             guard item.isNavigable else { return }
             let url = item.url
@@ -328,6 +371,61 @@ private struct GridCell: View {
             return "\(itemCount) item\(itemCount == 1 ? "" : "s")"
         }
         return Format.size(item)
+    }
+}
+
+extension View {
+    /// Folders accept drops (files move into them) and open after a moment's hover while
+    /// dragging ("spring-loaded"), so you can drop deeper. Files are left as they are.
+    func folderDropTarget(_ item: FileItem, browser: BrowserModel) -> some View {
+        modifier(FolderDropTarget(item: item, browser: browser))
+    }
+}
+
+private struct FolderDropTarget: ViewModifier {
+    let item: FileItem
+    let browser: BrowserModel
+    @State private var isTargeted = false
+    @State private var spring: Task<Void, Never>?
+
+    func body(content: Content) -> some View {
+        if item.isNavigable {
+            content
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.accentColor, lineWidth: 2)
+                    .opacity(isTargeted ? 1 : 0).allowsHitTesting(false))
+                .dropDestination(for: URL.self) { urls, _ in
+                    spring?.cancel()
+                    return browser.receiveDrop(urls, into: item.url)
+                } isTargeted: { targeted in
+                    isTargeted = targeted
+                    spring?.cancel()
+                    guard targeted else { return }
+                    spring = Task {
+                        try? await Task.sleep(for: .seconds(1))
+                        if !Task.isCancelled { browser.go(to: item.url) }
+                    }
+                }
+        } else {
+            content
+        }
+    }
+}
+
+/// Online-only (cloud) or downloading, like Finder's cloud icons. Nothing when it's on this Mac.
+struct CloudBadge: View {
+    let state: CloudState?
+
+    var body: some View {
+        switch state {
+        case .online:
+            Image(systemName: "icloud.and.arrow.down").font(.system(size: 10)).foregroundStyle(.secondary)
+                .help("In the cloud only. Opens after downloading.")
+        case .downloading:
+            Image(systemName: "arrow.down.circle.dotted").font(.system(size: 10)).foregroundStyle(Color.accentColor)
+                .help("Downloading")
+        default:
+            EmptyView()
+        }
     }
 }
 
@@ -461,6 +559,7 @@ struct FileContextMenu: View {
     let window: BrowserWindowModel
     let browser: BrowserModel
     let urls: Set<URL>
+    @Environment(\.openWindow) private var openWindow
 
     private var items: [FileItem] { browser.displayedItems.filter { urls.contains($0.id) } }
 
@@ -511,6 +610,13 @@ struct FileContextMenu: View {
                 browser.selection = urls
                 browser.compressSelection()
             }
+            QuickActionsMenu(browser: browser, urls: urls)
+            if items.contains(where: { $0.cloud == .online }) {
+                Button("Download Now") { browser.downloadCloudItems(items) }
+            }
+            if items.contains(where: { $0.cloud == .downloaded }) {
+                Button("Remove Download") { browser.removeCloudDownloads(items) }
+            }
             if items.contains(where: { Archiver.canExtract($0.url) }) {
                 Button("Extract Here") {
                     browser.selection = urls
@@ -535,6 +641,10 @@ struct FileContextMenu: View {
             }
             Divider()
             TagsMenu(browser: browser, items: items)
+            Button("Add to Shelf") {
+                browser.services.addToShelf(items.map(\.url))
+                openWindow(id: "shelf")
+            }
             let unpinned = items.filter { $0.isNavigable && !browser.services.isFavorite($0.path) }
             if !unpinned.isEmpty {
                 Button("Add to Favorites") { browser.services.addFavorites(unpinned.map(\.path)) }
@@ -551,6 +661,24 @@ struct FileContextMenu: View {
                 }
             }
             Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting(items.map(\.url)) }
+            Divider()
+            Button("Duplicate") {
+                browser.selection = urls
+                browser.duplicateSelection()
+            }
+            Button("Make Alias") {
+                browser.selection = urls
+                browser.makeAliases()
+            }
+            ShareLink(items: items.map(\.url)) { Label("Share…", systemImage: "square.and.arrow.up") }
+            Button("AirDrop…") {
+                browser.selection = urls
+                browser.airDropSelection()
+            }
+            Button("Get Info (Finder)") {
+                browser.selection = urls
+                browser.showFinderInfo()
+            }
             if items.count == 1, let item = items.first {
                 if item.isNavigable {
                     Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser.openInTerminal(item.url) }
@@ -592,6 +720,45 @@ private struct OpenWithMenu: View {
     }
 }
 
+
+/// Image and PDF actions that fit the selection. Results land next to the originals.
+private struct QuickActionsMenu: View {
+    let browser: BrowserModel
+    let urls: Set<URL>
+
+    var body: some View {
+        let images = urls.filter(QuickActions.isImage)
+        let pdfs = urls.filter(QuickActions.isPDF)
+        if !images.isEmpty || pdfs.count > 1 {
+            Menu("Quick Actions") {
+                if !images.isEmpty {
+                    Menu("Convert Image") {
+                        ForEach(QuickActions.ImageFormat.allCases) { format in
+                            Button("to \(format.title)") {
+                                browser.selection = urls
+                                browser.convertImages(to: format)
+                            }
+                        }
+                    }
+                    Menu("Resize Image") {
+                        ForEach([3840, 2560, 1920, 1280, 800, 400], id: \.self) { size in
+                            Button("Longest side \(size) px") {
+                                browser.selection = urls
+                                browser.resizeImages(maxPixels: size)
+                            }
+                        }
+                    }
+                }
+                if pdfs.count > 1 {
+                    Button("Combine \(pdfs.count) PDFs") {
+                        browser.selection = urls
+                        browser.combinePDFs()
+                    }
+                }
+            }
+        }
+    }
+}
 
 /// "Add to Workspace" submenu (and "Remove from Workspace" when inside one).
 private struct WorkspaceMenu: View {

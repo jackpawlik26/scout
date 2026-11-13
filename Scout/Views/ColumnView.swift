@@ -120,6 +120,7 @@ struct ColumnBrowserView: View {
                                 }
                             }
                             .draggable(item.url)
+                            .folderDropTarget(item, browser: browser)
                     }
                 }
                 .padding(6)

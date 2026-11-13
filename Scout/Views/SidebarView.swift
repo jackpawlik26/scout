@@ -7,8 +7,38 @@ struct SidebarView: View {
     let browser: BrowserModel
     @Environment(AppServices.self) private var services
     @AppStorage("collapsedSections") private var collapsedRaw = ""
+    @State private var isConfirmingEmptyTrash = false
+    @State private var sidebarMessage: String?
 
     var body: some View {
+        sidebar
+            .alert("Empty the Trash?", isPresented: $isConfirmingEmptyTrash) {
+                Button("Empty Trash", role: .destructive) {
+                    let failed = services.emptyTrash()
+                    if failed > 0 { sidebarMessage = "\(failed) item\(failed == 1 ? "" : "s") couldn’t be removed." }
+                    Task { await browser.reload() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Everything in the Trash is deleted for good. This can’t be undone.")
+            }
+            .alert("Scout", isPresented: Binding(get: { sidebarMessage != nil }, set: { if !$0 { sidebarMessage = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(sidebarMessage ?? "")
+            }
+    }
+
+    private func eject(_ place: Place) {
+        do {
+            if browser.location.filePath.hasPrefix(place.url.filePath) { browser.go(to: services.home) }
+            try services.eject(place)
+        } catch {
+            sidebarMessage = "Couldn’t eject “\(place.name)”: \(error.localizedDescription)"
+        }
+    }
+
+    private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 // The real app icon, so the sidebar always matches the Dock.
@@ -115,7 +145,29 @@ struct SidebarView: View {
                         }
                     }
                     section("Locations") {
-                        ForEach(services.locations) { placeRow($0) }
+                        ForEach(services.locations) { place in
+                            placeRow(place) {
+                                if place.isEjectable {
+                                    Divider()
+                                    Button("Eject “\(place.name)”") { eject(place) }
+                                }
+                                if place.symbol == "trash" {
+                                    Divider()
+                                    Button("Empty Trash…") { isConfirmingEmptyTrash = true }
+                                }
+                            }
+                            .overlay(alignment: .trailing) {
+                                if place.isEjectable {
+                                    Button { eject(place) } label: {
+                                        Image(systemName: "eject.fill").font(.system(size: 10)).foregroundStyle(.secondary)
+                                            .frame(width: 22, height: 22).contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .help("Eject")
+                                    .padding(.trailing, 4)
+                                }
+                            }
+                        }
                     }
                     section("Tools") {
                         SidebarRow(title: "Clean Up", symbol: "sparkles", isSelected: browser.mode == .cleanup) {

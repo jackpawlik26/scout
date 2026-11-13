@@ -15,5 +15,14 @@ struct ScoutApp: App {
         // Scout draws its own header; no system title bar or toolbar.
         .windowStyle(.hiddenTitleBar)
         .commands { ScoutCommands() }
+
+        Window("Shelf", id: "shelf") {
+            ShelfView()
+                .environment(services)
+        }
+        .windowResizability(.contentSize)
+        .windowLevel(.floating)
+        .defaultPosition(.trailing)
+        .restorationBehavior(.disabled)
     }
 }
