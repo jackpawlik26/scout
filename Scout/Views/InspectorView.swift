@@ -86,6 +86,23 @@ private struct ItemInspector: View {
                 if item.dateAdded != nil { InfoRow("Added", value: Format.date(item.dateAdded)) }
                 InfoRow("Where", value: PathDisplay.display(item.url.deletingLastPathComponent().filePath,
                                                             home: browser.services.homePath))
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Tags").foregroundStyle(.secondary)
+                    Spacer(minLength: 12)
+                    if item.tags.isEmpty {
+                        Text("None").foregroundStyle(.tertiary)
+                    } else {
+                        TagDots(tags: item.tags, size: 10)
+                        Text(item.tags.map(\.name).joined(separator: ", ")).lineLimit(1)
+                    }
+                    Menu {
+                        TagsMenu(browser: browser, items: [item])
+                    } label: {
+                        Image(systemName: "tag")
+                    }
+                    .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+                    .help("Change tags")
+                }
             }
 
             HStack {

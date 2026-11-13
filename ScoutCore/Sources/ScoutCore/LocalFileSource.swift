@@ -8,7 +8,7 @@ public struct LocalFileSource: FileSource {
     static let resourceKeys: [URLResourceKey] = [
         .nameKey, .isDirectoryKey, .isPackageKey, .isHiddenKey, .isSymbolicLinkKey,
         .fileSizeKey, .contentModificationDateKey, .creationDateKey, .addedToDirectoryDateKey,
-        .localizedTypeDescriptionKey, .contentTypeKey,
+        .localizedTypeDescriptionKey, .contentTypeKey, .tagNamesKey,
     ]
 
     public func contents(of folder: URL, includeHidden: Bool) async throws -> [FileItem] {
@@ -28,7 +28,7 @@ public struct LocalFileSource: FileSource {
            let target = try? url.resolvingSymlinksInPath().resourceValues(forKeys: [.isDirectoryKey]) {
             isDirectory = target.isDirectory ?? false
         }
-        return FileItem(
+        var item = FileItem(
             url: url,
             name: v.name ?? url.lastPathComponent,
             isDirectory: isDirectory,
@@ -42,6 +42,10 @@ public struct LocalFileSource: FileSource {
             kind: v.localizedTypeDescription ?? "",
             typeIdentifier: v.contentType?.identifier
         )
+        #if canImport(Darwin)
+        if v.tagNames?.isEmpty == false { item.tags = Tags.read(url) }
+        #endif
+        return item
     }
 
     // MARK: - Changing files

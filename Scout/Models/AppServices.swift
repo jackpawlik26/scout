@@ -24,6 +24,27 @@ final class AppServices {
     private(set) var volumes: [Place] = []
     private(set) var savedSearches: [SavedSearch] = []
     private(set) var workspaces: [Workspace] = []
+    /// Copies and moves in progress (the progress card shows the slow ones).
+    private(set) var transfers: [Transfer] = []
+
+    /// Tags you've used besides Finder's seven colors (remembered as they're seen).
+    private(set) var customTags: [FileTag] = (UserDefaults.standard.array(forKey: "customTags") as? [String] ?? [])
+        .map { Tags.parse($0) }
+
+    var allTags: [FileTag] { FileTag.standard + customTags }
+
+    /// Remembers tags that aren't Finder's built-in colors so they show in menus and the sidebar.
+    func noteTags(_ tags: some Sequence<FileTag>) {
+        let known = Set(allTags.map(\.name))
+        let new = tags.filter { !known.contains($0.name) }
+        guard !new.isEmpty else { return }
+        var seen = Set<String>()
+        customTags = (customTags + new).filter { seen.insert($0.name).inserted }.sorted { $0.name < $1.name }
+        UserDefaults.standard.set(customTags.map { "\($0.name)\n\($0.color)" }, forKey: "customTags")
+    }
+
+    func begin(_ transfer: Transfer) { transfers.append(transfer) }
+    func end(_ transfer: Transfer) { transfers.removeAll { $0.id == transfer.id } }
     /// Pinned favorites, in your order (starts with Home, Desktop, Documents, Downloads, Applications).
     private(set) var favoritePaths: [String] = []
 

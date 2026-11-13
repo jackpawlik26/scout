@@ -182,6 +182,19 @@ final class BrowserWindowModel {
             current.showPackages()
         case .settings:
             current.showSettings()
+        case .recents:
+            current.showRecents()
+        case .tidy(let rawPath):
+            let folder = URL.folder(PathCompletion.expandTilde(rawPath, home: services.homePath))
+            current.go(to: folder)
+            Task {
+                // Plan once the folder has loaded.
+                for _ in 0..<40 where current.location.filePath != folder.filePath || current.isLoading {
+                    try? await Task.sleep(for: .milliseconds(50))
+                }
+                try? await Task.sleep(for: .milliseconds(100))
+                current.beginTidy()
+            }
         case .shortcuts:
             isPaletteOpen = false
             isShortcutsOpen = true

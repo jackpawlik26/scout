@@ -272,6 +272,8 @@ public enum FileHitRanker {
             let allowed = ["/Library/Mobile Documents/", "/Library/CloudStorage/"]
             if !allowed.contains(where: { path.hasPrefix(home + $0) }) { return true }
         }
+        // Xcode and other build output ("…/build/Build/Products/Debug/Scout.app").
+        if path.contains("/Build/Products/") || path.contains("/Build/Intermediates") { return true }
         let components = path.split(separator: "/")
         for (i, part) in components.enumerated() {
             if part.hasPrefix(".") { return true }

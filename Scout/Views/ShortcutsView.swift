@@ -23,6 +23,7 @@ struct ShortcutsView: View {
                 ("⇧⌘F", "Find files"),
                 ("⌘L", "Go to a path (Tab completes)"),
                 ("⌘F", "Filter this folder"),
+                ("⌥⌘R", "Recents"),
                 ("a–z", "Type a name to select it"),
             ]),
             ShortcutGroup(title: "Move around", rows: [
@@ -50,9 +51,10 @@ struct ShortcutsView: View {
                 ("⌃1–9", "Workspaces"),
             ]),
             ShortcutGroup(title: "View", rows: [
-                ("⌘1  ⌘2", "List, icons"),
+                ("⌘1  ⌘2  ⌘3", "List, icons, columns"),
                 ("⌘I", "Info panel"),
                 ("⌃⌘S", "Sidebar"),
+                ("⌃⌘0–8", "Group by kind, date, size…"),
                 ("⇧⌘.", "Hidden files"),
                 ("⌘,", "Settings"),
                 ("⌘/", "This list"),
@@ -61,6 +63,7 @@ struct ShortcutsView: View {
                 ("⇧⌘K", "Clean Up"),
                 ("⌥⌘P", "Packages"),
                 ("⌥⌘G", "Git changes"),
+                ("⌥⌘T", "Tidy folder"),
                 ("⌥⇧⌘T", "Open in Terminal"),
                 ("⌥⇧⌘E", "Open in Editor"),
                 ("⌘R", "Show in Finder"),

@@ -56,6 +56,8 @@ import Testing
         #expect(FileHitRanker.isNoise("/Users/j/Library/Caches/x.txt", home: home))
         #expect(FileHitRanker.isNoise("/Users/j/proj/node_modules/a/readme.md", home: home))
         #expect(FileHitRanker.isNoise("/Users/j/.config/x", home: home))
+        #expect(FileHitRanker.isNoise("/Users/j/Scout/build/Build/Products/Debug/Scout.app", home: home))
+        #expect(!FileHitRanker.isNoise("/Users/j/School/build plan.pdf", home: home))
         #expect(FileHitRanker.isNoise("/Applications/Foo.app/Contents/Info.plist", home: home))
         #expect(!FileHitRanker.isNoise("/Applications/Foo.app", home: home))
         #expect(!FileHitRanker.isNoise("/Users/j/Library/Mobile Documents/com~apple~CloudDocs/a.pdf", home: home))

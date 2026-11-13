@@ -3,9 +3,27 @@ import UniformTypeIdentifiers
 
 /// Finder-style "Group By": the list splits into labeled blocks.
 public enum GroupBy: String, CaseIterable, Sendable, Identifiable {
-    case none, kind, dateModified, dateAdded, dateCreated, size, name
+    case none, kind, dateModified, dateAdded, dateCreated, size, name, dateOpened, tags
 
     public var id: Self { self }
+
+    /// Choices for a folder (Date Last Opened is only known in Recents).
+    public static let folderChoices: [GroupBy] = [.none, .kind, .dateModified, .dateAdded, .dateCreated, .size, .name, .tags]
+
+    /// Finder's ⌃⌘ shortcut digits.
+    public var shortcutDigit: Character? {
+        switch self {
+        case .none: "0"
+        case .name: "1"
+        case .kind: "2"
+        case .size: "3"
+        case .dateAdded: "5"
+        case .dateModified: "6"
+        case .dateCreated: "7"
+        case .tags: "8"
+        case .dateOpened: nil
+        }
+    }
 
     public var title: String {
         switch self {
@@ -16,6 +34,8 @@ public enum GroupBy: String, CaseIterable, Sendable, Identifiable {
         case .dateCreated: "Date Created"
         case .size: "Size"
         case .name: "Name"
+        case .dateOpened: "Date Last Opened"
+        case .tags: "Tags"
         }
     }
 }
@@ -117,6 +137,11 @@ public enum ItemGrouper {
             ]
             for (index, band) in bands.enumerated() where bytes >= band.0 { return (band.1, Double(index)) }
             return ("Empty", 8)
+        case .dateOpened:
+            return dateKey(item.lastOpened, now: now, calendar: calendar)
+        case .tags:
+            guard let tag = item.tags.first else { return ("No Tags", 9) }
+            return (tag.name, 1)
         case .dateModified, .dateAdded, .dateCreated:
             let date = groupBy == .dateModified ? item.dateModified : groupBy == .dateAdded ? item.dateAdded : item.dateCreated
             return dateKey(date, now: now, calendar: calendar)

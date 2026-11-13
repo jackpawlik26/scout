@@ -3,7 +3,7 @@ import Observation
 import ScoutCore
 
 enum ViewMode: String, CaseIterable, Identifiable {
-    case list, icons
+    case list, icons, columns
     var id: Self { self }
 }
 
@@ -45,6 +45,10 @@ enum BrowserMode: Equatable {
     case packages
     /// Scout's settings.
     case settings
+    /// Files you opened or downloaded lately, from anywhere.
+    case recents
+    /// Everything with a Finder tag.
+    case tag(String)
 }
 
 /// A stop in a tab's Back/Forward history.
@@ -82,6 +86,11 @@ final class BrowserModel: Identifiable {
     }
     /// `displayedItems` split into labeled groups (one untitled group when not grouping).
     private(set) var displayedGroups: [ItemGroup] = []
+    /// Folders opened in place in the list (disclosure arrows), and what's inside them.
+    private(set) var expanded: Set<URL> = []
+    @ObservationIgnored private var childItems: [URL: [FileItem]] = [:]
+    /// How deep each shown item is (0 = in this folder), for indenting.
+    private(set) var depth: [URL: Int] = [:]
     var showHidden = UserDefaults.standard.bool(forKey: "showHidden") { didSet { Task { await load(recordVisit: false) } } }
     /// Remembered across tabs and launches, like Finder.
     var viewMode: ViewMode = ViewMode(rawValue: UserDefaults.standard.string(forKey: "viewMode") ?? "") ?? .list {
@@ -103,6 +112,8 @@ final class BrowserModel: Identifiable {
     var renaming: FileItem?
     /// Items being renamed together (drives the Rename Items sheet).
     var batchRenaming: [FileItem]?
+    /// Tidy Folder's plan, waiting for you to confirm (drives the Tidy sheet).
+    var tidyPlan: [Tidy.Move]?
     /// Something slow in progress ("Compressing…"), shown in the footer.
     private(set) var activity: String?
     var alertMessage: String?
@@ -146,7 +157,14 @@ final class BrowserModel: Identifiable {
     var isToolPage: Bool { mode == .cleanup || mode == .packages || mode == .settings }
 
     /// Items come from many folders, so views show where each one lives.
-    var showsLocations: Bool { search != nil || workspaceID != nil || changesRoot != nil }
+    var showsLocations: Bool {
+        search != nil || workspaceID != nil || changesRoot != nil || mode == .recents || tagName != nil
+    }
+
+    var tagName: String? {
+        if case .tag(let name) = mode { return name }
+        return nil
+    }
 
     @ObservationIgnored let services: AppServices
     /// The pane (column) this tab lives in.
@@ -158,6 +176,7 @@ final class BrowserModel: Identifiable {
     /// Select this once the folder loads (e.g. the folder you just came up from).
     @ObservationIgnored private var pendingSelection: String?
     @ObservationIgnored private var spotlight: SpotlightSearch?
+    @ObservationIgnored private var spotlightAdded: SpotlightSearch?
     /// The folder sort order, kept while a search is showing.
     @ObservationIgnored private var folderSortOrder = defaultSortOrder
     @ObservationIgnored private var gitTask: Task<Void, Never>?
@@ -176,6 +195,8 @@ final class BrowserModel: Identifiable {
         case .cleanup: return "Clean Up"
         case .packages: return "Packages"
         case .settings: return "Settings"
+        case .recents: return "Recents"
+        case .tag(let name): return name
         case .changes(let root): return "Changes in " + FileManager.default.displayName(atPath: root)
         case .folder: break
         }
@@ -230,10 +251,11 @@ final class BrowserModel: Identifiable {
     }
 
     func date(of item: FileItem) -> Date? {
+        if groupBy == .dateOpened { return item.lastOpened }
         switch shownDate {
-        case .added: item.dateAdded
-        case .created: item.dateCreated
-        default: item.dateModified
+        case .added: return item.dateAdded
+        case .created: return item.dateCreated
+        default: return item.dateModified
         }
     }
 
@@ -303,6 +325,18 @@ final class BrowserModel: Identifiable {
         guard mode != .cleanup else { return }
         pushHistory()
         show(HistoryEntry(location: location, mode: .cleanup))
+    }
+
+    func showTag(_ name: String) {
+        guard tagName != name else { return }
+        pushHistory()
+        show(HistoryEntry(location: location, mode: .tag(name)))
+    }
+
+    func showRecents() {
+        guard mode != .recents else { return }
+        pushHistory()
+        show(HistoryEntry(location: location, mode: .recents))
     }
 
     func showSettings() {
@@ -386,9 +420,11 @@ final class BrowserModel: Identifiable {
         selection = []
         filterText = ""
         previewURL = nil
+        expanded = []
+        childItems = [:]
         pendingSelection = child?.filePath
         // Folders get their own remembered view; searches and workspaces keep their own order.
-        if mode == .folder { applyFolderView() } else if groupBy != .none { groupBy = .none }
+        if mode == .folder { applyFolderView() } else { groupBy = mode == .recents ? .dateOpened : .none }
         Task { await load(recordVisit: record) }
     }
 
@@ -407,11 +443,19 @@ final class BrowserModel: Identifiable {
             return
         case .cleanup, .packages, .settings:
             spotlight = nil
+            spotlightAdded = nil
             watcher = nil
             items = []
             return
+        case .recents:
+            startRecents(generation: generation)
+            return
+        case .tag(let name):
+            startTagSearch(name, generation: generation)
+            return
         case .changes:
             spotlight = nil
+            spotlightAdded = nil
             watcher = nil
             isSearching = false
             loadError = nil
@@ -422,6 +466,7 @@ final class BrowserModel: Identifiable {
             break
         }
         spotlight = nil
+        spotlightAdded = nil
         isSearching = false
         let target = location
         isLoading = true
@@ -445,6 +490,7 @@ final class BrowserModel: Identifiable {
             if recordVisit { services.recordVisit(target) }
             refreshGit()
             measureFolderSizes(generation: generation)
+            refreshExpanded()
             // Drop selections that no longer exist.
             let present = Set(result.map(\.id))
             if !selection.isSubset(of: present) { selection = selection.intersection(present) }
@@ -485,6 +531,7 @@ final class BrowserModel: Identifiable {
     /// A workspace's items, in the order you added them. Missing ones are skipped.
     private func loadWorkspace() {
         spotlight = nil
+        spotlightAdded = nil
         watcher = nil
         isSearching = false
         loadError = nil
@@ -492,7 +539,103 @@ final class BrowserModel: Identifiable {
         items = (workspace?.paths ?? []).compactMap { LocalFileSource.item(for: URL(filePath: $0)) }
     }
 
+    /// Recents: opened in the last 30 days anywhere in your home, plus new arrivals in
+    /// Downloads, Desktop and Documents. Newest first, grouped by day.
+    private func startRecents(generation: Int) {
+        watcher = nil
+        loadError = nil
+        needsPermission = false
+        isSearching = true
+        let home = services.homePath
+        var opened: [FileHit] = []
+        var added: [FileHit] = []
+        var openedDone = false
+        var addedDone = false
+        let update: () -> Void = { [weak self] in
+            guard let self, generation == self.loadGeneration else { return }
+            var latest: [String: (FileHit, Date)] = [:]
+            for hit in opened where !FileHitRanker.isNoise(hit.path, home: home) {
+                if let used = hit.lastUsed { latest[hit.path] = (hit, used) }
+            }
+            var items: [FileItem] = []
+            var seen = Set<String>()
+            for hit in added where !FileHitRanker.isNoise(hit.path, home: home) {
+                guard latest[hit.path] == nil, let item = LocalFileSource.item(for: URL(filePath: hit.path)),
+                      let date = item.dateAdded else { continue }
+                var dated = item
+                dated.lastOpened = date
+                items.append(dated)
+                seen.insert(hit.path)
+            }
+            for (path, entry) in latest where !seen.contains(path) {
+                guard var item = LocalFileSource.item(for: URL(filePath: path)) else { continue }
+                item.lastOpened = max(entry.1, item.dateAdded ?? .distantPast)
+                items.append(item)
+            }
+            self.items = Array(items.sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }.prefix(400))
+            if openedDone && addedDone { self.isSearching = false }
+        }
+        let notFolders = "kMDItemContentType != \"public.folder\""
+        spotlight = SpotlightSearch(queryString: "kMDItemLastUsedDate >= $time.today(-30) && \(notFolders)",
+                                    scopes: [NSMetadataQueryUserHomeScope], live: true) { hits, done in
+            opened = hits
+            if done { openedDone = true }
+            update()
+        }
+        let arrivals = ["Downloads", "Desktop", "Documents"].map { URL.folder(home + "/" + $0) }
+        spotlightAdded = SpotlightSearch(queryString: "kMDItemDateAdded >= $time.today(-30) && \(notFolders)",
+                                         scopes: arrivals, live: true) { hits, done in
+            added = hits
+            if done { addedDone = true }
+            update()
+        }
+    }
+
+    /// Everything in your home with a Finder tag, from Spotlight.
+    private func startTagSearch(_ name: String, generation: Int) {
+        spotlightAdded = nil
+        watcher = nil
+        loadError = nil
+        needsPermission = false
+        isSearching = true
+        let home = services.homePath
+        let escaped = name.replacingOccurrences(of: "\"", with: "\\\"")
+        spotlight = SpotlightSearch(queryString: "kMDItemUserTags == \"\(escaped)\"",
+                                    scopes: [NSMetadataQueryUserHomeScope], live: true) { [weak self] hits, finished in
+            guard let self, generation == self.loadGeneration else { return }
+            self.items = hits.filter { !FileHitRanker.isNoise($0.path, home: home) }
+                .compactMap { LocalFileSource.item(for: URL(filePath: $0.path)) }
+                .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+            if finished { self.isSearching = false }
+        }
+        if spotlight == nil {
+            items = []
+            isSearching = false
+        }
+    }
+
+    // MARK: - Tags
+
+    /// Items waiting for a name in the New Tag dialog.
+    var newTagItems: [FileItem]?
+
+    func toggleTag(_ tag: FileTag, on items: [FileItem]) {
+        do {
+            try Tags.toggle(tag, on: items.map(\.url))
+        } catch {
+            alertMessage = "Couldn’t change tags: \(error.localizedDescription)"
+        }
+        services.noteTags([tag])
+        Task { await reload() }
+    }
+
+    func removeTags(from items: [FileItem]) {
+        for item in items { try? Tags.write([], to: item.url) }
+        Task { await reload() }
+    }
+
     private func startSearch(_ saved: SavedSearch, generation: Int) {
+        spotlightAdded = nil
         watcher = nil
         loadError = nil
         needsPermission = false
@@ -565,14 +708,90 @@ final class BrowserModel: Identifiable {
         let query = filterText.trimmingCharacters(in: .whitespaces)
         if !query.isEmpty { list = list.filter { $0.name.localizedCaseInsensitiveContains(query) } }
         if !sortOrder.isEmpty { list.sort(using: sortOrder) }
+        let tagsSeen = list.flatMap(\.tags)
+        if !tagsSeen.isEmpty { services.noteTags(tagsSeen) }
+        var depths: [URL: Int] = [:]
         if groupBy != .none {
-            displayedGroups = ItemGrouper.groups(list, by: groupBy)
+            displayedGroups = ItemGrouper.groups(list, by: groupBy).map {
+                ItemGroup(title: $0.title, items: withChildren($0.items, depth: 0, into: &depths))
+            }
             displayedItems = displayedGroups.flatMap(\.items)
+            depth = depths
             return
         }
-        if foldersFirst, isFolder { list = list.filter(\.isNavigable) + list.filter { !$0.isNavigable } }
+        list = withChildren(arrange(list), depth: 0, into: &depths)
         displayedItems = list
         displayedGroups = [ItemGroup(title: "", items: list)]
+        depth = depths
+    }
+
+    /// Folders first (when on), as in the folder itself.
+    private func arrange(_ list: [FileItem]) -> [FileItem] {
+        guard foldersFirst, isFolder else { return list }
+        return list.filter(\.isNavigable) + list.filter { !$0.isNavigable }
+    }
+
+    /// Inserts the contents of expanded folders after them, sorted the same way.
+    private func withChildren(_ list: [FileItem], depth level: Int, into depths: inout [URL: Int]) -> [FileItem] {
+        guard !expanded.isEmpty else { return list }
+        var result: [FileItem] = []
+        for item in list {
+            result.append(item)
+            if level > 0 { depths[item.id] = level }
+            if expanded.contains(item.id), var children = childItems[item.id] {
+                if !sortOrder.isEmpty { children.sort(using: sortOrder) }
+                result += withChildren(arrange(children), depth: level + 1, into: &depths)
+            }
+        }
+        return result
+    }
+
+    // MARK: - Expanding folders in place
+
+    /// Opens or closes a folder in place. `recursive` (⌥-click) does every folder inside too.
+    func toggleExpanded(_ item: FileItem, recursive: Bool = false) {
+        guard item.isNavigable else { return }
+        if expanded.contains(item.id) {
+            expanded = expanded.filter { !($0 == item.id || $0.filePath.hasPrefix(item.path + "/")) }
+            refreshDisplayed()
+        } else {
+            expand([item.url], recursive: recursive)
+        }
+    }
+
+    private func expand(_ folders: [URL], recursive: Bool, level: Int = 0) {
+        let includeHidden = showHidden
+        let source = services.fileSource
+        Task {
+            var next: [URL] = []
+            for folder in folders {
+                let children = (try? await source.contents(of: folder, includeHidden: includeHidden)) ?? []
+                childItems[folder] = children
+                expanded.insert(folder)
+                if recursive { next += children.filter(\.isNavigable).map(\.url) }
+            }
+            refreshDisplayed()
+            // ⌥-click: a few levels deep at most, so huge trees don't run away.
+            if recursive, !next.isEmpty, level < 3 { expand(next, recursive: true, level: level + 1) }
+        }
+    }
+
+    /// Re-reads expanded folders after a reload, and closes them when you leave.
+    private func refreshExpanded() {
+        guard !expanded.isEmpty else { return }
+        let folders = Array(expanded)
+        let includeHidden = showHidden
+        let source = services.fileSource
+        Task {
+            for folder in folders {
+                if let children = try? await source.contents(of: folder, includeHidden: includeHidden) {
+                    childItems[folder] = children
+                } else {
+                    expanded.remove(folder)
+                }
+            }
+            refreshDisplayed()
+        }
     }
 
     // MARK: - Opening
@@ -644,6 +863,56 @@ final class BrowserModel: Identifiable {
             await reload()
             selection = Set(items.filter { renamed.contains($0.path) }.map(\.id))
         }
+    }
+
+    // MARK: - Tidy Folder
+
+    /// Plans moving this folder's loose files into folders by kind; shows the plan first.
+    func beginTidy() {
+        guard isFolder else { return }
+        let plan = Tidy.plan(for: items, in: location)
+        if plan.isEmpty {
+            alertMessage = "Nothing to tidy: there are no loose files here (new and unfinished downloads are left alone)."
+        } else {
+            tidyPlan = plan
+        }
+    }
+
+    /// Moves files into their kind folders. ⌘Z moves them back and removes folders it made.
+    func applyTidy(_ moves: [Tidy.Move]) {
+        let fm = FileManager.default
+        var made: [URL] = []
+        var done: [(URL, URL)] = []
+        var errors: [String] = []
+        for move in moves {
+            let folder = location.appending(path: move.folder, directoryHint: .isDirectory)
+            do {
+                if !fm.fileExists(atPath: folder.filePath) {
+                    try fm.createDirectory(at: folder, withIntermediateDirectories: false)
+                    made.append(folder)
+                }
+                let target = LocalFileSource.availableURL(in: folder, preferredName: move.item.name,
+                                                          isDirectory: false, style: .numbered)
+                try fm.moveItem(at: move.item.url, to: target)
+                done.append((move.item.url, target))
+            } catch {
+                errors.append(error.localizedDescription)
+            }
+        }
+        if let undoManager, !done.isEmpty {
+            undoManager.registerUndo(withTarget: self) { model in
+                MainActor.assumeIsolated {
+                    for (from, to) in done { try? fm.moveItem(at: to, to: from) }
+                    for folder in made where (try? fm.contentsOfDirectory(atPath: folder.filePath))?.isEmpty == true {
+                        try? fm.removeItem(at: folder)
+                    }
+                    Task { await model.reload() }
+                }
+            }
+            undoManager.setActionName("Tidy Folder")
+        }
+        if !errors.isEmpty { alertMessage = errors.joined(separator: "\n") }
+        Task { await reload() }
     }
 
     // MARK: - Archives and new files
@@ -823,28 +1092,57 @@ final class BrowserModel: Identifiable {
         return true
     }
 
+    /// The "already exists" question waiting for an answer (drives the conflict sheet).
+    var conflict: ConflictPrompt?
+
     /// Copies or moves items into a folder (paste, drops, F5/F6 between panes).
-    /// Name clashes keep both ("report copy.pdf"); ⌘Z undoes.
+    /// Asks Replace / Keep Both / Skip when a name is taken, shows progress for slow ones,
+    /// and ⌘Z undoes it.
     func transfer(_ urls: [URL], into destination: URL, move: Bool) {
-        let source = services.fileSource
-
         Task {
-            // Copy off the main thread so big files don't freeze the window.
-            let (results, errors) = await Task.detached(priority: .userInitiated) {
-                var done: [(URL, URL)] = []
-                var failed: [String] = []
-                for url in urls {
-                    if move && url.deletingLastPathComponent().filePath == destination.filePath { continue }
-                    do {
-                        let new = move ? try source.move(url, into: destination) : try source.copy(url, into: destination)
-                        done.append((url, new))
-                    } catch {
-                        failed.append(error.localizedDescription)
+            // 1. Decide where each item goes, asking about clashes.
+            var plan: [(source: URL, target: URL, replace: Bool)] = []
+            var applyToAll: ConflictChoice?
+            let fm = FileManager.default
+            let clashing = urls.filter { url in
+                url.deletingLastPathComponent().filePath != destination.filePath
+                    && fm.fileExists(atPath: destination.appending(path: url.lastPathComponent).filePath)
+            }
+            var remaining = clashing.count
+            for url in urls {
+                let sameFolder = url.deletingLastPathComponent().filePath == destination.filePath
+                if move && sameFolder { continue }
+                var choice: ConflictChoice?
+                if fm.fileExists(atPath: destination.appending(path: url.lastPathComponent).filePath) {
+                    if sameFolder {
+                        choice = .keepBoth // copying into its own folder makes "x copy"
+                    } else if let all = applyToAll {
+                        choice = all
+                    } else {
+                        guard let answer = await askConflict(url, in: destination, move: move, remaining: remaining)
+                        else { return } // Stop
+                        choice = answer.choice
+                        if answer.applyToAll { applyToAll = answer.choice }
                     }
+                    if !sameFolder { remaining -= 1 }
                 }
-                return (done, failed)
-            }.value
+                guard let target = FileCopier.destination(for: url, in: destination, choice: choice, isCopy: !move) else { continue }
+                plan.append((url, target, choice == .replace))
+            }
+            guard !plan.isEmpty else { return }
 
+            // 2. Do it off the main thread, with progress.
+            let verb = move ? "Moving" : "Copying"
+            let title = plan.count == 1 ? "\(verb) “\(plan[0].source.lastPathComponent)”"
+                : "\(verb) \(plan.count) items to “\(destination.lastPathComponent)”"
+            let needsBytes = !move || !FileCopier.sameVolume(plan[0].source, destination)
+            let total = needsBytes ? await Self.measure(plan.map(\.source)) : 0
+            let transfer = Transfer(title: title, totalBytes: total)
+            services.begin(transfer)
+            let (results, errors) = await Self.run(plan, move: move, transfer: transfer)
+            services.end(transfer)
+
+            // 3. Undo, errors, refresh, select what arrived.
             if move {
                 registerUndoMoves(results, name: "Move")
             } else if let undoManager, !results.isEmpty {
@@ -856,13 +1154,66 @@ final class BrowserModel: Identifiable {
                 }
                 undoManager.setActionName("Copy")
             }
-            if !errors.isEmpty { alertMessage = errors.joined(separator: "\n") }
+            if !errors.isEmpty, !transfer.isCancelled { alertMessage = errors.joined(separator: "\n") }
             await reload()
             if destination.filePath == location.filePath {
                 let newPaths = Set(results.map(\.1.filePath))
                 selection = Set(items.filter { newPaths.contains($0.path) }.map(\.id))
             }
         }
+    }
+
+    private func askConflict(_ url: URL, in folder: URL, move: Bool, remaining: Int) async -> ConflictAnswer? {
+        guard let incoming = LocalFileSource.item(for: url),
+              let existing = LocalFileSource.item(for: folder.appending(path: url.lastPathComponent)) else {
+            return ConflictAnswer(choice: .keepBoth, applyToAll: false)
+        }
+        return await withCheckedContinuation { continuation in
+            conflict = ConflictPrompt(incoming: incoming, existing: existing, folderName: folder.lastPathComponent,
+                                      isMove: move, remaining: remaining) { [weak self] answer in
+                self?.conflict = nil
+                continuation.resume(returning: answer)
+            }
+        }
+    }
+
+    @concurrent nonisolated private static func measure(_ urls: [URL]) async -> Int64 {
+        urls.reduce(0) { $0 + FileCopier.totalBytes($1) }
+    }
+
+    @concurrent nonisolated private static func run(_ plan: [(source: URL, target: URL, replace: Bool)], move: Bool,
+                                                    transfer: Transfer) async -> ([(URL, URL)], [String]) {
+        var done: [(URL, URL)] = []
+        var failed: [String] = []
+        var finishedBytes: Int64 = 0
+        for step in plan {
+            if transfer.isCancelled { break }
+            transfer.set(current: step.source.lastPathComponent)
+            do {
+                if step.replace {
+                    // The one being replaced goes to the Trash, not away for good.
+                    try FileManager.default.trashItem(at: step.target, resultingItemURL: nil)
+                }
+                let base = finishedBytes
+                let progress: FileCopier.Progress = { bytes in
+                    transfer.set(done: base + bytes)
+                    return !transfer.isCancelled
+                }
+                if move {
+                    try FileCopier.move(step.source, to: step.target, progress: progress)
+                } else {
+                    try FileCopier.copy(step.source, to: step.target, progress: progress)
+                }
+                finishedBytes += transfer.totalBytes > 0 ? FileCopier.totalBytes(step.target) : 0
+                transfer.set(done: finishedBytes)
+                done.append((step.source, step.target))
+            } catch FileCopier.Failure.cancelled {
+                break
+            } catch {
+                failed.append(error.localizedDescription)
+            }
+        }
+        return (done, failed)
     }
 
     /// Records that items moved from → to. Undo moves them back (and Redo forward again).

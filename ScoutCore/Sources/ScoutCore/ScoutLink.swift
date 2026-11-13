@@ -20,6 +20,9 @@ public enum ScoutLink: Equatable, Sendable {
     case packages
     case settings
     case shortcuts
+    case recents
+    /// Shows Tidy Folder's plan for a folder (nothing moves until you confirm).
+    case tidy(path: String)
     case changes(path: String)
 
     public static let scheme = "scout"
@@ -49,6 +52,10 @@ public enum ScoutLink: Equatable, Sendable {
             self = .settings
         case "shortcuts", "keys":
             self = .shortcuts
+        case "recents", "recent":
+            self = .recents
+        case "tidy":
+            self = .tidy(path: query["path"].flatMap { $0.isEmpty ? nil : $0 } ?? "~/Downloads")
         case "changes":
             guard let path = query["path"], !path.isEmpty else { return nil }
             self = .changes(path: path)
@@ -80,6 +87,11 @@ public enum ScoutLink: Equatable, Sendable {
             components.host = "settings"
         case .shortcuts:
             components.host = "shortcuts"
+        case .recents:
+            components.host = "recents"
+        case .tidy(let path):
+            components.host = "tidy"
+            components.queryItems = [URLQueryItem(name: "path", value: path)]
         case .changes(let path):
             components.host = "changes"
             components.queryItems = [URLQueryItem(name: "path", value: path)]

@@ -121,6 +121,7 @@ struct SettingsView: View {
                 })) {
                     Text("List").tag(ViewMode.list.rawValue)
                     Text("Icons").tag(ViewMode.icons.rawValue)
+                    Text("Columns").tag(ViewMode.columns.rawValue)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()

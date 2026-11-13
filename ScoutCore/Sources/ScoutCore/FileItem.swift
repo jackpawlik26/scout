@@ -25,6 +25,10 @@ public struct FileItem: Identifiable, Hashable, Sendable {
     public let typeIdentifier: String?
     /// For folders: everything inside, once measured (filled in after the listing loads).
     public var folderBytes: Int64?
+    /// When you last opened it (or added it, for new downloads), when known (Recents).
+    public var lastOpened: Date?
+    /// Finder tags (colored labels).
+    public var tags: [FileTag] = []
 
     public init(
         url: URL,

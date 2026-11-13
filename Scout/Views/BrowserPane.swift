@@ -16,6 +16,7 @@ struct BrowserPane: View {
     @State private var searchName = ""
     @State private var isRenamingWorkspace = false
     @State private var workspaceName = ""
+    @State private var newTagName = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -85,6 +86,25 @@ struct BrowserPane: View {
             .keyboardShortcut(.defaultAction)
             Button("Cancel", role: .cancel) {}
         }
+        .sheet(item: $browser.conflict) { prompt in
+            ConflictView(prompt: prompt)
+                .interactiveDismissDisabled()
+        }
+        .alert("New Tag", isPresented: newTagBinding) {
+            TextField("Name", text: $newTagName)
+            Button("Add") {
+                let name = newTagName.trimmingCharacters(in: .whitespaces)
+                if !name.isEmpty, let items = browser.newTagItems {
+                    browser.toggleTag(FileTag(name: name, color: 0), on: items)
+                }
+                newTagName = ""
+            }
+            .keyboardShortcut(.defaultAction)
+            Button("Cancel", role: .cancel) { newTagName = "" }
+        }
+        .sheet(item: tidyBinding) { plan in
+            TidyView(browser: browser, moves: plan.moves)
+        }
         .sheet(item: batchRenameBinding) { batch in
             BatchRenameView(browser: browser, items: batch.items)
         }
@@ -138,6 +158,9 @@ struct BrowserPane: View {
                     IconButton(symbol: "square.grid.2x2", isOn: browser.viewMode == .icons, help: "Icons (⌘2)") {
                         browser.viewMode = .icons
                     }
+                    IconButton(symbol: "rectangle.split.3x1", isOn: browser.viewMode == .columns, help: "Columns (⌘3)") {
+                        browser.viewMode = .columns
+                    }
                 }
                 .padding(2)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.045)))
@@ -166,6 +189,7 @@ struct BrowserPane: View {
                     Picker("View", selection: $browser.viewMode) {
                         Label("as List", systemImage: "list.bullet").tag(ViewMode.list)
                         Label("as Icons", systemImage: "square.grid.2x2").tag(ViewMode.icons)
+                        Label("as Columns", systemImage: "rectangle.split.3x1").tag(ViewMode.columns)
                     }
                     .pickerStyle(.inline)
                     Menu("Sort By") { SortMenuItems(browser: browser) }
@@ -208,6 +232,8 @@ struct BrowserPane: View {
                 case .workspace: Text("Workspace")
                 case .cleanup, .packages: Text("Tools")
                 case .settings: Text("Scout")
+                case .recents: Text("Last 30 days")
+                case .tag: Text("Tag")
                 case .changes: Text("Git")
                 case .folder:
                     ForEach(Array(parentCrumbs.enumerated()), id: \.offset) { index, url in
@@ -250,6 +276,8 @@ struct BrowserPane: View {
         case .cleanup: "sparkles"
         case .packages: "shippingbox"
         case .settings: "gearshape"
+        case .recents: "clock"
+        case .tag: "tag"
         case .changes: "arrow.triangle.branch"
         }
     }
@@ -440,6 +468,10 @@ struct BrowserPane: View {
                 switch browser.viewMode {
                 case .list: FileTableView(window: window, browser: browser)
                 case .icons: FileGridView(window: window, browser: browser)
+                case .columns:
+                    // Searches and workspaces aren't one folder, so they show as a list.
+                    if browser.isFolder { ColumnBrowserView(window: window, browser: browser) }
+                    else { FileTableView(window: window, browser: browser) }
                 }
             }
             .overlay {
@@ -515,6 +547,19 @@ struct BrowserPane: View {
         var id: [URL] { items.map(\.id) }
     }
 
+    private var newTagBinding: Binding<Bool> {
+        Binding(get: { browser.newTagItems != nil }, set: { if !$0 { browser.newTagItems = nil } })
+    }
+
+    private struct TidyPlan: Identifiable {
+        let moves: [Tidy.Move]
+        var id: Int { moves.count }
+    }
+
+    private var tidyBinding: Binding<TidyPlan?> {
+        Binding(get: { browser.tidyPlan.map(TidyPlan.init) }, set: { if $0 == nil { browser.tidyPlan = nil } })
+    }
+
     private var batchRenameBinding: Binding<Batch?> {
         Binding(get: { browser.batchRenaming.map(Batch.init) }, set: { if $0 == nil { browser.batchRenaming = nil } })
     }
@@ -583,7 +628,7 @@ private struct SortMenuItems: View {
             if !browser.showsLocations {
                 Divider()
                 Picker("Group By", selection: $browser.groupBy) {
-                    ForEach(GroupBy.allCases) { Text($0.title).tag($0) }
+                    ForEach(GroupBy.folderChoices) { Text($0.title).tag($0) }
                 }
             }
     }

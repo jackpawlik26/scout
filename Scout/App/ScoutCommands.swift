@@ -24,6 +24,9 @@ struct ScoutCommands: Commands {
             Button("New Text File") { browser?.newFile(.text) }
                 .keyboardShortcut("n", modifiers: [.command, .control])
             Button("New Markdown File") { browser?.newFile(.markdown) }
+            Button("Tidy Folder…") { browser?.beginTidy() }
+                .keyboardShortcut("t", modifiers: [.command, .option])
+                .disabled(browser?.isFolder != true)
             Divider()
             Button("Open") { browser?.openSelection() }
                 .keyboardShortcut("o")
@@ -101,14 +104,16 @@ struct ScoutCommands: Commands {
                 .keyboardShortcut("1")
             Button("as Icons") { browser?.viewMode = .icons }
                 .keyboardShortcut("2")
+            Button("as Columns") { browser?.viewMode = .columns }
+                .keyboardShortcut("3")
             Divider()
             Menu("Group By") {
-                ForEach(Array(zip(GroupBy.allCases, ["0", "2", "6", "5", "7", "3", "1"])), id: \.0) { group, key in
+                ForEach(GroupBy.folderChoices) { group in
                     Toggle(group.title, isOn: Binding(
                         get: { browser?.groupBy == group },
                         set: { _ in browser?.groupBy = group }
                     ))
-                    .keyboardShortcut(KeyEquivalent(Character(key)), modifiers: [.command, .control])
+                    .keyboardShortcut(KeyEquivalent(group.shortcutDigit ?? "0"), modifiers: [.command, .control])
                 }
             }
             .disabled(browser?.showsLocations ?? true)
@@ -164,6 +169,8 @@ struct ScoutCommands: Commands {
             Divider()
             if let window {
                 let services = window.services
+                Button("Recents") { browser?.showRecents() }
+                    .keyboardShortcut("r", modifiers: [.command, .option])
                 Button("Home") { browser?.go(to: services.home) }
                     .keyboardShortcut("h", modifiers: [.command, .shift])
                 Button("Desktop") { browser?.go(to: services.home.appending(path: "Desktop")) }

@@ -36,6 +36,10 @@ struct FileTableView: View {
         Table(of: FileItem.self, selection: $browser.selection, sortOrder: $browser.sortOrder) {
             TableColumn("Name", value: \.name, comparator: .localizedStandard) { item in
                 HStack(spacing: 8) {
+                    if browser.isFolder {
+                        DisclosureButton(item: item, browser: browser)
+                            .padding(.leading, CGFloat(browser.depth[item.id] ?? 0) * 16)
+                    }
                     FileIconView(item: item, size: browser.showsLocations ? 24 : 18)
                     if browser.showsLocations {
                         // Search results: show where each one lives.
@@ -49,6 +53,7 @@ struct FileTableView: View {
                     } else {
                         Text(item.name).lineLimit(1).truncationMode(.middle)
                     }
+                    TagDots(tags: item.tags)
                     if let state = browser.gitState(item) {
                         Spacer(minLength: 4)
                         GitBadge(state: state, isFolder: item.isNavigable)
@@ -71,14 +76,19 @@ struct FileTableView: View {
             }
             .width(min: 52, ideal: 64)
         } rows: {
-            ForEach(browser.displayedGroups) { group in
-                Section {
-                    ForEach(group.items) { item in
-                        TableRow(item)
-                            .itemProvider { NSItemProvider(contentsOf: item.url) }
-                    }
-                } header: {
-                    if !group.title.isEmpty {
+            if browser.groupBy == .none {
+                ForEach(browser.displayedItems) { item in
+                    TableRow(item)
+                        .itemProvider { NSItemProvider(contentsOf: item.url) }
+                }
+            } else {
+                ForEach(browser.displayedGroups) { group in
+                    Section {
+                        ForEach(group.items) { item in
+                            TableRow(item)
+                                .itemProvider { NSItemProvider(contentsOf: item.url) }
+                        }
+                    } header: {
                         GroupHeader(title: group.title, count: group.items.count)
                     }
                 }
@@ -90,6 +100,18 @@ struct FileTableView: View {
             browser.open(urls)
         }
         // No stripes or column headers: Scout's header has a Sort menu instead.
+        .onKeyPress(.rightArrow) {
+            let folders = browser.selectedItems.filter { $0.isNavigable && !browser.expanded.contains($0.id) }
+            guard browser.isFolder, !folders.isEmpty else { return .ignored }
+            for folder in folders { browser.toggleExpanded(folder, recursive: NSEvent.modifierFlags.contains(.option)) }
+            return .handled
+        }
+        .onKeyPress(.leftArrow) {
+            let open = browser.selectedItems.filter { browser.expanded.contains($0.id) }
+            guard browser.isFolder, !open.isEmpty else { return .ignored }
+            for folder in open { browser.toggleExpanded(folder) }
+            return .handled
+        }
         .tableStyle(.inset(alternatesRowBackgrounds: false))
         .tableColumnHeaders(.hidden)
         .scrollContentBackground(.hidden)
@@ -272,7 +294,10 @@ private struct GridCell: View {
                 .padding(6)
                 .background(isSelected ? Color.secondary.opacity(0.2) : .clear,
                             in: RoundedRectangle(cornerRadius: 8))
-            Text(item.name)
+            HStack(spacing: 4) {
+                TagDots(tags: item.tags, size: 8)
+                Text(item.name)
+            }
                 .font(.callout)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
@@ -303,6 +328,33 @@ private struct GridCell: View {
             return "\(itemCount) item\(itemCount == 1 ? "" : "s")"
         }
         return Format.size(item)
+    }
+}
+
+/// The little arrow that opens a folder in place (⌥-click opens everything inside).
+private struct DisclosureButton: View {
+    let item: FileItem
+    let browser: BrowserModel
+
+    var body: some View {
+        if item.isNavigable {
+            Button {
+                withAnimation(.snappy(duration: 0.15)) {
+                    browser.toggleExpanded(item, recursive: NSEvent.modifierFlags.contains(.option))
+                }
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(browser.expanded.contains(item.id) ? 90 : 0))
+                    .frame(width: 12, height: 16)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Show contents (⌥-click: everything inside)")
+        } else {
+            Color.clear.frame(width: 12, height: 16)
+        }
     }
 }
 
@@ -416,6 +468,7 @@ struct FileContextMenu: View {
         if urls.isEmpty {
             if browser.isFolder {
                 Button("New Folder") { browser.newFolder() }
+                Button("Tidy Folder…") { browser.beginTidy() }
                 Menu("New File") {
                     ForEach(BrowserModel.NewFileKind.allCases, id: \.self) { kind in
                         Button(kind.title) { browser.newFile(kind) }
@@ -481,6 +534,7 @@ struct FileContextMenu: View {
                 }
             }
             Divider()
+            TagsMenu(browser: browser, items: items)
             let unpinned = items.filter { $0.isNavigable && !browser.services.isFavorite($0.path) }
             if !unpinned.isEmpty {
                 Button("Add to Favorites") { browser.services.addFavorites(unpinned.map(\.path)) }

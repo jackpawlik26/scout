@@ -25,9 +25,10 @@ import Testing
         #expect(ScoutLink(url: URL(string: "scout://cleanup")!) == .cleanup)
         #expect(ScoutLink(url: URL(string: "scout://workspace")!) == nil)
         #expect(ScoutLink(url: URL(string: "scout://changes")!) == nil)
+        #expect(ScoutLink(url: URL(string: "scout://tidy")!) == .tidy(path: "~/Downloads"))
         for link in [ScoutLink.open(path: "/Users/jack/My Files & Stuff", newTab: true), .jump(query: "ib prep"), .jump(query: nil),
                      .workspace(name: "IB Recruiting"), .cleanup, .open(path: "/x", newTab: false, split: true),
-                     .packages, .settings, .shortcuts, .changes(path: "~/Scout")] {
+                     .packages, .settings, .shortcuts, .recents, .tidy(path: "~/Downloads"), .changes(path: "~/Scout")] {
             #expect(ScoutLink(url: link.url) == link)
         }
     }

@@ -35,6 +35,8 @@ Install to /Applications (also puts the `scout` CLI in ~/.local/bin): `./scripts
 - `scout://packages`: open Packages (Homebrew, npm)
 - `scout://settings`: open Settings
 - `scout://shortcuts`: show the keyboard shortcuts
+- `scout://recents`: files you opened or downloaded in the last 30 days
+- `scout://tidy?path=~/Downloads`: show Tidy Folder's plan (nothing moves until you confirm)
 - `scout://changes?path=~/Scout`: every changed file in a git repository
 
 **CLI:** `scout` ships inside Scout.app (`Contents/Helpers/scout`):
@@ -85,7 +87,11 @@ scout duplicates ~/Desktop   # list duplicate files (no folder = whole home)
 | ⌘C / ⌘V / ⌥⌘V | Copy / paste / move here |
 | Right-click ▸ Compress / Extract Here | Zip items; unzip .zip, .tar(.gz/.bz2/.xz), .7z |
 | ⌥⌘C | Copy path |
-| ⌘1 / ⌘2 | List / icons |
+| ⌘1 / ⌘2 / ⌘3 | List / icons / columns (→ ← move through columns; in the list, → ← open and close folders in place, ⌥ for everything inside) |
+| ⌃⌘0–8 | Group by none / name / kind / size / date added / modified / created / tags |
+| ⌥⌘R | Recents: files opened or downloaded in the last 30 days, grouped by day |
+| ⌥⌘T | Tidy Folder: plan, then move loose files into folders by kind (⌘Z undoes) |
+| Right-click ▸ Tags | Finder-compatible colored tags; sidebar Tags lists everything with a tag |
 | ⌘D / ⌘U / ⌥⇥ | Split view / swap panes / switch pane |
 | F5 / F6 | Copy / move selection to the other pane |
 | ⌥⌘N / ⌃1–9 | New workspace / open workspace 1–9 |

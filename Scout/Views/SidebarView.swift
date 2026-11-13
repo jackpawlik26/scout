@@ -32,6 +32,10 @@ struct SidebarView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     section("Favorites", addHelp: "Add “\(browser.title)” to Favorites (⌃⌘T)",
                             add: browser.isFolder ? { services.addFavorites([browser.location.filePath]) } : nil) {
+                        SidebarRow(title: "Recents", symbol: "clock", isSelected: browser.mode == .recents) {
+                            browser.showRecents()
+                        }
+                        .help("Files you opened or downloaded lately (⌥⌘R)")
                         FavoritesList(window: window, browser: browser) { place in
                             placeRow(place) {
                                 let favorites = services.favoritePaths
@@ -103,6 +107,11 @@ struct SidebarView: View {
                                     Button("Remove Saved Search", role: .destructive) { services.removeSearch(saved.id) }
                                 }
                             }
+                        }
+                    }
+                    section("Tags") {
+                        ForEach(services.allTags) { tag in
+                            TagSidebarRow(tag: tag, isSelected: browser.tagName == tag.name) { browser.showTag(tag.name) }
                         }
                     }
                     section("Locations") {
@@ -189,6 +198,32 @@ struct SidebarRow: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(isSelected ? Color.accentSoft : (isHovering ? Color.primary.opacity(0.06) : .clear))
             )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+    }
+}
+
+/// A tag in the sidebar: its color dot and name.
+private struct TagSidebarRow: View {
+    let tag: FileTag
+    let isSelected: Bool
+    let action: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                TagDots(tags: [tag], size: 10).frame(width: 18)
+                Text(tag.name).font(.system(size: 13, weight: isSelected ? .semibold : .regular)).lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(isSelected ? Color.accentColor : .primary)
+            .padding(.horizontal, 9)
+            .frame(height: 28)
+            .background(RoundedRectangle(cornerRadius: 8)
+                .fill(isSelected ? Color.accentSoft : (isHovering ? Color.primary.opacity(0.06) : .clear)))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

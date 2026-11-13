@@ -84,6 +84,7 @@ struct BrowserContent: View {
         .ignoresSafeArea()
         .frame(minWidth: 780, minHeight: 480)
         .animation(.snappy(duration: 0.25), value: window.panes.count)
+        .overlay(alignment: .bottom) { TransferOverlay() }
         .overlay {
             if window.isPaletteOpen {
                 CommandPalette(window: window)
