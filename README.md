@@ -88,10 +88,11 @@ scout duplicates ~/Desktop   # list duplicate files (no folder = whole home)
 | F5 / F6 | Copy / move selection to the other pane |
 | ⌥⌘N / ⌃1–9 | New workspace / open workspace 1–9 |
 | ⇧⌘K / ⌥⌘P / ⌥⌘G | Clean Up / Packages / Git changes |
-| ⌘I / ⌃⌘S / ⌘, | Info panel / sidebar / Settings (appearance and transparency, defaults, terminal and editor) |
+| ⌘I / ⌃⌘S / ⌘, | Info panel / sidebar / Settings (appearance, accent color, transparency, folder sizes, terminal and editor) |
 | ⇧⌘. | Show hidden files |
 | ⌘R | Show in Finder |
 | ⌥⇧⌘T / ⌥⇧⌘E | Open in your terminal (Tern, Ghostty, iTerm, Terminal…) / code editor; pick them in Settings (⌘,) |
+| ⌃⌘T | Add the folder (or selected folders) to Favorites; drag folders onto Favorites to pin, drag to reorder |
 | ⇧⌘H ⇧⌘D ⇧⌘O ⌥⌘L ⇧⌘A ⇧⌘I | Home, Desktop, Documents, Downloads, Applications, iCloud Drive |
 
 ## Roadmap

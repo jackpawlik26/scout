@@ -23,6 +23,8 @@ public struct FileItem: Identifiable, Hashable, Sendable {
     public let kind: String
     /// Uniform type identifier, e.g. "com.adobe.pdf".
     public let typeIdentifier: String?
+    /// For folders: everything inside, once measured (filled in after the listing loads).
+    public var folderBytes: Int64?
 
     public init(
         url: URL,
@@ -58,7 +60,7 @@ public struct FileItem: Identifiable, Hashable, Sendable {
     public var path: String { url.filePath }
 
     // Non-optional keys so table columns can sort on them.
-    public var sizeSortKey: Int64 { size ?? -1 }
+    public var sizeSortKey: Int64 { size ?? folderBytes ?? -1 }
     public var modifiedSortKey: Date { dateModified ?? .distantPast }
     public var createdSortKey: Date { dateCreated ?? .distantPast }
     public var addedSortKey: Date { dateAdded ?? .distantPast }

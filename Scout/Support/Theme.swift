@@ -221,3 +221,74 @@ struct WindowDragArea: View {
             .allowsWindowActivationEvents(true)
     }
 }
+
+// MARK: - Accent color
+
+/// Settings ▸ Appearance ▸ Accent color. Stored as AppKit's own per-app override
+/// (`AppleAccentColor` in Scout's defaults), so lists, switches and Scout's highlights all
+/// follow it. AppKit reads it at launch, so changing it asks for a restart.
+enum AccentChoice: Int, CaseIterable, Identifiable {
+    /// Scout's own purple (the AccentColor asset): no override.
+    case scout = 99
+    case blue = 4, purple = 5, pink = 6, red = 0, orange = 1, yellow = 2, green = 3, graphite = -1
+
+    var id: Int { rawValue }
+    static let key = "AppleAccentColor"
+
+    var title: String {
+        switch self {
+        case .scout: "Scout"
+        case .blue: "Blue"
+        case .purple: "Purple"
+        case .pink: "Pink"
+        case .red: "Red"
+        case .orange: "Orange"
+        case .yellow: "Yellow"
+        case .green: "Green"
+        case .graphite: "Graphite"
+        }
+    }
+
+    var swatch: Color {
+        switch self {
+        case .scout: Color(light: 0x6553F0, dark: 0x7D70F3)
+        case .blue: Color(nsColor: .systemBlue)
+        case .purple: Color(nsColor: .systemPurple)
+        case .pink: Color(nsColor: .systemPink)
+        case .red: Color(nsColor: .systemRed)
+        case .orange: Color(nsColor: .systemOrange)
+        case .yellow: Color(nsColor: .systemYellow)
+        case .green: Color(nsColor: .systemGreen)
+        case .graphite: Color(nsColor: .systemGray)
+        }
+    }
+
+    /// What's saved now (applies from the next launch).
+    static var saved: AccentChoice {
+        guard UserDefaults.standard.object(forKey: key) != nil else { return .scout }
+        return AccentChoice(rawValue: UserDefaults.standard.integer(forKey: key)) ?? .scout
+    }
+
+    func save() {
+        if self == .scout {
+            UserDefaults.standard.removeObject(forKey: Self.key)
+        } else {
+            UserDefaults.standard.set(rawValue, forKey: Self.key)
+        }
+    }
+
+    /// The color Scout launched with.
+    static let launched = saved
+}
+
+enum Relaunch {
+    /// Quits and reopens Scout (windows and tabs come back).
+    static func now() {
+        let path = Bundle.main.bundlePath
+        let process = Process()
+        process.executableURL = URL(filePath: "/bin/sh")
+        process.arguments = ["-c", "while kill -0 \(ProcessInfo.processInfo.processIdentifier) 2>/dev/null; do sleep 0.1; done; /usr/bin/open \"$0\"", path]
+        try? process.run()
+        NSApp.terminate(nil)
+    }
+}

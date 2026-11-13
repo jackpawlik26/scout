@@ -150,6 +150,12 @@ struct ScoutCommands: Commands {
                     Button("iCloud Drive") { browser?.go(to: iCloud) }
                         .keyboardShortcut("i", modifiers: [.command, .shift])
                 }
+                Button("Add to Favorites") {
+                    guard let browser else { return }
+                    let folders = browser.selectedItems.filter(\.isNavigable).map(\.path)
+                    services.addFavorites(folders.isEmpty && browser.isFolder ? [browser.location.filePath] : folders)
+                }
+                .keyboardShortcut("t", modifiers: [.command, .control])
                 Divider()
                 Button("Clean Up") { browser?.showCleanup() }
                     .keyboardShortcut("k", modifiers: [.command, .shift])

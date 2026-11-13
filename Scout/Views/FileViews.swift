@@ -439,6 +439,10 @@ struct FileContextMenu: View {
                 }
             }
             Divider()
+            let unpinned = items.filter { $0.isNavigable && !browser.services.isFavorite($0.path) }
+            if !unpinned.isEmpty {
+                Button("Add to Favorites") { browser.services.addFavorites(unpinned.map(\.path)) }
+            }
             WorkspaceMenu(window: window, browser: browser, paths: items.map(\.path))
             if window.isSplit, let other = window.otherPane?.current, other.isFolder {
                 Button("Copy to Other Pane") {

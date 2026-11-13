@@ -6,7 +6,10 @@ import UniformTypeIdentifiers
 
 enum Format {
     static func size(_ item: FileItem) -> String {
-        guard let size = item.size, !item.isNavigable else { return "--" }
+        if item.isNavigable {
+            return item.folderBytes.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? "--"
+        }
+        guard let size = item.size else { return "--" }
         return ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
     }
 

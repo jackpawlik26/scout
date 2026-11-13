@@ -30,8 +30,19 @@ struct SidebarView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 1) {
-                    section("Favorites") {
-                        ForEach(services.favorites) { placeRow($0) }
+                    section("Favorites", addHelp: "Add “\(browser.title)” to Favorites (⌃⌘T)",
+                            add: browser.isFolder ? { services.addFavorites([browser.location.filePath]) } : nil) {
+                        FavoritesList(window: window, browser: browser) { place in
+                            placeRow(place) {
+                                let favorites = services.favoritePaths
+                                Divider()
+                                Button("Move Up") { services.moveFavorite(place.id, by: -1) }
+                                    .disabled(favorites.first == place.id)
+                                Button("Move Down") { services.moveFavorite(place.id, by: 1) }
+                                    .disabled(favorites.last == place.id)
+                                Button("Remove from Favorites") { services.removeFavorite(place.id) }
+                            }
+                        }
                     }
                     section("Workspaces", addHelp: "New Workspace (⌥⌘N)", add: { window.newWorkspacePaths = [] }) {
                         ForEach(Array(services.workspaces.enumerated()), id: \.element.id) { index, workspace in
@@ -182,6 +193,57 @@ struct SidebarRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
+    }
+}
+
+/// Favorites: drop folders on the list to pin them (before the row you drop on, or at the
+/// end), drag a favorite onto another to reorder.
+private struct FavoritesList<Row: View>: View {
+    let window: BrowserWindowModel
+    let browser: BrowserModel
+    @ViewBuilder let row: (Place) -> Row
+    @Environment(AppServices.self) private var services
+    @State private var isTargeted = false
+
+    var body: some View {
+        let favorites = services.favorites
+        VStack(spacing: 1) {
+            ForEach(Array(favorites.enumerated()), id: \.element.id) { index, place in
+                FavoriteDropRow(index: index) { row(place).draggable(place.url) }
+            }
+            if favorites.isEmpty {
+                Text("Drag folders here to pin them")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 9)
+                    .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.accentColor.opacity(isTargeted ? 0.5 : 0), lineWidth: 1.5))
+        .dropDestination(for: URL.self) { urls, _ in
+            services.addFavorites(urls.map(\.filePath))
+            return true
+        } isTargeted: { isTargeted = $0 }
+    }
+}
+
+/// One favorite that shows an insertion line when something is dragged over it.
+private struct FavoriteDropRow<Content: View>: View {
+    let index: Int
+    @ViewBuilder let content: Content
+    @Environment(AppServices.self) private var services
+    @State private var isTargeted = false
+
+    var body: some View {
+        content
+            .overlay(alignment: .top) {
+                Capsule().fill(Color.accentColor).frame(height: 2.5).padding(.horizontal, 6).offset(y: -1.5)
+                    .opacity(isTargeted ? 1 : 0)
+            }
+            .dropDestination(for: URL.self) { urls, _ in
+                services.addFavorites(urls.map(\.filePath), at: index)
+                return true
+            } isTargeted: { isTargeted = $0 }
     }
 }
 

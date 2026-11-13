@@ -54,6 +54,13 @@ import Testing
         #expect(ScoutStore.loadHistory(from: url) == log)
     }
 
+    @Test func favoritesRoundTrip() throws {
+        let url = dir.appending(path: "favorites.json")
+        #expect(ScoutStore.loadFavorites(from: url) == nil)
+        try ScoutStore.saveFavorites(["/Users/j", "/Users/j/My Stuff"], to: url)
+        #expect(ScoutStore.loadFavorites(from: url) == ["/Users/j", "/Users/j/My Stuff"])
+    }
+
     @Test func foldersRoundTrip() throws {
         let folders = ["/Users/j/a", "/Users/j/b c"].map { IndexedFolder(path: $0, home: "/Users/j") }
         let url = dir.appending(path: "folders.txt")

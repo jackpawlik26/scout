@@ -349,13 +349,21 @@ final class BrowserModel: Identifiable {
         do {
             let result = try await services.fileSource.contents(of: target, includeHidden: showHidden)
             guard generation == loadGeneration else { return }
-            items = result
+            // Keep sizes already measured (auto-reloads happen on every change in the folder).
+            let measured = Dictionary(items.compactMap { item in item.folderBytes.map { (item.url, $0) } },
+                                      uniquingKeysWith: { a, _ in a })
+            items = measured.isEmpty ? result : result.map { item in
+                var item = item
+                item.folderBytes = measured[item.url]
+                return item
+            }
             loadError = nil
             needsPermission = false
             freeSpace = try? target.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
                 .volumeAvailableCapacityForImportantUsage
             if recordVisit { services.recordVisit(target) }
             refreshGit()
+            measureFolderSizes(generation: generation)
             // Drop selections that no longer exist.
             let present = Set(result.map(\.id))
             if !selection.isSubset(of: present) { selection = selection.intersection(present) }
@@ -376,6 +384,22 @@ final class BrowserModel: Identifiable {
     }
 
     func reload() async { await load(recordVisit: false) }
+
+    /// Fills in folder sizes one at a time (shared cache with the info panel), so the
+    /// Size column shows them and sorting by size works. Settings can turn this off.
+    private func measureFolderSizes(generation: Int) {
+        guard UserDefaults.standard.object(forKey: "folderSizes") as? Bool ?? true else { return }
+        let folders = items.filter { $0.isNavigable && !$0.isSymlink && $0.folderBytes == nil }.map(\.url)
+        guard !folders.isEmpty else { return }
+        Task {
+            for url in folders {
+                guard generation == loadGeneration else { return }
+                let size = await services.folderSize(url)
+                guard generation == loadGeneration, let index = items.firstIndex(where: { $0.url == url }) else { continue }
+                items[index].folderBytes = size.bytes
+            }
+        }
+    }
 
     /// A workspace's items, in the order you added them. Missing ones are skipped.
     private func loadWorkspace() {

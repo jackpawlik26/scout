@@ -12,9 +12,11 @@ struct SettingsView: View {
     @AppStorage("appearance") private var appearance = AppAppearance.system.rawValue
     @AppStorage(Transparency.amountKey) private var transparency = 0.0
     @AppStorage(Transparency.blurKey) private var transparencyBlur = true
+    @State private var accent = AccentChoice.saved
     @AppStorage("viewMode") private var viewMode = ViewMode.list.rawValue
     @AppStorage("foldersFirst") private var foldersFirst = true
     @AppStorage("showHidden") private var showHidden = false
+    @AppStorage("folderSizes") private var folderSizes = true
     @AppStorage("terminalApp") private var terminalApp = ""
     @AppStorage("editorApp") private var editorApp = ""
     @State private var isConfirmingClearHistory = false
@@ -66,6 +68,32 @@ struct SettingsView: View {
             }
             .padding(.vertical, 4)
             Divider()
+            SettingRow("Accent color", detail: accent == AccentChoice.launched ? accent.title
+                       : "\(accent.title) after Scout restarts.") {
+                HStack(spacing: 7) {
+                    ForEach(AccentChoice.allCases) { choice in
+                        Button {
+                            accent = choice
+                            choice.save()
+                        } label: {
+                            Circle()
+                                .fill(choice.swatch)
+                                .frame(width: 18, height: 18)
+                                .overlay(Circle().strokeBorder(.white.opacity(accent == choice ? 0.9 : 0), lineWidth: 2))
+                                .overlay(Circle().strokeBorder(Color.primary.opacity(accent == choice ? 0.35 : 0.1),
+                                                               lineWidth: 1).padding(-2))
+                        }
+                        .buttonStyle(.plain)
+                        .help(choice.title)
+                    }
+                    if accent != AccentChoice.launched {
+                        Button("Restart Scout") { Relaunch.now() }
+                            .controlSize(.small)
+                            .padding(.leading, 4)
+                    }
+                }
+            }
+            Divider()
             SettingRow("Transparency", detail: transparency == 0 ? "Solid. Slide to let your desktop show through."
                        : "\(Int((transparency * 100).rounded()))%. Content cards stay a bit more solid so text stays readable.") {
                 HStack(spacing: 8) {
@@ -113,6 +141,14 @@ struct SettingsView: View {
                     for tab in allTabs where tab.showHidden != on { tab.showHidden = on }
                 }))
                 .toggleStyle(.switch).labelsHidden()
+            }
+            Divider()
+            SettingRow("Folder sizes", detail: "Measure folders in the background so the Size column and sorting by size include them.") {
+                Toggle("", isOn: $folderSizes).toggleStyle(.switch).labelsHidden()
+            }
+            Divider()
+            SettingRow("Favorites", detail: "Drag folders onto Favorites in the sidebar, or press ⌃⌘T.") {
+                Button("Reset to Default") { services.resetFavorites() }
             }
             Divider()
             SettingRow("Sidebar", detail: "⌃⌘S") {

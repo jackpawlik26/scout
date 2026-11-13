@@ -24,6 +24,8 @@ final class AppServices {
     private(set) var volumes: [Place] = []
     private(set) var savedSearches: [SavedSearch] = []
     private(set) var workspaces: [Workspace] = []
+    /// Pinned favorites, in your order (starts with Home, Desktop, Documents, Downloads, Applications).
+    private(set) var favoritePaths: [String] = []
 
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private var sizeCache: [String: (size: FolderStats.Size, at: Date)] = [:]
@@ -38,6 +40,7 @@ final class AppServices {
         frecency = ScoutStore.loadHistory()
         savedSearches = ScoutStore.loadSavedSearches()
         workspaces = ScoutStore.loadWorkspaces()
+        favoritePaths = ScoutStore.loadFavorites() ?? defaultFavorites
         // Start with the saved index so ⌘K works instantly, then refresh it.
         folders = ScoutStore.loadFolders(home: home.filePath) ?? []
         refreshVolumes()
@@ -117,14 +120,56 @@ final class AppServices {
         }
     }
 
+    private var defaultFavorites: [String] {
+        [homePath, homePath + "/Desktop", homePath + "/Documents", homePath + "/Downloads", "/Applications"]
+    }
+
+    /// Favorites that still exist, with their sidebar icons.
     var favorites: [Place] {
-        [
-            Place(url: home, name: FileManager.default.displayName(atPath: homePath), symbol: "house"),
-            Place(url: home.appending(path: "Desktop", directoryHint: .isDirectory), name: "Desktop", symbol: "menubar.dock.rectangle"),
-            Place(url: home.appending(path: "Documents", directoryHint: .isDirectory), name: "Documents", symbol: "doc"),
-            Place(url: home.appending(path: "Downloads", directoryHint: .isDirectory), name: "Downloads", symbol: "arrow.down.circle"),
-            Place(url: .folder("/Applications"), name: "Applications", symbol: "square.grid.2x2"),
-        ]
+        favoritePaths.compactMap { path in
+            var isDir: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: path, isDirectory: &isDir) else { return nil }
+            let symbols = [homePath: "house", homePath + "/Desktop": "menubar.dock.rectangle", homePath + "/Documents": "doc",
+                           homePath + "/Downloads": "arrow.down.circle", "/Applications": "square.grid.2x2"]
+            let symbol = symbols[path] ?? (isDir.boolValue ? "folder" : "doc.text")
+            return Place(url: isDir.boolValue ? .folder(path) : URL(filePath: path),
+                         name: FileManager.default.displayName(atPath: path), symbol: symbol)
+        }
+    }
+
+    func isFavorite(_ path: String) -> Bool { favoritePaths.contains(path) }
+
+    /// Pins paths to Favorites (before `index`, or at the end). Pinned ones move there instead.
+    func addFavorites(_ paths: [String], at index: Int? = nil) {
+        var list = favoritePaths
+        var insertAt = min(index ?? list.count, list.count)
+        for path in paths {
+            if let existing = list.firstIndex(of: path) {
+                list.remove(at: existing)
+                if existing < insertAt { insertAt -= 1 }
+            }
+            list.insert(path, at: insertAt)
+            insertAt += 1
+        }
+        setFavorites(list)
+    }
+
+    func removeFavorite(_ path: String) { setFavorites(favoritePaths.filter { $0 != path }) }
+
+    func moveFavorite(_ path: String, by offset: Int) {
+        guard let index = favoritePaths.firstIndex(of: path) else { return }
+        let target = index + offset
+        guard favoritePaths.indices.contains(target) else { return }
+        var list = favoritePaths
+        list.swapAt(index, target)
+        setFavorites(list)
+    }
+
+    func resetFavorites() { setFavorites(defaultFavorites) }
+
+    private func setFavorites(_ paths: [String]) {
+        favoritePaths = paths
+        try? ScoutStore.saveFavorites(paths)
     }
 
     var locations: [Place] {
