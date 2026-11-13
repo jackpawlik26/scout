@@ -1,0 +1,301 @@
+import ScoutCore
+import SwiftUI
+
+/// Scout's own sidebar: logo, search, collapsible sections, storage at the bottom.
+struct SidebarView: View {
+    let window: BrowserWindowModel
+    let browser: BrowserModel
+    @Environment(AppServices.self) private var services
+    @AppStorage("collapsedSections") private var collapsedRaw = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Top row: the window's traffic lights sit at the left (centered 20pt down),
+            // the sidebar toggle lines up with them on the right.
+            HStack(spacing: 0) {
+                WindowDragArea()
+                IconButton(symbol: "sidebar.left", help: "Hide Sidebar (⌃⌘S)") {
+                    withAnimation(.snappy(duration: 0.25)) { window.isSidebarShown = false }
+                }
+            }
+            .frame(height: Layout.titleRowHeight)
+            .padding(.trailing, 10)
+
+            HStack(spacing: 8) {
+                Image("ScoutGlyph").resizable().interpolation(.high).frame(width: 18, height: 18)
+                Text("Scout").font(.system(size: 15, weight: .semibold, design: .rounded))
+                Spacer()
+            }
+            .padding(.leading, 19)
+            .padding(.top, 6)
+            .padding(.bottom, 12)
+
+            SidebarSearchButton { window.isPaletteOpen = true }
+                .padding(.horizontal, 10)
+                .padding(.bottom, 8)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 1) {
+                    section("Favorites") {
+                        ForEach(services.favorites) { placeRow($0) }
+                    }
+                    section("Workspaces", addHelp: "New Workspace (⌥⌘N)", add: { window.newWorkspacePaths = [] }) {
+                        ForEach(Array(services.workspaces.enumerated()), id: \.element.id) { index, workspace in
+                            SidebarRow(title: workspace.name, symbol: workspace.symbol,
+                                       isSelected: browser.workspaceID == workspace.id) {
+                                browser.showWorkspace(workspace.id)
+                            }
+                            .help(index < 9 ? "\(workspace.name) (⌃\(index + 1))" : workspace.name)
+                            .contextMenu {
+                                Button("Open in New Tab") {
+                                    window.newTab()
+                                    window.current.showWorkspace(workspace.id)
+                                }
+                                Divider()
+                                Button("Delete Workspace", role: .destructive) { services.deleteWorkspace(workspace.id) }
+                            }
+                            .dropDestination(for: URL.self) { urls, _ in
+                                services.updateWorkspace(workspace.id) { $0.add(urls.map(\.filePath)) }
+                                return true
+                            }
+                        }
+                        if services.workspaces.isEmpty {
+                            Button { window.newWorkspacePaths = [] } label: {
+                                Text("Gather folders from anywhere onto one page")
+                                    .font(.system(size: 11.5))
+                                    .foregroundStyle(.tertiary)
+                                    .multilineTextAlignment(.leading)
+                                    .padding(.horizontal, 9)
+                                    .padding(.vertical, 2)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    let frequent = services.frequent()
+                    if !frequent.isEmpty {
+                        section("Frequent") {
+                            ForEach(frequent) { place in
+                                placeRow(place) {
+                                    Button("Remove from Frequent") { services.forget(place.id) }
+                                }
+                            }
+                        }
+                    }
+                    if !services.savedSearches.isEmpty {
+                        section("Saved Searches") {
+                            ForEach(services.savedSearches) { saved in
+                                SidebarRow(title: saved.name, symbol: "magnifyingglass",
+                                           isSelected: browser.search?.id == saved.id) {
+                                    browser.showSearch(saved)
+                                }
+                                .help(saved.spec.summary)
+                                .contextMenu {
+                                    Button("Open in New Tab") {
+                                        window.newTab()
+                                        window.current.showSearch(saved)
+                                    }
+                                    Divider()
+                                    Button("Remove Saved Search", role: .destructive) { services.removeSearch(saved.id) }
+                                }
+                            }
+                        }
+                    }
+                    section("Locations") {
+                        ForEach(services.locations) { placeRow($0) }
+                    }
+                    section("Tools") {
+                        SidebarRow(title: "Clean Up", symbol: "sparkles", isSelected: browser.mode == .cleanup) {
+                            browser.showCleanup()
+                        }
+                        .help("Find space you can free up (⇧⌘K)")
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.bottom, 12)
+            }
+            .scrollIndicators(.never)
+
+            StorageMeter(browser: browser, isIndexing: services.isIndexing)
+                .padding(10)
+        }
+    }
+
+    // MARK: - Pieces
+
+    private func placeRow(_ place: Place, @ViewBuilder extraMenu: () -> some View = { EmptyView() }) -> some View {
+        SidebarRow(title: place.name, symbol: place.symbol,
+                   isSelected: browser.isFolder && browser.location.filePath == place.id) {
+            browser.go(to: place.url)
+        }
+        .contextMenu {
+            Button("Open in New Tab") { window.newTab(at: place.url) }
+            Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([place.url]) }
+            Button("Open in Terminal") { browser.openInTerminal(place.url) }
+            extraMenu()
+        }
+    }
+
+    private var collapsed: Set<String> {
+        Set(collapsedRaw.split(separator: "|").map(String.init))
+    }
+
+    @ViewBuilder
+    private func section(_ title: String, addHelp: String? = nil, add: (() -> Void)? = nil,
+                         @ViewBuilder rows: () -> some View) -> some View {
+        let isCollapsed = collapsed.contains(title)
+        SectionHeader(title: title, isCollapsed: isCollapsed, addHelp: addHelp, add: add) {
+            var set = collapsed
+            if isCollapsed { set.remove(title) } else { set.insert(title) }
+            withAnimation(.snappy(duration: 0.2)) { collapsedRaw = set.sorted().joined(separator: "|") }
+        }
+        if !isCollapsed { rows() }
+    }
+}
+
+struct SidebarRow: View {
+    let title: String
+    let symbol: String
+    let isSelected: Bool
+    let action: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Image(systemName: symbol)
+                    .font(.system(size: 13, weight: .medium))
+                    .frame(width: 18)
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                Text(title)
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(isSelected ? Color.accentColor : .primary)
+            .padding(.horizontal, 9)
+            .frame(height: 28)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.accentSoft : (isHovering ? Color.primary.opacity(0.06) : .clear))
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+    }
+}
+
+private struct SectionHeader: View {
+    let title: String
+    let isCollapsed: Bool
+    var addHelp: String?
+    var add: (() -> Void)?
+    let toggle: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: toggle) {
+            HStack(spacing: 4) {
+                Text(title.uppercased())
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .tracking(0.6)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8, weight: .bold))
+                    .rotationEffect(.degrees(isCollapsed ? 0 : 90))
+                    .opacity(isHovering || isCollapsed ? 1 : 0)
+                Spacer()
+                if let add {
+                    Button(action: add) {
+                        Image(systemName: "plus").font(.system(size: 10, weight: .bold))
+                            .frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(.plain)
+                    .opacity(isHovering ? 1 : 0)
+                    .help(addHelp ?? "Add")
+                }
+            }
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal, 9)
+            .padding(.top, 14)
+            .padding(.bottom, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+    }
+}
+
+/// The search box at the top of the sidebar. Opens ⌘K.
+private struct SidebarSearchButton: View {
+    let action: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 7) {
+                Image(systemName: "magnifyingglass").font(.system(size: 12, weight: .medium))
+                Text("Search").font(.system(size: 13))
+                Spacer()
+                KeyCap(text: "⌘K")
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 9)
+            .frame(height: 30)
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.canvas.opacity(isHovering ? 1 : 0.7)))
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.hairline))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+        .help("Find any folder or file (⌘K)")
+    }
+}
+
+/// Free space on the current disk, at the bottom of the sidebar.
+private struct StorageMeter: View {
+    let browser: BrowserModel
+    let isIndexing: Bool
+    @State private var capacity: (total: Int64, free: Int64)?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "internaldrive").font(.system(size: 11, weight: .medium))
+                Text(volumeName).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                Spacer()
+                if isIndexing {
+                    ProgressView().controlSize(.mini).help("Indexing folders for ⌘K")
+                }
+            }
+            if let capacity, capacity.total > 0 {
+                GeometryReader { geo in
+                    Capsule().fill(Color.primary.opacity(0.08))
+                        .overlay(alignment: .leading) {
+                            Capsule().fill(Color.accentColor)
+                                .frame(width: geo.size.width * CGFloat(capacity.total - capacity.free) / CGFloat(capacity.total))
+                        }
+                }
+                .frame(height: 4)
+                Text("\(Format.bytes(capacity.free)) free of \(Format.bytes(capacity.total))")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .foregroundStyle(.secondary)
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.04)))
+        .task(id: browser.freeSpace) { capacity = Self.capacity(of: browser.location) }
+    }
+
+    private var volumeName: String {
+        let volume = (try? browser.location.resourceValues(forKeys: [.volumeURLKey]))?.volume ?? URL.folder("/")
+        return AppServices.volumeName(volume) ?? "Disk"
+    }
+
+    static func capacity(of url: URL) -> (total: Int64, free: Int64)? {
+        guard let v = try? url.resourceValues(forKeys: [.volumeTotalCapacityKey, .volumeAvailableCapacityForImportantUsageKey]),
+              let total = v.volumeTotalCapacity, let free = v.volumeAvailableCapacityForImportantUsage else { return nil }
+        return (Int64(total), free)
+    }
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "scout",
+  "title": "Scout",
+  "description": "Jump to any folder with Scout's fuzzy search, ranked by the folders you use most.",
+  "icon": "icon.png",
+  "author": "jackpawlik",
+  "categories": [
+    "Productivity",
+    "System"
+  ],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "jump-to-folder",
+      "title": "Jump to Folder",
+      "subtitle": "Scout",
+      "description": "Fuzzy-search every folder and open it in Scout.",
+      "mode": "view"
+    },
+    {
+      "name": "open-finder-selection",
+      "title": "Open Finder Selection in Scout",
+      "subtitle": "Scout",
+      "description": "Opens the selected Finder item (or the front Finder window) in Scout.",
+      "mode": "no-view"
+    }
+  ],
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "lint": "ray lint"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@raycast/api": "^2.12.1",
+    "@raycast/utils": "^2.3.3"
+  }
+}

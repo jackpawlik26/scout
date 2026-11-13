@@ -1,0 +1,82 @@
+# XcodeGen spec. Run `xcodegen` to (re)generate Scout.xcodeproj; the .xcodeproj is not committed.
+name: Scout
+options:
+  bundleIdPrefix: com.jackpawlik
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+
+packages:
+  ScoutCore:
+    path: ScoutCore
+
+targets:
+  Scout:
+    type: application
+    platform: macOS
+    sources: [Scout]
+    dependencies:
+      - package: ScoutCore
+      # The `scout` CLI ships inside the app at Scout.app/Contents/Helpers/scout.
+      - target: scout-cli
+        embed: true
+        codeSign: false
+        copy:
+          destination: wrapper
+          subpath: Contents/Helpers
+    info:
+      path: Scout/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleURLName: com.jackpawlik.scout
+            CFBundleURLSchemes: [scout]
+    settings:
+      base:
+        PRODUCT_NAME: Scout
+        PRODUCT_BUNDLE_IDENTIFIER: com.jackpawlik.scout
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Scout
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        SWIFT_VERSION: "6.0"
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        # A file manager needs to see your whole disk, so no App Store sandbox.
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        # Ad-hoc signing for local builds. Set DEVELOPMENT_TEAM to your Apple ID team
+        # so macOS remembers folder permissions between builds.
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        ENABLE_PREVIEWS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: Scout
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+
+  scout-cli:
+    type: tool
+    platform: macOS
+    sources: [ScoutCore/Sources/ScoutCLI]
+    dependencies:
+      - package: ScoutCore
+    settings:
+      base:
+        PRODUCT_NAME: scout
+        SWIFT_VERSION: "6.0"
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+        SKIP_INSTALL: YES
+
+schemes:
+  Scout:
+    build:
+      targets:
+        Scout: all
+    test:
+      targets:
+        - package: ScoutCore/ScoutCoreTests
