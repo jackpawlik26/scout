@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Scout Changelog</title>
+<meta name="description" content="Everything added, changed, fixed and removed in Scout, build by build.">
+<link rel="icon" href="../assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<nav class="nav scrolled" aria-label="Main">
+  <div class="wrap">
+    <a class="logo" href="../"><img src="../assets/icon.png" alt="">Scout</a>
+    <div class="nav-links">
+      <a href="../#features">Features</a>
+      <a href="../#developers">Developers</a>
+      <a href="../#keyboard">Keyboard</a>
+      <a href="./" aria-current="page">Changelog</a>
+    </div>
+    <div class="nav-right"><a class="btn btn-line btn-sm" href="../">Back to Scout</a></div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header class="log-hero">
+    <h1>Changelog</h1>
+    <p>Every build of Scout, newest first: what was added, changed, fixed and removed. Ten builds on November 13, 2026, from the first working version to now.</p>
+  </header>
+  <div class="log-tools">
+    <div class="seg" role="group" aria-label="Show">
+      <button type="button" data-filter="all" aria-pressed="true">All <span class="n" data-count="all"></span></button>
+      <button type="button" data-filter="added" aria-pressed="false">Added <span class="n" data-count="added"></span></button>
+      <button type="button" data-filter="changed" aria-pressed="false">Changed <span class="n" data-count="changed"></span></button>
+      <button type="button" data-filter="fixed" aria-pressed="false">Fixed <span class="n" data-count="fixed"></span></button>
+      <button type="button" data-filter="removed" aria-pressed="false">Removed <span class="n" data-count="removed"></span></button>
+    </div>
+    <input class="search" id="search" type="search" placeholder="Search changes" aria-label="Search the changelog">
+  </div>
+  <div id="releases"></div>
+  <p class="empty" id="empty" hidden>No changes match. Try another word or filter.</p>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Scout · a personal file browser for macOS</span>
+    <nav aria-label="Footer"><a href="../#features">Features</a><a href="../#developers">Developers</a><a href="./">Changelog</a><a href="https://github.com/jackpawlik26/scout">GitHub</a></nav>
+  </div>
+</footer>
+
+<script>
+const BUILDS = [
+  {
+    time: "5:20 PM", hash: "7b8dfc1", title: "Menu bar, Siri and making it yours",
+    summary: "The last of the Finder, FileOS and Tilde comparison list: quick access from the menu bar, Shortcuts actions, and ways to personalize folders and keys.",
+    changes: [
+      ["added", "Menu bar icon with Jump, your latest downloads, Favorites, Workspaces, Recents, Clean Up and the Shelf. Can be turned off in Settings."],
+      ["added", "Shortcuts app and Siri actions: Open in Scout, Open Workspace, Jump, Recents, Clean Up and Tidy Downloads, with phrases like “Tidy Downloads with Scout”."],
+      ["added", "Edit markdown and text files from the preview, with a live rendered preview beside the editor. Warns if another app changed the file meanwhile."],
+      ["added", "Right-click ▸ Customize: folder colors and symbols, nicknames (the name on disk stays the same) and Pin to Top."],
+      ["added", "Settings ▸ Keyboard Shortcuts: record new keys for any of 50 commands, with clash handling, Reset per command and Restore Defaults."],
+    ],
+  },
+  {
+    time: "5:13 PM", hash: "e5b395b", title: "Finder basics, Shelf and quick actions",
+    summary: "Second batch from the comparison: the Finder features Scout was missing, plus tools from FileOS and Tilde.",
+    changes: [
+      ["added", "Column headers in the list that sort when clicked. Right-click a header to add Kind or Tags columns."],
+      ["added", "Icon size slider in the footer, and <kbd>⌘+</kbd> / <kbd>⌘−</kbd> to resize icons."],
+      ["added", "Duplicate, Make Alias <kbd>⌃⌘A</kbd>, Share, AirDrop <kbd>⇧⌘R</kbd> and Finder's own Get Info window <kbd>⌥⌘I</kbd>."],
+      ["added", "Trash in the sidebar with Empty Trash, and eject buttons for drives, disk images and network shares."],
+      ["added", "Shelf <kbd>⌥⌘S</kbd>: a floating window to collect files from different folders, then Copy Here or Move Here."],
+      ["added", "Quick Actions: convert images to JPEG, PNG, HEIC or TIFF, resize them, and combine PDFs. Originals are kept."],
+      ["added", "Cloud badges for online-only and downloading iCloud and OneDrive files, with Download Now and Remove Download."],
+      ["added", "Five more Clean Up groups: old node_modules, screen recordings, Mail attachments, leftovers from deleted apps, and apps unused for 6 months."],
+      ["added", "Drag-hover opens folders: hold a drag over a folder for a second to open it and drop deeper."],
+      ["changed", "Dropping files onto a folder row now moves them into that folder, not the one you're viewing."],
+      ["changed", "List column headers are shown by default; View ▸ Column Headers hides them."],
+      ["fixed", "A Clean Up description showed stray code formatting around “npm install”."],
+    ],
+  },
+  {
+    time: "5:04 PM", hash: "77b6834", title: "Safer copies, column view, Recents and tags",
+    summary: "First batch from the Finder, FileOS and Tilde comparison, starting with the one that protects files.",
+    changes: [
+      ["added", "Progress card for copies and moves, with byte counts and Cancel. On the same disk, copies are instant APFS clones."],
+      ["added", "“Already exists” dialog with Replace, Keep Both, Skip and Stop, comparing both files' sizes and dates. Replaced files go to the Trash."],
+      ["added", "Column view <kbd>⌘3</kbd>, with a preview column and arrow-key navigation."],
+      ["added", "Disclosure arrows in the list open folders in place; ⌥-click opens everything inside."],
+      ["added", "Recents <kbd>⌥⌘R</kbd>: files opened anywhere, or added to Downloads, Desktop or Documents, in the last 30 days."],
+      ["added", "Tidy Folder <kbd>⌥⌘T</kbd>: a plan to sort loose files into folders by kind. Untick groups, confirm, and <kbd>⌘Z</kbd> undoes it."],
+      ["added", "Finder tags: colored dots in every view, a Tags menu, a Tags section in the sidebar and Group By Tags. Written the way Finder writes them, so both apps agree."],
+      ["changed", "Copying now goes through macOS's own copy engine, which keeps permissions and metadata like Finder does."],
+      ["fixed", "Recents showed when files were modified instead of when you last opened them."],
+      ["fixed", "Xcode build output, like a Debug copy of Scout, showed up in Recents and search results."],
+      ["fixed", "An empty strip appeared above the list when a folder wasn't grouped."],
+      ["fixed", "Reinstalling could get stuck if Scout had a dialog open; the installer now stops Scout first."],
+      ["removed", "Silent renaming on name clashes (“report copy.pdf”). Scout now asks."],
+    ],
+  },
+  {
+    time: "4:49 PM", hash: "b0e14f0", title: "Group By and clearer lists",
+    summary: "Folders split into labeled sections the way Finder's Group By does, and every folder remembers how you like it.",
+    changes: [
+      ["added", "Group By: Kind, Date Modified, Date Added, Date Created, Size or Name, with section headers in list and icon views. <kbd>⌃⌘0</kbd>–<kbd>⌃⌘8</kbd> like Finder."],
+      ["added", "Sort by Date Added and Date Created."],
+      ["added", "<kbd>⌘↩</kbd> and <kbd>⌃↩</kbd> open the selection."],
+      ["changed", "The date column shows the date you're sorting or grouping by."],
+      ["changed", "Each folder remembers its own sort and grouping. Downloads starts newest-added first, grouped by day."],
+    ],
+  },
+  {
+    time: "4:32 PM", hash: "28f002b", title: "Rename, zip and richer previews",
+    summary: "Everyday file jobs that needed another app before.",
+    changes: [
+      ["added", "Rename Items: select several and press Return for find and replace, numbering, prefixes, suffixes and letter case, with a live preview that blocks clashes."],
+      ["added", "Compress and Extract Here for zip, tar.gz, tar.bz2, tar.xz and 7z. One item extracts as-is; several go in a folder."],
+      ["added", "New Text File <kbd>⌃⌘N</kbd> and New Markdown File, ready to name."],
+      ["changed", "The info panel shows real previews: rendered markdown, highlighted code with line numbers, and scrollable PDFs, video and Office files."],
+      ["added", "Private GitHub backup of the project."],
+    ],
+  },
+  {
+    time: "4:27 PM", hash: "3d937b0", title: "Accent colors, your Favorites, folder sizes",
+    summary: "Small changes you notice every day.",
+    changes: [
+      ["added", "Nine accent colors in Settings ▸ Appearance, used by lists, switches and highlights."],
+      ["added", "Favorites are yours: drag folders in, drag to reorder, Move Up, Move Down, Remove, <kbd>⌃⌘T</kbd>, and Reset to Default."],
+      ["added", "Folder sizes in the list, measured in the background, so sorting by size works for folders too."],
+      ["changed", "Favorites used to be a fixed list of Home, Desktop, Documents, Downloads and Applications."],
+      ["fixed", "Folder shortcuts (aliases), like the OneDrive links in your home folder, showed “Zero KB”. They now show “--”."],
+    ],
+  },
+  {
+    time: "4:23 PM", hash: "6461edf", title: "Keyboard first, ⌥Space and transparency",
+    summary: "A pass to make Scout work without the mouse, plus a see-through look.",
+    changes: [
+      ["added", "<kbd>⌥Space</kbd> opens the ⌘K palette from any app. Press it again, or Esc, to go back."],
+      ["added", "Option to make Scout the app for “Show in Finder” in other apps."],
+      ["added", "Type a few letters to select a file, arrow keys in icon view, <kbd>⌘O</kbd> to open, and a <kbd>⌘/</kbd> cheat sheet of every shortcut."],
+      ["added", "Transparency slider and “Blur what's behind” in Settings ▸ Appearance."],
+      ["added", "Open at login, so the jump shortcut is always ready."],
+      ["fixed", "Esc didn't close the ⌘K palette or Go to Path; the search box swallowed the key."],
+      ["fixed", "Revealing a file in a long folder didn't scroll to it."],
+      ["fixed", "After jumping to a folder, arrow keys did nothing until you clicked the list."],
+      ["fixed", "Panels inside the info panel stayed solid and looked blocky with transparency on."],
+    ],
+  },
+  {
+    time: "3:59 PM", hash: "123b08e", title: "Developer tools, Packages and Settings",
+    summary: "Git awareness, your terminal and editor, a Packages page, the duplicate finder, and Settings you can actually find.",
+    changes: [
+      ["added", "Git: branch chip with change count, <span class=\"badge m\">M</span> and <span class=\"badge u\">U</span> badges on files, a Git card in the info panel, Open on GitHub, and a Changes page <kbd>⌥⌘G</kbd>."],
+      ["added", "Open In: your terminal and editor, <kbd>⌥⇧⌘T</kbd> and <kbd>⌥⇧⌘E</kbd>."],
+      ["added", "Packages <kbd>⌥⌘P</kbd>: Homebrew and global npm, with sizes, updates and copy-and-paste upgrade commands."],
+      ["added", "Duplicates in Clean Up, plus <code>scout duplicates</code> in the terminal."],
+      ["added", "Settings as a page in the window, opened with <kbd>⌘,</kbd> or the gear in the sidebar."],
+      ["changed", "Open in Terminal uses Tern instead of Apple's Terminal."],
+      ["fixed", "The duplicate finder flagged app data and backups (Serato's folders, design libraries) and deliberate copies inside code projects."],
+      ["fixed", "Reinstalling sometimes failed to reopen Scout because the old copy hadn't finished quitting."],
+      ["removed", "The separate Settings window, replaced by the in-app page."],
+    ],
+  },
+  {
+    time: "2:37 PM", hash: "888d1e2", title: "Sidebar toggle and header spacing",
+    summary: "A fix for the button that hides and shows the sidebar, and a tidier header.",
+    changes: [
+      ["fixed", "After hiding the sidebar, the button to bring it back didn't respond. Clicks near the top of the window were dragging the window instead."],
+      ["fixed", "Padding and spacing at the top of the sidebar and header."],
+      ["changed", "The sidebar shows Scout's app icon next to its name."],
+      ["removed", "The old paper-sheet logo in the sidebar."],
+    ],
+  },
+  {
+    time: "12:38 PM", hash: "7936b7c", title: "First working version",
+    summary: "Scout's first build: a native Mac file browser with its own look, built around finding things fast.",
+    changes: [
+      ["added", "Sidebar, tabs, list and icon views, Quick Look, and file operations with undo. Folders update live when files change."],
+      ["added", "⌘K palette: a private folder index ranked by how often and recently you visit, plus Spotlight file search with kind, date and folder filters."],
+      ["added", "Saved searches that stay up to date in the sidebar."],
+      ["added", "Split panes <kbd>⌘D</kbd> with F5 copy and F6 move, and Workspaces that gather folders from anywhere."],
+      ["added", "Clean Up: developer caches, installers, old downloads, large files and the Trash, all moved to the Trash with undo."],
+      ["added", "Info panel with a “what takes the space” breakdown by kind."],
+      ["added", "Light and dark themes, a Liquid Glass app icon, and a design of floating cards instead of Finder's toolbar."],
+      ["added", "The <code>scout</code> command line tool, scout:// links and a Raycast extension."],
+      ["added", "Permissions you grant once stay granted when Scout is updated."],
+      ["fixed", "Search matched unrelated folders by scattered letters (“Illustrations” for “valuation”)."],
+      ["fixed", "The window controls and header didn't line up."],
+      ["fixed", "“What takes the space” only ever said “Folders”."],
+      ["removed", "The Kind column, to keep the list readable in narrow panes. It returned as an optional column later."],
+      ["removed", "The Finder-style toolbar, in favor of Scout's own header."],
+    ],
+  },
+];
+
+(function () {
+  const list = document.getElementById("releases");
+  const empty = document.getElementById("empty");
+  const search = document.getElementById("search");
+  const buttons = document.querySelectorAll("[data-filter]");
+  const labels = { added: "Added", changed: "Changed", fixed: "Fixed", removed: "Removed" };
+  let active = "all";
+  try { active = localStorage.getItem("scout-changelog-filter") || "all"; } catch (e) {}
+
+  const counts = { all: 0, added: 0, changed: 0, fixed: 0, removed: 0 };
+  BUILDS.forEach(b => b.changes.forEach(([type]) => { counts[type]++; counts.all++; }));
+  document.querySelectorAll("[data-count]").forEach(el => { el.textContent = counts[el.dataset.count]; });
+
+  list.innerHTML = BUILDS.map((b, i) => {
+    const number = BUILDS.length - i;
+    return '<article class="release" id="build-' + number + '">' +
+      '<aside><strong>Build ' + number + '</strong><span>Nov 13, 2026 · ' + b.time + '</span><code>' + b.hash + '</code>' +
+      (i === 0 ? '<div><span class="latest-pill">Latest</span></div>' : '') + '</aside>' +
+      '<div><h2>' + b.title + '</h2><p class="summary">' + b.summary + '</p><ul>' +
+      b.changes.map(([type, text]) => '<li data-type="' + type + '"><span class="t">' + labels[type] + '</span><span>' + text + '</span></li>').join("") +
+      '</ul></div></article>';
+  }).join("");
+
+  function apply() {
+    const q = search.value.trim().toLowerCase();
+    let shown = 0;
+    list.querySelectorAll(".release").forEach(release => {
+      let any = 0;
+      release.querySelectorAll("li").forEach(li => {
+        const ok = (active === "all" || li.dataset.type === active) && (!q || li.textContent.toLowerCase().includes(q));
+        li.hidden = !ok;
+        if (ok) any++;
+      });
+      release.hidden = any === 0;
+      shown += any;
+    });
+    empty.hidden = shown > 0;
+    buttons.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.filter === active)));
+  }
+  buttons.forEach(b => b.addEventListener("click", () => {
+    active = b.dataset.filter;
+    try { localStorage.setItem("scout-changelog-filter", active); } catch (e) {}
+    apply();
+  }));
+  search.addEventListener("input", apply);
+  apply();
+})();
+</script>
+</body>
+</html>

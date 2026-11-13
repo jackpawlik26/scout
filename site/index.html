@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Scout for Mac</title>
+<meta name="description" content="Scout is a fast, keyboard-first file browser for macOS. Jump to any folder, group and tidy what piles up, and see what's taking the space.">
+<link rel="icon" href="assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<nav class="nav" aria-label="Main">
+  <div class="wrap">
+    <a class="logo" href="./"><img src="assets/icon.png" alt="">Scout</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#developers">Developers</a>
+      <a href="#keyboard">Keyboard</a>
+      <a href="changelog/">Changelog</a>
+    </div>
+    <div class="nav-right">
+      <a class="btn btn-line btn-sm" href="changelog/">What's new</a><a class="btn btn-dark btn-sm" href="https://github.com/jackpawlik26/scout"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <a class="announce" href="changelog/"><b>Build 10</b> Menu bar, Siri actions and custom shortcuts →</a>
+    <h1>The fastest way around your Mac.</h1>
+    <p class="sub">Scout is a native file browser for macOS. Press ⌥Space from any app, type a few letters, and you're in the folder. It groups and tidies what piles up, and shows you what's taking the space.</p>
+    <div class="hero-cta">
+      <a class="btn btn-dark" href="https://github.com/jackpawlik26/scout"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Download on GitHub</a>
+      <a class="btn btn-line" href="#features">Take the tour</a>
+    </div>
+    <p class="hero-note">Free and open source · macOS 26 and later · Apple silicon · Nothing leaves your Mac</p>
+    <div class="hero-shot">
+      <div class="shot"><img src="assets/list.jpg" width="1720" height="1160" alt="Scout's list view: a project folder grouped into Folders, Documents, Images and PDF Documents, with an image preview in the info panel"></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="features">
+    <div class="wrap">
+      <div class="head">
+        <div class="kicker">Find</div>
+        <h2>Fewer clicks to everything.</h2>
+        <p>Scout keeps a private index of your folders, ranked by how often you use them. Files come from Spotlight, by name or by what's inside.</p>
+      </div>
+      <div class="bento">
+        <article class="tile">
+          <div class="tile-text">
+            <h3>Jump from anywhere</h3>
+            <p>⌥Space opens Scout's palette over any app. Pick a folder and you're there; press Esc to go back to what you were doing.</p>
+            <div class="keys"><kbd>⌥ Space</kbd><kbd>⌘K</kbd></div>
+          </div>
+          <div class="tile-media"><div class="shot"><img src="assets/palette.jpg" width="900" height="560" alt="Scout's search palette finding the Northwind Studio folder" loading="lazy"></div></div>
+        </article>
+        <article class="tile">
+          <div class="tile-text">
+            <h3>Recents and Group By</h3>
+            <p>Everything you opened or downloaded lately, grouped by day. Any folder can split into blocks by kind, date, size or tag, and remembers how you left it.</p>
+            <div class="keys"><kbd>⌥⌘R</kbd><kbd>⌃⌘2</kbd></div>
+          </div>
+          <div class="mini" aria-hidden="true">
+            <div class="mini-row"><strong>Today</strong><span style="color:var(--faint)">3</span></div>
+            <div class="mini-row"><span class="grow">Launch Plan.docx</span><span style="color:var(--faint)">11:05 AM</span></div>
+            <div class="mini-row"><span class="grow">Q4 Financial Model.xlsx</span><span class="dot" style="background:#3B82F6"></span><span class="dot" style="background:#22C55E;margin-left:-5px"></span></div>
+            <div class="mini-row"><strong>Yesterday</strong><span style="color:var(--faint)">2</span></div>
+            <div class="mini-row"><span class="grow">Northwind Board Update.pdf</span><span style="color:var(--faint)">10:30 AM</span></div>
+          </div>
+        </article>
+        <article class="tile wide">
+          <div class="tile-text">
+            <h3>Organize without moving things around</h3>
+            <p>Color and label folders, tag files the same way Finder does, gather a project's folders into a Workspace, and keep a Shelf for files you're collecting. List, icon and column views, with split panes for moving between two places.</p>
+          </div>
+          <div class="tile-media crop"><div class="shot"><img src="assets/icons.jpg" width="1720" height="900" alt="Scout's icon view with colored folders for Brand Assets, Client Work and Taxes 2026" loading="lazy"></div></div>
+        </article>
+      </div>
+
+      <div class="features">
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg>
+          <h3>Split panes and tabs</h3><p>Two folders side by side, each with tabs. F5 copies across, F6 moves.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h6"/><path d="M17 14l3 3-3 3"/></svg>
+          <h3>Tidy Folder</h3><p>Sorts loose files into PDFs, Images, Installers and more. You see the plan first; ⌘Z undoes it.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h9"/><path d="M17 16l2 2 3-4"/></svg>
+          <h3>Rename many at once</h3><p>Find and replace, numbering and letter case, with a live preview that blocks clashes.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+          <h3>Safe copies</h3><p>Progress with Cancel for big copies, and a clear Replace, Keep Both or Skip when names clash.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>
+          <h3>Rich previews</h3><p>Rendered markdown, highlighted code, scrollable PDFs and video, right in the info panel.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4 4 0 0 1-.6-7.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9H7z"/></svg>
+          <h3>Cloud aware</h3><p>See which iCloud and OneDrive files are online-only, and download or free them up.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cleanup">
+    <div class="wrap">
+      <div class="head center">
+        <div class="kicker">Clean Up</div>
+        <h2>See the space. Choose what goes.</h2>
+        <p>Developer caches, old installers, duplicates, forgotten node_modules and apps you don't use. Scout explains each one, ticks only the safe ones, and moves your picks to the Trash so nothing is gone for good.</p>
+      </div>
+      <div class="hero-shot" style="margin-top:52px">
+        <div class="shot"><img src="assets/cleanup.jpg" width="1720" height="1160" alt="Scout's Clean Up page listing developer caches, installers, duplicates, old node_modules and unused apps with their sizes" loading="lazy"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="developers">
+    <div class="wrap">
+      <div class="head">
+        <div class="kicker">For developers</div>
+        <h2>Git, terminals and packages, built in.</h2>
+        <p>Branch and status in the header, badges on changed files, one-key Open in Terminal and Open in Editor, and everything Homebrew and npm installed, with what's outdated.</p>
+      </div>
+      <div class="bento">
+        <article class="tile third plain">
+          <div class="tile-text">
+            <h3>Git at a glance</h3>
+            <p>A branch chip with ahead and behind counts, and every changed file in the repo on one page.</p>
+          </div>
+          <div class="mini" aria-hidden="true">
+            <div class="mini-row"><span class="grow">BrowserModel.swift</span><span class="badge m">M</span></div>
+            <div class="mini-row"><span class="grow">ColumnView.swift</span><span class="badge u">U</span></div>
+            <div class="mini-row"><span class="grow">README.md</span><span class="badge m">M</span></div>
+          </div>
+        </article>
+        <article class="tile third plain">
+          <div class="tile-text">
+            <h3>Your tools, one key away</h3>
+            <p>Tern, Ghostty, iTerm or Terminal. Cursor, VS Code, Zed or Xcode. Pick them once in Settings.</p>
+            <div class="keys"><kbd>⌥⇧⌘T</kbd><kbd>⌥⇧⌘E</kbd></div>
+          </div>
+        </article>
+        <article class="tile third plain">
+          <div class="tile-text">
+            <h3>Packages</h3>
+            <p>Homebrew and npm in one list with sizes and updates. Scout hands you the upgrade command; it never runs installs itself.</p>
+            <div class="keys"><kbd>⌥⌘P</kbd></div>
+          </div>
+        </article>
+        <article class="tile wide plain">
+          <div class="tile-text">
+            <h3>A command line, links and Shortcuts</h3>
+            <p>The <code>scout</code> tool ranks folders the same way the palette does. scout:// links, Raycast commands, and Shortcuts actions drive the app from anywhere.</p>
+          </div>
+          <div class="term" role="region" aria-label="Command line examples" tabindex="0"><span class="c"># cd to the best match, like zoxide</span>
+<span class="p">$</span> cd "$(scout jump northwind)"
+
+<span class="c"># show the tidy plan for Downloads</span>
+<span class="p">$</span> open "scout://tidy?path=~/Downloads"
+
+<span class="c"># duplicate files over 1 MB, biggest waste first</span>
+<span class="p">$</span> scout duplicates ~/Desktop</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="keyboard">
+    <div class="wrap">
+      <div class="head center">
+        <div class="kicker">Keyboard</div>
+        <h2>Built for your keyboard.</h2>
+        <p>Type a name to select it, use the arrow keys in every view, and press Esc to back out of anything. Every shortcut can be changed in Settings.</p>
+      </div>
+      <div class="keys-strip">
+        <div><span>Jump to anything</span><span class="combo"><kbd>⌘</kbd><kbd>K</kbd></span></div>
+        <div><span>From any app</span><span class="combo"><kbd>⌥</kbd><kbd>Space</kbd></span></div>
+        <div><span>Split view</span><span class="combo"><kbd>⌘</kbd><kbd>D</kbd></span></div>
+        <div><span>All shortcuts</span><span class="combo"><kbd>⌘</kbd><kbd>/</kbd></span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta">
+    <div class="wrap">
+      <h2>Ten builds in, and moving fast.</h2>
+      <p>See everything that's been added, changed, fixed and removed since the first version.</p>
+      <div class="hero-cta"><a class="btn btn-dark" href="https://github.com/jackpawlik26/scout"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Download on GitHub</a><a class="btn btn-line" href="changelog/">Read the changelog</a></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Scout · a personal file browser for macOS</span>
+    <nav aria-label="Footer"><a href="#features">Features</a><a href="#developers">Developers</a><a href="changelog/">Changelog</a><a href="https://github.com/jackpawlik26/scout">GitHub</a></nav>
+  </div>
+</footer>
+<script>
+  const nav = document.querySelector(".nav");
+  const onScroll = () => nav.classList.toggle("scrolled", window.scrollY > 8);
+  addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+</script>
+</body>
+</html>
