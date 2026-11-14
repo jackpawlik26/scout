@@ -25,7 +25,7 @@ struct GitBadge: View {
                     .frame(width: 16)
             } else {
                 Text(state.letter)
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(state.color)
                     .frame(width: 16, height: 16)
                     .background(state.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 4))
@@ -47,7 +47,7 @@ struct GitChip: View {
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: "arrow.triangle.branch")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 11, weight: .light))
                 Text(status.headName)
                     .font(.system(size: 12, weight: .medium))
                     .lineLimit(1)
@@ -56,12 +56,12 @@ struct GitChip: View {
                     .fixedSize()
                 if status.ahead > 0 || status.behind > 0 {
                     Text(syncText(status))
-                        .font(.system(size: 11).monospacedDigit())
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 12).monospacedDigit())
+                        .foregroundStyle(Color.textSubtle)
                 }
                 if status.changeCount > 0 {
                     Text("\(status.changeCount)")
-                        .font(.system(size: 10, weight: .bold).monospacedDigit())
+                        .font(.system(size: 12, weight: .medium).monospacedDigit())
                         .foregroundStyle(.white)
                         .padding(.horizontal, 5)
                         .frame(minWidth: 16, minHeight: 16)
@@ -160,17 +160,17 @@ struct GitCard: View {
         Card(spacing: 9) {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.triangle.branch").foregroundStyle(Color.accentColor)
-                Text(status.headName).font(.headline).lineLimit(1).truncationMode(.middle)
+                Text(status.headName).font(.ui(13, .medium)).lineLimit(1).truncationMode(.middle)
                 Spacer(minLength: 4)
                 if let item, let state = browser.gitState(item) {
                     Text(item.isNavigable ? "Changes inside" : state.title)
-                        .font(.caption.weight(.semibold))
+                        .font(.ui(12).weight(.medium))
                         .foregroundStyle(state.color)
                 }
             }
-            Text(syncText(status)).font(.callout).foregroundStyle(.secondary)
+            Text(syncText(status)).font(.ui(13)).foregroundStyle(Color.textSubtle)
             if status.changeCount > 0 {
-                Text(changesText(status)).font(.callout).foregroundStyle(.secondary)
+                Text(changesText(status)).font(.ui(13)).foregroundStyle(Color.textSubtle)
             }
             if let subject = git.lastCommitSubject {
                 Divider()
@@ -178,7 +178,7 @@ struct GitCard: View {
                     Text(subject).lineLimit(2)
                     if let date = git.lastCommitDate {
                         Text("Last commit " + date.formatted(.relative(presentation: .named)))
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.ui(12)).foregroundStyle(Color.textSubtle)
                     }
                 }
             }
@@ -212,4 +212,26 @@ struct GitCard: View {
 private func copy(_ string: String) {
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(string, forType: .string)
+}
+
+/// Shown instead of the Git card when a repository's settings could run programs.
+struct UntrustedRepoCard: View {
+    let browser: BrowserModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Git is paused here", systemImage: "lock.shield")
+                .font(.ui(13, .medium))
+                .foregroundStyle(Color.textStrong)
+            Text("This repository's settings can run programs when git reads it, so Scout didn't run git. Only trust repositories you know.")
+                .font(.ui(12))
+                .foregroundStyle(Color.textSubtle)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Trust This Repository") { browser.trustRepository() }
+                .controlSize(.small)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RaisedFill(shape: RoundedRectangle(cornerRadius: 10)))
+    }
 }

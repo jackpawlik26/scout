@@ -110,6 +110,20 @@ final class AppServices {
         }
     }
 
+    // MARK: - Trusted git repositories
+
+    private static let trustedReposKey = "trustedRepositories"
+
+    func isTrustedRepository(_ root: String) -> Bool {
+        (UserDefaults.standard.stringArray(forKey: Self.trustedReposKey) ?? []).contains(root)
+    }
+
+    func trustRepository(_ root: String) {
+        var list = UserDefaults.standard.stringArray(forKey: Self.trustedReposKey) ?? []
+        if !list.contains(root) { list.append(root) }
+        UserDefaults.standard.set(list, forKey: Self.trustedReposKey)
+    }
+
     // MARK: - Latest downloads (menu bar)
 
     /// The newest files in Downloads, for the menu bar icon's menu.

@@ -134,6 +134,8 @@ final class BrowserModel: Identifiable {
     private(set) var isSearching = false
     /// Git status when this folder is inside a repository.
     private(set) var git: GitRunner.Snapshot?
+    /// A repository whose settings could run programs, so git waits until you trust it.
+    private(set) var untrustedRepo: String?
 
     var search: SavedSearch? {
         if case .search(let saved) = mode { return saved }
@@ -642,7 +644,7 @@ final class BrowserModel: Identifiable {
         needsPermission = false
         isSearching = true
         let home = services.homePath
-        let escaped = name.replacingOccurrences(of: "\"", with: "\\\"")
+        let escaped = SpotlightQueryBuilder.escape(name)
         spotlight = SpotlightSearch(queryString: "kMDItemUserTags == \"\(escaped)\"",
                                     scopes: [NSMetadataQueryUserHomeScope], live: true) { [weak self] hits, finished in
             guard let self, generation == self.loadGeneration else { return }
@@ -1270,6 +1272,12 @@ final class BrowserModel: Identifiable {
     /// Asks Replace / Keep Both / Skip when a name is taken, shows progress for slow ones,
     /// and ⌘Z undoes it.
     func transfer(_ urls: [URL], into destination: URL, move: Bool) {
+        // Never copy or move a folder into itself (copying would nest it until the path is too long).
+        let urls = urls.filter { $0.filePath != destination.filePath && !destination.filePath.hasPrefix($0.filePath + "/") }
+        guard !urls.isEmpty else {
+            alertMessage = "Can’t put a folder inside itself."
+            return
+        }
         Task {
             // 1. Decide where each item goes, asking about clashes.
             var plan: [(source: URL, target: URL, replace: Bool)] = []
@@ -1298,6 +1306,11 @@ final class BrowserModel: Identifiable {
                     if !sameFolder { remaining -= 1 }
                 }
                 guard let target = FileCopier.destination(for: url, in: destination, choice: choice, isCopy: !move) else { continue }
+                // Replacing a folder that contains the item would trash the item itself.
+                if choice == .replace, url.filePath.hasPrefix(target.filePath + "/") {
+                    alertMessage = "Can’t replace “\(target.lastPathComponent)”: it contains “\(url.lastPathComponent)”."
+                    continue
+                }
                 plan.append((url, target, choice == .replace))
             }
             guard !plan.isEmpty else { return }
@@ -1443,14 +1456,25 @@ final class BrowserModel: Identifiable {
         let path = changesRoot ?? (isFolder ? location.filePath : nil)
         guard let path, let root = Git.repositoryRoot(containing: path) else {
             if git != nil { git = nil }
+            if untrustedRepo != nil { untrustedRepo = nil }
             return
         }
+        let trusted = services.isTrustedRepository(root)
         gitTask = Task {
-            let snapshot = await Self.readGit(root: root)
+            let (snapshot, blocked) = await Self.readGit(root: root, trusted: trusted)
             guard !Task.isCancelled else { return }
             git = snapshot
+            let untrusted = blocked ? root : nil
+            if untrustedRepo != untrusted { untrustedRepo = untrusted }
             if changesRoot != nil { items = changedItems() }
         }
+    }
+
+    /// "Trust This Repository": run git here from now on.
+    func trustRepository() {
+        guard let root = untrustedRepo else { return }
+        services.trustRepository(root)
+        refreshGit()
     }
 
     /// The Changes page: changed files that still exist (deleted ones are counted in the header),
@@ -1465,8 +1489,12 @@ final class BrowserModel: Identifiable {
             }
     }
 
-    @concurrent nonisolated private static func readGit(root: String) async -> GitRunner.Snapshot? {
-        GitRunner.snapshot(root: root)
+    /// The repository's status, or `blocked` when its settings could run programs and you
+    /// haven't trusted it (git isn't run at all then).
+    @concurrent nonisolated private static func readGit(root: String, trusted: Bool) async
+        -> (snapshot: GitRunner.Snapshot?, blocked: Bool) {
+        guard trusted || GitTrust.isSafe(root: root) else { return (nil, true) }
+        return (GitRunner.snapshot(root: root), false)
     }
 
     func gitState(_ item: FileItem) -> GitFileState? {

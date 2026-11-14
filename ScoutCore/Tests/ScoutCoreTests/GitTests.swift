@@ -91,3 +91,30 @@ import Testing
         #expect(snapshot.lastCommitSubject == nil)
     }
 }
+
+@Suite struct GitTrustTests {
+    @Test func flagsConfigThatRunsPrograms() {
+        #expect(GitTrust.riskyConfig("[core]\n\tfsmonitor = touch PWNED\n"))
+        #expect(GitTrust.riskyConfig("[core]\n\thooksPath = /tmp/h\n"))
+        #expect(GitTrust.riskyConfig("[filter \"x\"]\n\tclean = sh evil.sh\n"))
+        #expect(GitTrust.riskyConfig("[ include ]\n\tpath = ../other\n"))
+        #expect(GitTrust.riskyConfig("[includeIf \"gitdir:~/\"]\n\tpath = x\n"))
+        #expect(!GitTrust.riskyConfig("[core]\n\tbare = false\n[remote \"origin\"]\n\turl = git@github.com:me/x.git\n"))
+    }
+
+    @Test func readsWorktreePointerAndBlocksUnreadable() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "GitTrust-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let real = root.appending(path: "real.git")
+        try FileManager.default.createDirectory(at: real, withIntermediateDirectories: true)
+        try "[filter \"x\"]\n\tclean = evil\n".write(to: real.appending(path: "config"), atomically: true, encoding: .utf8)
+        let work = root.appending(path: "work")
+        try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
+        try "gitdir: ../real.git\n".write(to: work.appending(path: ".git"), atomically: true, encoding: .utf8)
+        #expect(!GitTrust.isSafe(root: work.filePath))
+
+        try "[core]\n\tbare = false\n".write(to: real.appending(path: "config"), atomically: true, encoding: .utf8)
+        #expect(GitTrust.isSafe(root: work.filePath))
+        #expect(!GitTrust.isSafe(root: root.appending(path: "missing").filePath))
+    }
+}

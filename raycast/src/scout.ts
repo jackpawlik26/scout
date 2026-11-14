@@ -18,8 +18,8 @@ export type RankedFolder = {
 
 /** Opens a folder (or reveals a file) in Scout via a scout:// link. */
 export async function openInScout(path: string, options: { newTab?: boolean } = {}) {
-  const params = new URLSearchParams({ path });
-  if (options.newTab) params.set("newTab", "1");
+  // encodeURIComponent, not URLSearchParams: Scout reads "+" literally, so spaces must be %20.
+  const query = `path=${encodeURIComponent(path)}${options.newTab ? "&newTab=1" : ""}`;
   await closeMainWindow({ clearRootSearch: true });
-  await open(`scout://open?${params.toString()}`);
+  await open(`scout://open?${query}`);
 }

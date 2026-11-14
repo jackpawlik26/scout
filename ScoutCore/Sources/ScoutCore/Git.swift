@@ -190,10 +190,66 @@ public enum Git {
     }
 }
 
+/// Whether it's safe to run git automatically in a repository you merely browse to.
+///
+/// A repository's own `.git/config` can make even `git status` run programs: an fsmonitor
+/// hook, clean/smudge filters, or includes that pull those in. A downloaded or cloned
+/// repository could abuse that, so Scout only runs git there after you trust it.
+public enum GitTrust {
+    /// Settings in a repository's config that can launch programs during `git status`.
+    public static func riskyConfig(_ text: String) -> Bool {
+        let lower = text.lowercased()
+        if lower.contains("fsmonitor") || lower.contains("hookspath") { return true }
+        return lower.range(of: #"\[\s*(filter|include|includeif)\b"#, options: .regularExpression) != nil
+    }
+
+    /// The config files git reads for this repository (handles worktrees and submodules,
+    /// where `.git` is a file pointing elsewhere). Nil if they can't be found or read.
+    public static func configTexts(root: String) -> [String]? {
+        let dotGit = URL(filePath: root).appending(path: ".git")
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: dotGit.filePath, isDirectory: &isDir) else { return nil }
+        var gitDir = dotGit
+        if !isDir.boolValue {
+            guard let pointer = try? String(contentsOf: dotGit, encoding: .utf8),
+                  let line = pointer.split(separator: "\n").first(where: { $0.hasPrefix("gitdir:") }) else { return nil }
+            let target = line.dropFirst("gitdir:".count).trimmingCharacters(in: .whitespaces)
+            gitDir = target.hasPrefix("/") ? URL(filePath: target) : URL(filePath: root).appending(path: target)
+        }
+        var dirs = [gitDir]
+        if let common = try? String(contentsOf: gitDir.appending(path: "commondir"), encoding: .utf8) {
+            let path = common.trimmingCharacters(in: .whitespacesAndNewlines)
+            dirs.append(path.hasPrefix("/") ? URL(filePath: path) : gitDir.appending(path: path))
+        }
+        var texts: [String] = []
+        for dir in dirs {
+            let config = dir.appending(path: "config")
+            guard FileManager.default.fileExists(atPath: config.filePath) else { continue }
+            guard let text = try? String(contentsOf: config, encoding: .utf8) else { return nil }
+            texts.append(text)
+        }
+        return texts
+    }
+
+    /// True when git can run here without your say-so.
+    public static func isSafe(root: String) -> Bool {
+        guard let texts = configTexts(root: root) else { return false }
+        return !texts.contains(where: riskyConfig)
+    }
+}
+
 #if os(macOS)
 /// Runs git for Scout (macOS only; a future server would do the same).
 public enum GitRunner {
     public static let executable = "/usr/bin/git"
+
+    /// `/usr/bin/git` is only a stub until Apple's command line tools are installed; running
+    /// it then pops up an "install developer tools?" dialog. Checked once per launch.
+    public static let isInstalled: Bool = {
+        guard let path = CommandRunner.run("/usr/bin/xcode-select", ["-p"], timeout: 3)?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !path.isEmpty else { return false }
+        return FileManager.default.isExecutableFile(atPath: path + "/usr/bin/git")
+    }()
 
     /// Everything Scout shows about a repository, from one or two quick git calls.
     public struct Snapshot: Sendable {
@@ -223,7 +279,10 @@ public enum GitRunner {
     /// Runs git and returns stdout, or nil if it failed or took longer than `timeout`.
     public static func run(_ arguments: [String], in directory: String, timeout: TimeInterval = 5) -> String? {
         // Read-only: don't take index.lock (which would also wake folder watchers).
-        CommandRunner.run(executable, ["-C", directory] + arguments, timeout: timeout,
+        guard isInstalled else { return nil }
+        // Never run hooks or an fsmonitor, even in a trusted repository.
+        let safety = ["-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null"]
+        return CommandRunner.run(executable, safety + ["-C", directory] + arguments, timeout: timeout,
                           environment: ["GIT_OPTIONAL_LOCKS": "0", "GIT_TERMINAL_PROMPT": "0"])
     }
 }

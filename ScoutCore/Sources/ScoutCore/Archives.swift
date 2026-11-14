@@ -33,8 +33,9 @@ public enum Archiver {
                                                       destination.filePath], timeout: 3600) != nil
         } else {
             // Several items: zip them by name from their folder, skipping Finder clutter.
+            // "./" keeps a file named like an option ("-m" deletes originals!) a file name.
             ok = CommandRunner.run("/usr/bin/zip", ["-r", "-y", "-q", destination.filePath]
-                                   + urls.map(\.lastPathComponent) + ["-x", "*.DS_Store"],
+                                   + urls.map { "./" + $0.lastPathComponent } + ["-x", "*.DS_Store"],
                                    timeout: 3600, directory: folder) != nil
         }
         guard ok, FileManager.default.fileExists(atPath: destination.filePath) else {

@@ -38,6 +38,8 @@ struct InspectorView: View {
                                       icon: IconCache.icon(forPath: browser.location.filePath), items: browser.items)
                         if let git = browser.git {
                             GitCard(browser: browser, git: git)
+                        } else if browser.untrustedRepo != nil {
+                            UntrustedRepoCard(browser: browser)
                         }
                     }
                 } else if browser.workspaceID != nil {
@@ -46,7 +48,7 @@ struct InspectorView: View {
                     Text(browser.mode == .settings ? "Settings apply to every Scout window."
                          : browser.isToolPage ? "\(browser.title) shows what each item is right in the list."
                          : "Select an item to see its details.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.textSubtle)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 40)
                 }
@@ -72,13 +74,13 @@ private struct ItemInspector: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(browser.services.displayName(item))
-                    .font(.title3.weight(.semibold))
+                    .font(.ui(16).weight(.medium))
                     .textSelection(.enabled)
                 if browser.services.displayName(item) != item.name {
-                    Text("On disk: \(item.name)").font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                    Text("On disk: \(item.name)").font(.ui(12)).foregroundStyle(Color.textSubtle).textSelection(.enabled)
                 }
                 Text(item.isNavigable ? "Folder" : item.kind)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.textSubtle)
             }
 
             Card {
@@ -90,10 +92,10 @@ private struct ItemInspector: View {
                 InfoRow("Where", value: PathDisplay.display(item.url.deletingLastPathComponent().filePath,
                                                             home: browser.services.homePath))
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Tags").foregroundStyle(.secondary)
+                    Text("Tags").foregroundStyle(Color.textSubtle)
                     Spacer(minLength: 12)
                     if item.tags.isEmpty {
-                        Text("None").foregroundStyle(.tertiary)
+                        Text("None").foregroundStyle(Color.textSubtle)
                     } else {
                         TagDots(tags: item.tags, size: 10)
                         Text(item.tags.map(\.name).joined(separator: ", ")).lineLimit(1)
@@ -162,15 +164,15 @@ private struct FolderSummary: View {
                     Image(nsImage: icon).resizable().frame(width: 40, height: 40)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.title3.weight(.semibold)).lineLimit(2)
-                    Text(countText).foregroundStyle(.secondary)
+                    Text(title).font(.ui(16).weight(.medium)).lineLimit(2)
+                    Text(countText).foregroundStyle(Color.textSubtle)
                 }
             }
 
             Card {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(Format.bytes(total)).font(.title2.weight(.semibold)).monospacedDigit()
-                    Text("in all").foregroundStyle(.secondary)
+                    Text(Format.bytes(total)).font(.ui(18, .medium).weight(.medium)).monospacedDigit()
+                    Text("in all").foregroundStyle(Color.textSubtle)
                     Spacer()
                     if isMeasuring {
                         ProgressView().controlSize(.small)
@@ -181,28 +183,28 @@ private struct FolderSummary: View {
                     .padding(.vertical, 2)
 
                 Text("What takes the space")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.ui(12).weight(.medium))
+                    .foregroundStyle(Color.textSubtle)
                     .padding(.top, 4)
                 ForEach(breakdown, id: \.0) { category, bytes in
                     HStack(spacing: 8) {
                         Circle().fill(category.color).frame(width: 8, height: 8)
                         Text(category.title)
                         Spacer()
-                        Text(Format.bytes(bytes)).foregroundStyle(.secondary).monospacedDigit()
+                        Text(Format.bytes(bytes)).foregroundStyle(Color.textSubtle).monospacedDigit()
                     }
-                    .font(.callout)
+                    .font(.ui(13))
                 }
                 if breakdown.isEmpty, !isMeasuring {
-                    Text("Nothing here takes up space.").font(.callout).foregroundStyle(.secondary)
+                    Text("Nothing here takes up space.").font(.ui(13)).foregroundStyle(Color.textSubtle)
                 }
             }
 
             let largest = largestItems
             if !largest.isEmpty {
                 Text("Largest")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.ui(12).weight(.medium))
+                    .foregroundStyle(Color.textSubtle)
                 Card(spacing: 6) {
                     ForEach(largest, id: \.0.id) { item, bytes in
                         Button {
@@ -212,12 +214,12 @@ private struct FolderSummary: View {
                                 FileIconView(item: item, size: 18)
                                 Text(item.name).lineLimit(1).truncationMode(.middle)
                                 Spacer()
-                                Text(Format.bytes(bytes)).foregroundStyle(.secondary).monospacedDigit()
+                                Text(Format.bytes(bytes)).foregroundStyle(Color.textSubtle).monospacedDigit()
                             }
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .font(.callout)
+                        .font(.ui(13))
                     }
                 }
             }
@@ -306,13 +308,13 @@ private struct InfoRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(label).foregroundStyle(.secondary).fixedSize()
+            Text(label).foregroundStyle(Color.textSubtle).fixedSize()
             Spacer(minLength: 12)
             Text(value)
                 .multilineTextAlignment(.trailing)
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
         }
-        .font(.callout)
+        .font(.ui(13))
     }
 }

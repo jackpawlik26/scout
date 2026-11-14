@@ -192,7 +192,7 @@ public enum SpotlightQueryBuilder {
         return clauses.joined(separator: " && ")
     }
 
-    static func escape(_ s: String) -> String {
+    public static func escape(_ s: String) -> String {
         var out = ""
         for c in s {
             if c == "\\" || c == "\"" || c == "*" || c == "?" { out.append("\\") }
