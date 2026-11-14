@@ -5,23 +5,61 @@ import UniformTypeIdentifiers
 public struct LocalFileSource: FileSource {
     public init() {}
 
-    static let resourceKeys: [URLResourceKey] = [
+    /// Cheap to read for every file.
+    static let basicKeys: [URLResourceKey] = [
         .nameKey, .isDirectoryKey, .isPackageKey, .isHiddenKey, .isSymbolicLinkKey,
         .fileSizeKey, .contentModificationDateKey, .creationDateKey, .addedToDirectoryDateKey,
-        .localizedTypeDescriptionKey, .contentTypeKey, .tagNamesKey,
+        .contentTypeKey,
+    ]
+    /// iCloud / OneDrive status: slow (about 50µs a file), so only read where files can sync.
+    static let cloudKeys: [URLResourceKey] = [
         .isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey, .ubiquitousItemIsDownloadingKey,
     ]
+    static let resourceKeys = basicKeys + cloudKeys
 
+    /// Lists a folder. Built to stay quick in folders with tens of thousands of items:
+    /// slow attributes are skipped or shared, and files are read on several cores at once.
     public func contents(of folder: URL, includeHidden: Bool) async throws -> [FileItem] {
         let options: FileManager.DirectoryEnumerationOptions = includeHidden ? [] : [.skipsHiddenFiles]
-        let urls = try FileManager.default.contentsOfDirectory(
-            at: folder, includingPropertiesForKeys: Self.resourceKeys, options: options)
-        return urls.compactMap(Self.item(for:))
+        let cloud = Self.maySync(folder)
+        let keys = cloud ? Self.resourceKeys : Self.basicKeys
+        let urls = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: keys, options: options)
+        return Self.items(for: urls, cloud: cloud)
+    }
+
+    /// `FileItem`s for many URLs, read in parallel chunks (order kept, vanished files dropped).
+    static func items(for urls: [URL], cloud: Bool) -> [FileItem] {
+        guard urls.count > 256 else {
+            let kinds = KindCache()
+            return urls.compactMap { item(for: $0, cloud: cloud, kinds: kinds) }
+        }
+        let chunkCount = min(ProcessInfo.processInfo.activeProcessorCount * 2, 32)
+        let chunkSize = (urls.count + chunkCount - 1) / chunkCount
+        let results = ChunkResults(count: chunkCount)
+        DispatchQueue.concurrentPerform(iterations: chunkCount) { chunk in
+            let start = chunk * chunkSize
+            guard start < urls.count else { return }
+            let kinds = KindCache()
+            let part = urls[start..<min(start + chunkSize, urls.count)].compactMap { item(for: $0, cloud: cloud, kinds: kinds) }
+            results.set(chunk, part)
+        }
+        return results.joined
+    }
+
+    /// Whether files in this folder can be iCloud or cloud-storage (OneDrive, Dropbox…) files.
+    static func maySync(_ folder: URL) -> Bool {
+        let path = folder.filePath
+        if path.contains("/Library/Mobile Documents/") || path.contains("/Library/CloudStorage/") { return true }
+        return (try? folder.resourceValues(forKeys: [.isUbiquitousItemKey]).isUbiquitousItem) == true
     }
 
     /// Builds a `FileItem` for one URL, or nil if it vanished.
     public static func item(for url: URL) -> FileItem? {
-        guard let v = try? url.resourceValues(forKeys: Set(resourceKeys)) else { return nil }
+        item(for: url, cloud: true, kinds: KindCache())
+    }
+
+    static func item(for url: URL, cloud: Bool, kinds: KindCache) -> FileItem? {
+        guard let v = try? url.resourceValues(forKeys: Set(cloud ? resourceKeys : basicKeys)) else { return nil }
         var isDirectory = v.isDirectory ?? false
         let isSymlink = v.isSymbolicLink ?? false
         // Finder treats a link to a folder like the folder itself.
@@ -40,13 +78,14 @@ public struct LocalFileSource: FileSource {
             dateModified: v.contentModificationDate,
             dateCreated: v.creationDate,
             dateAdded: v.addedToDirectoryDate,
-            kind: v.localizedTypeDescription ?? "",
+            kind: kinds.kind(for: url, type: v.contentType),
             typeIdentifier: v.contentType?.identifier
         )
         #if canImport(Darwin)
-        if v.tagNames?.isEmpty == false { item.tags = Tags.read(url) }
+        // Reading the tag attribute directly is several times faster than `.tagNamesKey`.
+        item.tags = Tags.read(url)
         #endif
-        if v.isUbiquitousItem == true {
+        if cloud, v.isUbiquitousItem == true {
             if v.ubiquitousItemIsDownloading == true {
                 item.cloud = .downloading
             } else if let status = v.ubiquitousItemDownloadingStatus {
@@ -148,4 +187,36 @@ public struct LocalFileSource: FileSource {
         }
         if name == "." || name == ".." { throw ScoutError.invalidName("That name is reserved.") }
     }
+}
+
+/// "PDF document", "Folder"…: asked once per file type instead of once per file
+/// (Finder's kind text is slow to look up). Not shared between threads.
+final class KindCache {
+    private var byType: [String: String] = [:]
+
+    func kind(for url: URL, type: UTType?) -> String {
+        guard let id = type?.identifier else {
+            return (try? url.resourceValues(forKeys: [.localizedTypeDescriptionKey]).localizedTypeDescription) ?? ""
+        }
+        if let known = byType[id] { return known }
+        let kind = (try? url.resourceValues(forKeys: [.localizedTypeDescriptionKey]).localizedTypeDescription) ?? ""
+        byType[id] = kind
+        return kind
+    }
+}
+
+/// Collects each parallel chunk's items, then joins them in order.
+private final class ChunkResults: @unchecked Sendable {
+    private var parts: [[FileItem]]
+    private let lock = NSLock()
+
+    init(count: Int) { parts = Array(repeating: [], count: count) }
+
+    func set(_ index: Int, _ items: [FileItem]) {
+        lock.lock()
+        parts[index] = items
+        lock.unlock()
+    }
+
+    var joined: [FileItem] { parts.flatMap { $0 } }
 }

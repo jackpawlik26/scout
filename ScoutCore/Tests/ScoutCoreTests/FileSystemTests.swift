@@ -19,6 +19,21 @@ import Testing
         return url
     }
 
+    /// The fast parallel lister must match reading each file the slow, thorough way.
+    @Test func bigFolderListingMatchesItemByItem() async throws {
+        for i in 0..<1_200 { _ = try makeFile("file \(i).\(["pdf", "txt", "png"][i % 3])") }
+        for i in 0..<30 { _ = try fs.createFolder(in: root, named: "Folder \(i)") }
+        try Tags.write([FileTag(name: "Red", color: 6)], to: root.appending(path: "file 8.png"))
+
+        let fast = try await fs.contents(of: root, includeHidden: false)
+        #expect(fast.count == 1_230)
+        let slow = fast.compactMap { LocalFileSource.item(for: $0.url) }
+        #expect(fast.map(\.name) == slow.map(\.name))
+        #expect(fast.map(\.kind) == slow.map(\.kind))
+        #expect(fast.map(\.tags) == slow.map(\.tags))
+        #expect(fast.first { $0.name == "file 8.png" }?.tags.map(\.name) == ["Red"])
+    }
+
     @Test func listsFilesAndFolders() async throws {
         _ = try makeFile("a.txt")
         _ = try makeFile(".hidden")

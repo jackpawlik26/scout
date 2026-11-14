@@ -491,8 +491,16 @@ final class BrowserModel: Identifiable {
         defer { if generation == loadGeneration { isLoading = false } }
 
         do {
-            let result = try await services.fileSource.contents(of: target, includeHidden: showHidden)
+            var result = try await services.fileSource.contents(of: target, includeHidden: showHidden)
             guard generation == loadGeneration else { return }
+            // Sort big folders off the main thread. The list then arrives in order, and
+            // re-sorting a list that's already in order is nearly free.
+            if result.count > 500, !sortOrder.isEmpty {
+                let order = sortOrder
+                let unsorted = result
+                result = await Task.detached(priority: .userInitiated) { unsorted.sorted(using: order) }.value
+                guard generation == loadGeneration else { return }
+            }
             // Keep sizes already measured (auto-reloads happen on every change in the folder).
             let measured = Dictionary(items.compactMap { item in item.folderBytes.map { (item.url, $0) } },
                                       uniquingKeysWith: { a, _ in a })
@@ -537,13 +545,30 @@ final class BrowserModel: Identifiable {
         let folders = items.filter { $0.isNavigable && !$0.isSymlink && $0.folderBytes == nil }.map(\.url)
         guard !folders.isEmpty else { return }
         Task {
+            // Apply sizes in batches: each change to `items` re-sorts the whole list, which
+            // adds up in folders with thousands of subfolders.
+            var measured: [URL: Int64] = [:]
+            var lastFlush = ContinuousClock.now
             for url in folders {
                 guard generation == loadGeneration else { return }
-                let size = await services.folderSize(url)
-                guard generation == loadGeneration, let index = items.firstIndex(where: { $0.url == url }) else { continue }
-                items[index].folderBytes = size.bytes
+                measured[url] = await services.folderSize(url).bytes
+                if ContinuousClock.now - lastFlush > .milliseconds(folders.count > 200 ? 600 : 150) {
+                    applyFolderSizes(measured, generation: generation)
+                    measured.removeAll()
+                    lastFlush = .now
+                }
             }
+            applyFolderSizes(measured, generation: generation)
         }
+    }
+
+    private func applyFolderSizes(_ measured: [URL: Int64], generation: Int) {
+        guard !measured.isEmpty, generation == loadGeneration else { return }
+        var updated = items
+        for index in updated.indices {
+            if let bytes = measured[updated[index].url] { updated[index].folderBytes = bytes }
+        }
+        items = updated
     }
 
     /// A workspace's items, in the order you added them. Missing ones are skipped.
