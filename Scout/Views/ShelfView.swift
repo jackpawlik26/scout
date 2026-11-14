@@ -17,10 +17,10 @@ struct ShelfView: View {
         VStack(spacing: 0) {
             if items.isEmpty {
                 VStack(spacing: 8) {
-                    Image(systemName: "tray.and.arrow.down").font(.system(size: 28)).foregroundStyle(.secondary)
-                    Text("Drop files here").font(.headline)
+                    Image(systemName: "tray.and.arrow.down").font(.system(size: 28, weight: .light)).foregroundStyle(Color.textSubtle)
+                    Text("Drop files here").font(.ui(13, .medium))
                     Text("Collect files from different folders, then copy or move them together.")
-                        .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                        .font(.ui(12)).foregroundStyle(Color.textSubtle).multilineTextAlignment(.center)
                 }
                 .padding(20)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -32,11 +32,11 @@ struct ShelfView: View {
                             VStack(alignment: .leading, spacing: 0) {
                                 Text(item.name).lineLimit(1).truncationMode(.middle)
                                 Text(PathDisplay.display(item.url.deletingLastPathComponent().filePath, home: services.homePath))
-                                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
+                                    .font(.ui(12)).foregroundStyle(Color.textSubtle).lineLimit(1).truncationMode(.head)
                             }
                             Spacer()
                             Button { services.removeFromShelf(item.url) } label: { Image(systemName: "xmark.circle.fill") }
-                                .buttonStyle(.plain).foregroundStyle(.tertiary)
+                                .buttonStyle(.plain).foregroundStyle(Color.textSubtle)
                         }
                         .draggable(item.url)
                     }
@@ -56,7 +56,7 @@ struct ShelfView: View {
             .controlSize(.small)
             .padding(10)
             Text(target.map { "Into “\($0.title)”" } ?? "Open a folder in Scout to copy or move into it")
-                .font(.caption2).foregroundStyle(.tertiary).padding(.bottom, 8)
+                .font(.ui(12)).foregroundStyle(Color.textSubtle).padding(.bottom, 8)
         }
         .frame(width: 300, height: 360)
         .background(isTargeted ? Color.accentSoft : Color.clear)

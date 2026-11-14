@@ -281,6 +281,7 @@ struct BrowserPane: View {
                 }
                 Text(browser.title)
                     .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(Color.textStrong)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }

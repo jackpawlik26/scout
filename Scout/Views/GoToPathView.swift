@@ -11,10 +11,10 @@ struct GoToPathView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Go to Path").font(.headline)
+            Text("Go to Path").font(.ui(13, .medium))
             TextField("~/Documents or /usr/local", text: $path)
                 .textFieldStyle(.roundedBorder)
-                .font(.body.monospaced())
+                .font(.ui(13).monospaced())
                 .frame(width: 460)
                 .onKeyPress(.tab) {
                     if let completed = PathCompletion.complete(path, home: window.services.homePath) {
@@ -24,9 +24,9 @@ struct GoToPathView: View {
                 }
                 .onSubmit(go)
             if let error {
-                Text(error).font(.caption).foregroundStyle(.red)
+                Text(error).font(.ui(12)).foregroundStyle(.red)
             } else {
-                Text("Tab completes folder names.").font(.caption).foregroundStyle(.secondary)
+                Text("Tab completes folder names.").font(.ui(12)).foregroundStyle(Color.textSubtle)
             }
             HStack {
                 Spacer()

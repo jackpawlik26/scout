@@ -78,7 +78,8 @@ struct BrowserContent: View {
                     ForEach(window.panes) { pane in
                         PaneCard(window: window, pane: pane)
                     }
-                    if window.isInspectorShown {
+                    // Settings, Clean Up and Packages use the full width; the panel has nothing to say there.
+                    if window.isInspectorShown, !browser.isToolPage {
                         InspectorView(browser: browser)
                             .frame(width: 300)
                             .canvasCard()
@@ -212,28 +213,27 @@ private struct TabButton: View {
             if let iconPath {
                 Image(nsImage: IconCache.icon(forPath: iconPath)).resizable().frame(width: 15, height: 15)
             } else {
-                Image(systemName: "square.stack.3d.up").font(.system(size: 11, weight: .medium))
+                Image(systemName: "square.stack.3d.up").font(.system(size: 11, weight: .light))
             }
-            Text(title).font(.system(size: 12.5, weight: isSelected ? .semibold : .regular)).lineLimit(1)
+            Text(title).font(.system(size: 13, weight: isSelected ? .medium : .regular)).lineLimit(1)
             Spacer(minLength: 0)
             Button(action: close) {
-                Image(systemName: "xmark").font(.system(size: 8.5, weight: .bold))
+                Image(systemName: "xmark").font(.system(size: 8.5, weight: .regular))
                     .frame(width: 16, height: 16)
-                    .background(Circle().fill(Color.primary.opacity(isHovering ? 0.08 : 0)))
+                    .background(Circle().fill(isHovering ? Color.bgSelected : .clear))
             }
             .buttonStyle(.plain)
             .opacity(isHovering || isSelected ? 1 : 0)
         }
-        .foregroundStyle(isSelected ? .primary : .secondary)
+        .foregroundStyle(isSelected ? Color.textStrong : Color.textSubtle)
         .padding(.leading, 10)
         .padding(.trailing, 6)
         .frame(height: 28)
         .frame(maxWidth: 220)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.raised : (isHovering ? Color.primary.opacity(0.04) : .clear))
+                .fill(isSelected ? Color.bgSelected : (isHovering ? Color.bgSelected.opacity(0.6) : .clear))
         )
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(isSelected ? Color.hairline : .clear))
         .contentShape(Rectangle())
         .onTapGesture(perform: select)
         .onHover { isHovering = $0 }

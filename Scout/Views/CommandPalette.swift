@@ -98,10 +98,10 @@ struct CommandPalette: View {
 
     private var searchField: some View {
         HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            Image(systemName: "magnifyingglass").foregroundStyle(Color.textSubtle)
             TextField(placeholder, text: $query)
                 .textFieldStyle(.plain)
-                .font(.title3)
+                .font(.ui(16))
                 .focused($isFieldFocused)
                 .onKeyPress(.downArrow) { move(1); return .handled }
                 .onKeyPress(.upArrow) { move(-1); return .handled }
@@ -140,8 +140,8 @@ struct CommandPalette: View {
         let rows = rows
         if rows.isEmpty {
             Text(emptyMessage)
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .font(.ui(13))
+                .foregroundStyle(Color.textSubtle)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 28)
         } else {
@@ -151,8 +151,8 @@ struct CommandPalette: View {
                         ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                             if let header = sectionHeader(at: index, in: rows) {
                                 Text(header)
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
+                                    .font(.ui(12).weight(.medium))
+                                    .foregroundStyle(Color.textSubtle)
                                     .padding(.horizontal, 10)
                                     .padding(.top, index == 0 ? 2 : 10)
                                     .padding(.bottom, 2)
@@ -220,15 +220,15 @@ struct CommandPalette: View {
             Spacer()
             Text(services.isIndexing ? "Indexing folders…" : "\(services.folders.count.formatted()) folders indexed")
         }
-        .font(.caption)
-        .foregroundStyle(.secondary)
+        .font(.ui(12))
+        .foregroundStyle(Color.textSubtle)
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
     }
 
     private func hint(_ key: String, _ label: String) -> some View {
         HStack(spacing: 4) {
-            Text(key).fontWeight(.semibold)
+            Text(key).fontWeight(.medium)
             Text(label)
         }
     }
@@ -419,7 +419,7 @@ private struct PaletteRow: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(highlighted).lineLimit(1)
                 Text(subtitle)
-                    .font(.caption)
+                    .font(.ui(12))
                     .foregroundStyle(isSelected ? AnyShapeStyle(.white.opacity(0.85)) : AnyShapeStyle(.secondary))
                     .lineLimit(1)
                     .truncationMode(.head)
@@ -460,7 +460,7 @@ private struct PaletteRow: View {
         for (index, character) in name.enumerated() {
             var piece = AttributedString(String(character))
             if matched.contains(index) {
-                piece.font = .body.bold()
+                piece.font = .ui(13, .medium)
                 if !isSelected { piece.foregroundColor = .accentColor }
             }
             output += piece
@@ -483,7 +483,7 @@ private struct DestinationHeader: View {
                 Image(systemName: request.copy ? "doc.on.doc" : "arrow.right.doc.on.clipboard")
                     .foregroundStyle(Color.accentColor)
                 Text("\(request.copy ? "Copy" : "Move") \(request.summary) to…")
-                    .font(.callout.weight(.semibold))
+                    .font(.ui(13).weight(.medium))
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Spacer()
@@ -491,7 +491,7 @@ private struct DestinationHeader: View {
                 Chip(title: "Copy", isOn: request.copy) { setCopy(true) }
             }
             if let error {
-                Text(error).font(.caption).foregroundStyle(.red)
+                Text(error).font(.ui(12)).foregroundStyle(.red)
             }
         }
         .padding(.horizontal, 14)
@@ -573,10 +573,10 @@ private struct ChipLabel: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            if let symbol { Image(systemName: symbol).font(.caption2) }
+            if let symbol { Image(systemName: symbol).font(.ui(12)) }
             Text(title).lineLimit(1)
         }
-        .font(.caption.weight(.medium))
+        .font(.ui(12).weight(.medium))
         .padding(.horizontal, 9)
         .padding(.vertical, 4)
         .foregroundStyle(isOn ? .white : .primary)

@@ -82,9 +82,9 @@ struct ShortcutsView: View {
 
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Text("Keyboard Shortcuts").font(.system(size: 17, weight: .semibold, design: .rounded))
+                    Text("Keyboard Shortcuts").font(.system(size: 16, weight: .medium))
                     Spacer()
-                    Text("Esc to close").font(.caption).foregroundStyle(.secondary)
+                    Text("Esc to close").font(.ui(12)).foregroundStyle(Color.textSubtle)
                 }
                 Grid(alignment: .topLeading, horizontalSpacing: 28, verticalSpacing: 18) {
                     ForEach(0..<2) { row in
@@ -110,21 +110,21 @@ struct ShortcutsView: View {
     private func groupView(_ group: ShortcutGroup) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(group.title.uppercased())
-                .font(.system(size: 10.5, weight: .semibold))
+                .font(.system(size: 12, weight: .medium))
                 .tracking(0.6)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.textSubtle)
                 .padding(.bottom, 2)
             ForEach(group.rows, id: \.action) { row in
                 HStack(spacing: 8) {
                     Text(row.keys)
-                        .font(.system(size: 11.5, weight: .medium, design: .rounded))
+                        .font(.system(size: 12, weight: .medium))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(RoundedRectangle(cornerRadius: 5).fill(Color.primary.opacity(0.08)))
+                        .background(RoundedRectangle(cornerRadius: 5).fill(Color.bgSelected))
                         .fixedSize()
                     Text(row.action)
                         .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.textSubtle)
                         .lineLimit(1)
                 }
             }

@@ -1,19 +1,31 @@
 import AppKit
 import SwiftUI
 
-/// Scout's colors and shared controls. The window is a tinted "chrome" frame
+/// Scout's colors and shared controls. The window is a neutral "chrome" frame
 /// with content on rounded "canvas" cards floating on it.
+///
+/// Type and color follow one small system: SF Pro in regular and medium only, sizes
+/// 12, 13 (base), 14, 16, 18 and 24, and three text grays (strong, default, subtle).
 extension Color {
-    /// The window frame and sidebar: faintly purple.
-    static let chrome = Color(light: 0xEEEDF6, dark: 0x141319)
+    /// The window frame and sidebar.
+    static let chrome = Color(light: 0xF7F7F7, dark: 0x141414)
     /// Content cards.
-    static let canvas = Color(light: 0xFFFFFF, dark: 0x1C1B22)
+    static let canvas = Color(light: 0xFFFFFF, dark: 0x1B1B1B)
     /// Panels inside a card (inspector boxes, search header).
-    static let raised = Color(light: 0xF6F5FB, dark: 0x25242C)
-    /// Thin borders.
-    static let hairline = Color(light: NSColor.black.withAlphaComponent(0.08), dark: NSColor.white.withAlphaComponent(0.07))
-    /// Selected rows: the accent, softened.
-    static let accentSoft = Color.accentColor.opacity(0.16)
+    static let raised = Color(light: 0xFAFAFA, dark: 0x222222)
+    /// Thin borders (#F2F2F2 on white).
+    static let hairline = Color(light: NSColor.black.withAlphaComponent(0.06), dark: NSColor.white.withAlphaComponent(0.07))
+    /// Hovered and selected rows, tabs and chips (#F5F5F5 on white).
+    static let bgSelected = Color(light: NSColor.black.withAlphaComponent(0.045), dark: NSColor.white.withAlphaComponent(0.07))
+    /// Kept for places that mark the current item with the accent.
+    static let accentSoft = Color.accentColor.opacity(0.14)
+
+    /// Titles, names, anything the eye should land on first.
+    static let textStrong = Color(light: 0x292929, dark: 0xEDEDED)
+    /// Body text.
+    static let textDefault = Color(light: 0x5D5D5D, dark: 0xB3B3B3)
+    /// Hints, captions, secondary details.
+    static let textSubtle = Color(light: 0x7F7F7F, dark: 0x858585)
 
     init(light: Int, dark: Int) {
         self.init(light: NSColor(hex: light), dark: NSColor(hex: dark))
@@ -23,6 +35,13 @@ extension Color {
         self.init(nsColor: NSColor(name: nil) { appearance in
             appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
         })
+    }
+}
+
+extension Font {
+    /// Scout's type scale: 12, 13 (base), 14, 16, 18, 24, in regular or medium.
+    static func ui(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight)
     }
 }
 
@@ -165,12 +184,12 @@ struct IconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 13, weight: .light))
                 .frame(width: 28, height: 28)
-                .foregroundStyle(isOn ? Color.accentColor : .secondary)
+                .foregroundStyle(isOn ? Color.textStrong : Color.textSubtle)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(isOn ? Color.accentSoft : (isHovering ? Color.primary.opacity(0.07) : .clear))
+                        .fill(isOn ? Color.bgSelected : (isHovering ? Color.bgSelected.opacity(0.6) : .clear))
                 )
                 .contentShape(Rectangle())
         }
@@ -186,11 +205,11 @@ struct KeyCap: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 10.5, weight: .medium, design: .rounded))
-            .foregroundStyle(.secondary)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(Color.textSubtle)
             .padding(.horizontal, 5)
             .padding(.vertical, 1.5)
-            .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.06)))
+            .background(RoundedRectangle(cornerRadius: 4).fill(Color.bgSelected))
             .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Color.hairline))
     }
 }

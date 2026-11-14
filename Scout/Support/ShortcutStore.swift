@@ -143,7 +143,7 @@ struct ShortcutRecorderList: View {
             HStack {
                 TextField("Search commands", text: $search).textFieldStyle(.roundedBorder).frame(maxWidth: 220)
                 Spacer()
-                if let note { Text(note).font(.caption).foregroundStyle(.orange) }
+                if let note { Text(note).font(.ui(12)).foregroundStyle(.orange) }
                 Button("Restore Defaults") {
                     store.resetAll()
                     note = nil
@@ -157,13 +157,13 @@ struct ShortcutRecorderList: View {
                             Text(command.title)
                             Spacer()
                             if store.isCustomized(command) {
-                                Button("Reset") { store.reset(command) }.buttonStyle(.link).font(.caption)
+                                Button("Reset") { store.reset(command) }.buttonStyle(.link).font(.ui(12))
                             }
                             Button {
                                 recording == command ? stopRecording() : startRecording(command)
                             } label: {
                                 Text(recording == command ? "Press keys…" : ShortcutStore.display(store.shortcut(command)))
-                                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                                    .font(.system(size: 12, weight: .medium))
                                     .frame(minWidth: 84)
                             }
                             .buttonStyle(.bordered)

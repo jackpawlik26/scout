@@ -238,19 +238,19 @@ struct SidebarRow: View {
                 Image(systemName: symbol)
                     .font(.system(size: 13, weight: .light))
                     .frame(width: 18)
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .foregroundStyle(isSelected ? Color.textStrong : Color.textSubtle)
                 Text(title)
                     .font(.system(size: 13, weight: isSelected ? .medium : .regular))
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Spacer(minLength: 0)
             }
-            .foregroundStyle(isSelected ? Color.accentColor : .primary)
+            .foregroundStyle(isSelected ? Color.textStrong : Color.textDefault)
             .padding(.horizontal, 9)
             .frame(height: 28)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.accentSoft : (isHovering ? Color.bgSelected : .clear))
+                    .fill(isSelected ? Color.bgSelected : (isHovering ? Color.bgSelected.opacity(0.6) : .clear))
             )
             .contentShape(Rectangle())
         }
@@ -273,11 +273,11 @@ private struct TagSidebarRow: View {
                 Text(tag.name).font(.system(size: 13, weight: isSelected ? .medium : .regular)).lineLimit(1)
                 Spacer(minLength: 0)
             }
-            .foregroundStyle(isSelected ? Color.accentColor : .primary)
+            .foregroundStyle(isSelected ? Color.textStrong : Color.textDefault)
             .padding(.horizontal, 9)
             .frame(height: 28)
             .background(RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.accentSoft : (isHovering ? Color.bgSelected : .clear)))
+                .fill(isSelected ? Color.bgSelected : (isHovering ? Color.bgSelected.opacity(0.6) : .clear)))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -347,9 +347,8 @@ private struct SectionHeader: View {
     var body: some View {
         Button(action: toggle) {
             HStack(spacing: 4) {
-                Text(title.uppercased())
+                Text(title)
                     .font(.system(size: 12, weight: .medium))
-                    .tracking(0.6)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 8, weight: .regular))
                     .rotationEffect(.degrees(isCollapsed ? 0 : 90))

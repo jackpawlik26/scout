@@ -50,6 +50,16 @@ Scout isn't signed with an Apple Developer ID yet (that costs $99 a year), so on
 
 `./scripts/deploy-site.sh` (first time: `npx wrangler login`).
 
+## Design system
+
+All in `Scout/Support/Theme.swift`, so new views stay consistent:
+
+- **Type:** SF Pro (the system font), regular and medium only, at 12, 13 (base), 14, 16, 18 and 24 points. Use `.font(.ui(13))` or `.font(.ui(16, .medium))`.
+- **Text colors:** `Color.textStrong` (#292929, titles and names), `Color.textDefault` (#5D5D5D, body), `Color.textSubtle` (#7F7F7F, hints and captions), each with a dark-mode value.
+- **Surfaces:** `Color.bgSelected` (#F5F5F5 on white) for hovered and selected rows, tabs and chips; `Color.hairline` (#F2F2F2) for borders; `chrome`, `canvas` and `raised` for the window frame, cards and panels.
+- **Icons:** SF Symbols at `.light` weight (`.regular` below 11 points), for a thin 1-pixel look.
+- The accent color is for focus, the list selection and primary buttons only. File lists keep the system's `.primary`/`.secondary` styles so selected rows turn white on the accent.
+
 ## Gotchas
 
 - Clicks in the top 32 points of the window drag it (SwiftUI reports `mouseDownCanMoveWindow`). Anything clickable up there goes in an `NSTitlebarAccessoryViewController`; see `SidebarToggleAccessory.swift`.

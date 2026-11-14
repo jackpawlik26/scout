@@ -59,13 +59,13 @@ struct FileTableView: View {
                             Text(browser.services.displayName(item)).lineLimit(1).truncationMode(.middle)
                             Text(PathDisplay.display(item.url.deletingLastPathComponent().filePath,
                                                      home: browser.services.homePath))
-                                .font(.caption2).foregroundStyle(.secondary)
+                                .font(.ui(12)).foregroundStyle(.secondary)
                                 .lineLimit(1).truncationMode(.head)
                         }
                     } else {
                         Text(browser.services.displayName(item)).lineLimit(1).truncationMode(.middle)
                         if browser.isFolder, browser.services.customizations.isPinned(item.path) {
-                            Image(systemName: "pin.fill").font(.system(size: 9)).foregroundStyle(.secondary)
+                            Image(systemName: "pin.fill").font(.system(size: 9, weight: .regular)).foregroundStyle(.secondary)
                                 .help("Pinned to the top")
                         }
                     }
@@ -250,8 +250,8 @@ struct FileGridView: View {
 
     private func sectionHeader(_ title: String, count: Int) -> some View {
         HStack(spacing: 6) {
-            Text(title).font(.subheadline.weight(.semibold))
-            Text("\(count)").font(.subheadline).foregroundStyle(.tertiary)
+            Text(title).font(.ui(12).weight(.medium))
+            Text("\(count)").font(.ui(12)).foregroundStyle(.tertiary)
             Spacer()
         }
         .padding(.horizontal, 4)
@@ -346,7 +346,7 @@ private struct GridCell: View {
                 CloudBadge(state: item.cloud)
                 Text(services?.displayName(item) ?? item.name)
             }
-                .font(.callout)
+                .font(.ui(13))
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .truncationMode(.middle)
@@ -355,7 +355,7 @@ private struct GridCell: View {
                 .foregroundStyle(isSelected ? .white : .primary)
                 .background(isSelected ? Color.accentColor : .clear, in: RoundedRectangle(cornerRadius: 5))
             Text(caption)
-                .font(.caption2)
+                .font(.ui(12))
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
         }
@@ -423,10 +423,10 @@ struct CloudBadge: View {
     var body: some View {
         switch state {
         case .online:
-            Image(systemName: "icloud.and.arrow.down").font(.system(size: 10)).foregroundStyle(.secondary)
+            Image(systemName: "icloud.and.arrow.down").font(.system(size: 10, weight: .regular)).foregroundStyle(.secondary)
                 .help("In the cloud only. Opens after downloading.")
         case .downloading:
-            Image(systemName: "arrow.down.circle.dotted").font(.system(size: 10)).foregroundStyle(Color.accentColor)
+            Image(systemName: "arrow.down.circle.dotted").font(.system(size: 10, weight: .regular)).foregroundStyle(Color.accentColor)
                 .help("Downloading")
         default:
             EmptyView()
@@ -447,7 +447,7 @@ private struct DisclosureButton: View {
                 }
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 9, weight: .regular))
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(browser.expanded.contains(item.id) ? 90 : 0))
                     .frame(width: 12, height: 16)
@@ -468,8 +468,8 @@ struct GroupHeader: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(title).font(.system(size: 12, weight: .semibold))
-            Text("\(count)").font(.system(size: 11)).foregroundStyle(.tertiary).monospacedDigit()
+            Text(title).font(.system(size: 12, weight: .medium))
+            Text("\(count)").font(.system(size: 12)).foregroundStyle(.tertiary).monospacedDigit()
             Spacer()
         }
         .padding(.top, 6)

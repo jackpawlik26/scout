@@ -21,7 +21,7 @@ struct BatchRenameView: View {
         let problems = problems
         let changed = zip(items, names).filter { $0.name != $1 }.count
         VStack(alignment: .leading, spacing: 14) {
-            Text("Rename \(items.count) Items").font(.headline)
+            Text("Rename \(items.count) Items").font(.ui(13, .medium))
             Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
                 GridRow {
                     label("Find")
@@ -65,10 +65,10 @@ struct BatchRenameView: View {
             HStack {
                 if !problems.isEmpty {
                     Label("\(problems.count) name\(problems.count == 1 ? "" : "s") can’t be used", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red).font(.callout)
+                        .foregroundStyle(.red).font(.ui(13))
                 } else {
                     Text(changed == 0 ? "Nothing changes yet." : "\(changed) of \(items.count) will change. ⌘Z undoes it.")
-                        .foregroundStyle(.secondary).font(.callout)
+                        .foregroundStyle(Color.textSubtle).font(.ui(13))
                 }
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
@@ -90,7 +90,7 @@ struct BatchRenameView: View {
     }
 
     private func label(_ text: String) -> some View {
-        Text(text).foregroundStyle(.secondary).gridColumnAlignment(.trailing)
+        Text(text).foregroundStyle(Color.textSubtle).gridColumnAlignment(.trailing)
     }
 
     private func preview(names: [String], problems: [Int: String]) -> some View {
@@ -103,7 +103,7 @@ struct BatchRenameView: View {
                         Text(item.name).lineLimit(1).truncationMode(.middle)
                             .foregroundStyle(newName == item.name ? .primary : .secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Image(systemName: "arrow.right").font(.caption).foregroundStyle(.tertiary)
+                        Image(systemName: "arrow.right").font(.ui(12)).foregroundStyle(Color.textSubtle)
                         Group {
                             if let problem = problems[index] {
                                 Text("\(newName)  ·  \(problem)").foregroundStyle(.red)
@@ -118,12 +118,12 @@ struct BatchRenameView: View {
                     .font(.system(size: 12))
                     .padding(.horizontal, 10)
                     .frame(height: 26)
-                    .background(index.isMultiple(of: 2) ? Color.primary.opacity(0.03) : .clear)
+                    .background(index.isMultiple(of: 2) ? Color.bgSelected : .clear)
                 }
             }
         }
         .frame(height: min(CGFloat(items.count) * 26, 260))
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.03)))
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.bgSelected))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.hairline))
     }
 }

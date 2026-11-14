@@ -13,9 +13,9 @@ struct TidyView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Tidy “\(browser.title)”").font(.headline)
+                Text("Tidy “\(browser.title)”").font(.ui(13, .medium))
                 Text("Loose files move into folders by kind. Folders, hidden files and anything still downloading stay put. ⌘Z puts everything back.")
-                    .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    .foregroundStyle(Color.textSubtle).fixedSize(horizontal: false, vertical: true)
             }
             ScrollView {
                 VStack(spacing: 2) {
@@ -25,9 +25,9 @@ struct TidyView: View {
                 }
             }
             .frame(maxHeight: 320)
-            .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.03)))
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.bgSelected))
             HStack {
-                Text("\(chosen.count) of \(moves.count) files").foregroundStyle(.secondary).monospacedDigit()
+                Text("\(chosen.count) of \(moves.count) files").foregroundStyle(Color.textSubtle).monospacedDigit()
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
@@ -57,10 +57,10 @@ struct TidyView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(folder).font(.system(size: 13, weight: .medium))
                 Text(names.prefix(3).joined(separator: ", ") + (names.count > 3 ? ", …" : ""))
-                    .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
+                    .font(.system(size: 12)).foregroundStyle(Color.textSubtle).lineLimit(1).truncationMode(.tail)
             }
             Spacer()
-            Text("\(count)").monospacedDigit().foregroundStyle(.secondary)
+            Text("\(count)").monospacedDigit().foregroundStyle(Color.textSubtle)
         }
         .padding(.horizontal, 10)
         .frame(height: 40)

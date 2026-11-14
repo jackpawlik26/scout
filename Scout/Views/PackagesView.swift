@@ -28,7 +28,7 @@ struct PackagesView: View {
                 if let banner {
                     Label(banner, systemImage: "doc.on.clipboard")
                         .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.textSubtle)
                         .padding(.horizontal, 4)
                 }
                 ForEach(PackageSource.allCases) { source in
@@ -52,7 +52,7 @@ struct PackagesView: View {
         Card(spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("\(all.count) installed")
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
+                    .font(.system(size: 24, weight: .medium))
                 if !outdated.isEmpty {
                     Text("\(outdated.count) update\(outdated.count == 1 ? "" : "s") available")
                         .foregroundStyle(.orange)
@@ -60,12 +60,12 @@ struct PackagesView: View {
                 Spacer()
                 if !loading.isEmpty || isUpdatingHomebrew {
                     ProgressView().controlSize(.small)
-                    Text(isUpdatingHomebrew ? "Checking Homebrew…" : "Looking…").foregroundStyle(.secondary)
+                    Text(isUpdatingHomebrew ? "Checking Homebrew…" : "Looking…").foregroundStyle(Color.textSubtle)
                 }
             }
             Text("Sizes are what each package takes on disk. Updates are checked against Homebrew’s last refresh and the npm registry.")
-                .font(.system(size: 12.5))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 13))
+                .foregroundStyle(Color.textSubtle)
             HStack(spacing: 10) {
                 Picker("", selection: $showOnlyUpdates) {
                     Text("All").tag(false)
@@ -100,19 +100,19 @@ struct PackagesView: View {
         return Card(spacing: 0) {
             HStack(spacing: 10) {
                 Image(systemName: source.symbol)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 15, weight: .light))
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(source.title).font(.system(size: 13.5, weight: .semibold))
+                    Text(source.title).font(.system(size: 13, weight: .medium))
                     Text(subtitle(count: everything.count, dependencies: dependencies, updates: updates))
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                        .font(.system(size: 12)).foregroundStyle(Color.textSubtle)
                 }
                 Spacer()
                 if loading.contains(source) {
                     ProgressView().controlSize(.small)
                 } else if total > 0 {
-                    Text(Format.bytes(total)).font(.system(size: 13, weight: .semibold)).monospacedDigit()
+                    Text(Format.bytes(total)).font(.system(size: 13, weight: .medium)).monospacedDigit()
                 }
             }
             if !shown.isEmpty {
@@ -122,7 +122,7 @@ struct PackagesView: View {
                 }
             } else if !loading.contains(source), !everything.isEmpty {
                 Text(showOnlyUpdates ? "Everything’s up to date." : "Only dependencies here.")
-                    .font(.system(size: 12)).foregroundStyle(.tertiary)
+                    .font(.system(size: 12)).foregroundStyle(Color.textSubtle)
                     .padding(.top, 8).padding(.leading, 32)
             }
         }
@@ -139,25 +139,25 @@ struct PackagesView: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 6) {
-                    Text(package.name).font(.system(size: 12.5, weight: .medium))
+                    Text(package.name).font(.system(size: 13, weight: .medium))
                     Text(package.version)
-                        .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+                        .font(.system(size: 12, design: .monospaced)).foregroundStyle(Color.textSubtle)
                     if let latest = package.latest, package.isOutdated {
                         Text("→ \(latest)")
-                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
                             .foregroundStyle(.orange)
                     }
                     if package.isDependency {
-                        Text("dependency").font(.system(size: 10)).foregroundStyle(.tertiary)
+                        Text("dependency").font(.system(size: 12)).foregroundStyle(Color.textSubtle)
                     }
                 }
                 if let summary = package.summary {
-                    Text(summary).font(.system(size: 11)).foregroundStyle(.tertiary).lineLimit(1)
+                    Text(summary).font(.system(size: 12)).foregroundStyle(Color.textSubtle).lineLimit(1)
                 }
             }
             Spacer(minLength: 8)
             if let size = sizes[package.id] {
-                Text(Format.bytes(size)).font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit()
+                Text(Format.bytes(size)).font(.system(size: 12)).foregroundStyle(Color.textSubtle).monospacedDigit()
             }
             if package.isOutdated {
                 Button("Upgrade") { runInTerminal(package.upgradeCommand) }
@@ -176,8 +176,8 @@ struct PackagesView: View {
                 Button("Copy Uninstall Command") { copy(package.uninstallCommand) }
             } label: {
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 12, weight: .light))
+                    .foregroundStyle(Color.textSubtle)
                     .frame(width: 24, height: 24)
                     .contentShape(Rectangle())
             }

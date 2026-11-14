@@ -103,10 +103,10 @@ struct SettingsView: View {
             SettingRow("Transparency", detail: transparency == 0 ? "Solid. Slide to let your desktop show through."
                        : "\(Int((transparency * 100).rounded()))%. Content cards stay a bit more solid so text stays readable.") {
                 HStack(spacing: 8) {
-                    Image(systemName: "square.fill").font(.system(size: 10)).foregroundStyle(.secondary)
+                    Image(systemName: "square.fill").font(.system(size: 10, weight: .regular)).foregroundStyle(Color.textSubtle)
                     Slider(value: $transparency, in: 0...1, step: 0.05)
                         .frame(width: 180)
-                    Image(systemName: "square.dashed").font(.system(size: 10)).foregroundStyle(.secondary)
+                    Image(systemName: "square.dashed").font(.system(size: 10, weight: .regular)).foregroundStyle(Color.textSubtle)
                 }
             }
             Divider()
@@ -310,9 +310,9 @@ struct SettingsView: View {
             HStack(spacing: 14) {
                 Image(nsImage: NSApp.applicationIconImage).resizable().interpolation(.high).frame(width: 52, height: 52)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Scout").font(.system(size: 17, weight: .semibold, design: .rounded))
-                    Text("Version \(version) (\(build))").foregroundStyle(.secondary)
-                    Text("Your files, found fast.").font(.caption).foregroundStyle(.tertiary)
+                    Text("Scout").font(.system(size: 16, weight: .medium))
+                    Text("Version \(version) (\(build))").foregroundStyle(Color.textSubtle)
+                    Text("Your files, found fast.").font(.ui(12)).foregroundStyle(Color.textSubtle)
                 }
                 Spacer()
             }
@@ -329,7 +329,7 @@ struct SettingsView: View {
         let apps = DevApp.installed(kind)
         SettingRow(title, detail: detail) {
             if apps.isEmpty {
-                Text("None installed").foregroundStyle(.secondary)
+                Text("None installed").foregroundStyle(Color.textSubtle)
             } else {
                 Picker("", selection: Binding(get: { current?.id ?? "" }, set: { selection.wrappedValue = $0 })) {
                     ForEach(apps) { app in
@@ -377,8 +377,8 @@ private struct SettingsCard<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label(title, systemImage: symbol)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Color.textSubtle)
                 .padding(.leading, 4)
             Card(spacing: 10) { content }
         }
@@ -402,7 +402,7 @@ private struct SettingRow<Control: View>: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.system(size: 13))
                 if let detail {
-                    Text(LocalizedStringKey(detail)).font(.system(size: 11.5)).foregroundStyle(.secondary)
+                    Text(LocalizedStringKey(detail)).font(.system(size: 12)).foregroundStyle(Color.textSubtle)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -429,7 +429,7 @@ private struct AppearanceTile: View {
                             .strokeBorder(isSelected ? Color.accentColor : Color.hairline, lineWidth: isSelected ? 2.5 : 1)
                     )
                 Text(option.title)
-                    .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+                    .font(.system(size: 12, weight: isSelected ? .medium : .regular))
                     .foregroundStyle(isSelected ? .primary : .secondary)
             }
             .contentShape(Rectangle())
