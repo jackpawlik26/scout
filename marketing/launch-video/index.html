@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Scout launch video</title>
+<style>
+  :root {
+    --strong: #F5F5F7; --default: #A1A1A6; --subtle: #7F7F85;
+    --selected: #F5F5F5; --border: #F2F2F2; --accent: #6553F0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #0B0B0D; }
+  body {
+    font-family: -apple-system, "SF Pro Display", "SF Pro", system-ui, sans-serif;
+    color: var(--strong); -webkit-font-smoothing: antialiased; position: relative;
+  }
+  .glow {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(900px 600px at 50% 115%, rgba(101, 83, 240, .30), transparent 70%),
+      radial-gradient(700px 500px at 85% -10%, rgba(125, 112, 243, .16), transparent 70%);
+  }
+  .scene { position: absolute; inset: 0; opacity: 0; }
+  .center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+  .caption { position: absolute; top: 96px; left: 0; right: 0; text-align: center; }
+  .caption h2 { font-size: 64px; font-weight: 500; letter-spacing: -1.6px; color: var(--strong); }
+  .caption p { margin-top: 14px; font-size: 28px; font-weight: 400; color: var(--default); letter-spacing: -.2px; }
+
+  .window {
+    position: absolute; left: 50%; border-radius: 22px; overflow: hidden; background: #1C1C1E;
+    box-shadow: 0 50px 140px -30px rgba(101, 83, 240, .45), 0 0 0 1px rgba(255,255,255,.10);
+  }
+  .titlebar { height: 44px; display: flex; align-items: center; gap: 9px; padding-left: 18px;
+    background: #232325; border-bottom: 1px solid #000; }
+  .titlebar i { width: 13px; height: 13px; border-radius: 50%; display: block; }
+  .titlebar i:nth-child(1) { background: #FF5F57; } .titlebar i:nth-child(2) { background: #FEBC2E; }
+  .titlebar i:nth-child(3) { background: #28C840; }
+  .titlebar span { margin-left: 16px; color: #A1A1A6; font-size: 16px; font-weight: 500; }
+  .shot { position: absolute; left: 0; width: 100%; display: block; }
+
+  .keys { position: absolute; top: 500px; left: 0; right: 0; display: flex; justify-content: center; gap: 22px; }
+  .key {
+    height: 120px; min-width: 120px; padding: 0 34px; border-radius: 22px; background: #1E1E21;
+    border: 1px solid #333338; display: flex; align-items: center; justify-content: center;
+    font-size: 48px; font-weight: 500; color: var(--strong);
+    box-shadow: 0 8px 0 #050506, 0 16px 40px -12px rgba(0,0,0,.6);
+  }
+  .key.wide { min-width: 360px; font-size: 34px; }
+
+  .wordmark { font-size: 120px; font-weight: 500; letter-spacing: -4px; margin-top: 34px; }
+  .tagline { font-size: 36px; color: var(--default); margin-top: 10px; letter-spacing: -.4px; }
+  .meta { margin-top: 40px; display: flex; gap: 16px; align-items: center; }
+  .pill { font-size: 26px; padding: 14px 28px; border-radius: 999px; }
+  .pill.solid { background: var(--accent); color: #fff; font-weight: 500; }
+  .fine { margin-top: 28px; font-size: 22px; color: var(--subtle); }
+  .pill.ghost { background: #18181B; color: #C7C7CC; border: 1px solid #303035; }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<!-- 1. Intro -->
+<section class="scene center" id="intro">
+  <img id="introIcon" src="assets/icon.png" width="260" height="260" alt="">
+  <div class="wordmark" id="introWord">Scout</div>
+  <div class="tagline" id="introTag">The fastest way around your Mac.</div>
+</section>
+
+<!-- 2. Jump -->
+<section class="scene" id="jump">
+  <div class="caption" id="jumpCap"><h2>Jump to any folder.</h2><p>Press ⌥ Space in any app and type a few letters.</p></div>
+  <div class="keys" id="keys"><div class="key" id="kOpt">⌥ option</div><div class="key wide" id="kSpace">space</div></div>
+  <div class="window" id="paletteWin" style="width:1020px;height:758px;top:280px;margin-left:-510px;border-radius:22px">
+    <img class="shot" src="assets/palette.jpg" style="top:-25px;left:-60px;width:1140px">
+  </div>
+</section>
+
+<!-- 3. Browse -->
+<section class="scene" id="browse">
+  <div class="caption" id="browseCap"><h2>Fewer clicks to everything.</h2><p>List or icons, a live preview and every detail at a glance.</p></div>
+  <div class="window" id="browseWin" style="width:1640px;height:900px;top:290px;margin-left:-820px">
+    <div class="titlebar"><i></i><i></i><i></i><span>Northwind Studio</span></div>
+    <div style="position:absolute;top:45px;left:0;right:0;bottom:0;overflow:hidden">
+      <img class="shot" id="listShot" src="assets/list.jpg" style="top:0">
+      <img class="shot" id="iconShot" src="assets/icons.jpg" style="top:0;opacity:0">
+    </div>
+  </div>
+</section>
+
+<!-- 4. Clean up -->
+<section class="scene" id="clean">
+  <div class="caption" id="cleanCap"><h2>See the space. Choose what goes.</h2><p>Scout finds what you can free up. Nothing moves until you say so.</p></div>
+  <div class="window" id="cleanWin" style="width:1160px;height:900px;top:290px;margin-left:-580px">
+    <div class="titlebar"><i></i><i></i><i></i><span>Clean Up</span></div>
+    <div style="position:absolute;top:45px;left:0;right:0;bottom:0;overflow:hidden">
+      <img class="shot" id="cleanShot" src="assets/cleanup.jpg" style="top:28px;left:-570px;width:2253px">
+    </div>
+  </div>
+</section>
+
+<!-- 5. End card -->
+<section class="scene center" id="end">
+  <img id="endIcon" src="assets/icon.png" width="200" height="200" alt="">
+  <div class="wordmark" id="endWord" style="font-size:96px;margin-top:22px">Scout</div>
+  <div class="tagline" id="endTag">A faster file browser for your Mac.</div>
+  <div class="meta" id="endMeta">
+    <span class="pill solid">Download free</span>
+    <span class="pill ghost">scout.jackpawlik.workers.dev</span>
+  </div>
+  <div class="fine" id="endFine">Free and open source · macOS 26 or later</div>
+</section>
+
+<script>
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+const easeInOut = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeBack = x => { const c = 1.5; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+
+// Fade/slide an element in at `a` (over `d` s) and out at `b`.
+function enter(el, t, a, d = .55, dy = 36) {
+  const p = easeOut(prog(t, a, a + d));
+  el.style.opacity = p;
+  el.style.transform = `translateY(${lerp(dy, 0, p)}px)`;
+  return p;
+}
+function scene(el, t, a, b, fade = .3) {
+  const vis = t >= a && t < b + .001;
+  el.style.opacity = vis ? (1 - easeInOut(prog(t, b - fade, b))) : 0;
+  el.style.transform = `translateY(${lerp(0, -24, easeInOut(prog(t, b - fade, b)))}px)`;
+}
+function key(el, t, appear, press) {
+  const a = easeBack(prog(t, appear, appear + .4));
+  const down = prog(t, press, press + .07) - prog(t, press + .16, press + .26);
+  el.style.opacity = prog(t, appear, appear + .2);
+  el.style.transform = `translateY(${lerp(30, 0, a) + down * 7}px) scale(${lerp(.9, 1, a)})`;
+  el.style.boxShadow = `0 ${lerp(8, 1, down)}px 0 #050506, 0 16px 40px -12px rgba(0,0,0,.6)`;
+  el.style.background = down > .5 ? '#2A2A2F' : '#1E1E21';
+}
+
+const T = { intro: [0, 2.5], jump: [2.5, 5.7], browse: [5.7, 9.5], clean: [9.5, 12.3], end: [12.3, 99] };
+
+window.render = function (t) {
+  // 1. Intro
+  scene($('intro'), t, ...T.intro);
+  const ip = easeBack(prog(t, .1, .8));
+  $('introIcon').style.transform = `scale(${lerp(.6, 1, ip)})`;
+  $('introIcon').style.opacity = prog(t, .1, .35);
+  enter($('introWord'), t, .4);
+  enter($('introTag'), t, .7);
+
+  // 2. Jump: keys press, then the palette pops in where they were.
+  scene($('jump'), t, ...T.jump);
+  enter($('jumpCap'), t, 2.55);
+  key($('kOpt'), t, 2.75, 3.2);
+  key($('kSpace'), t, 2.85, 3.32);
+  const keysOut = easeInOut(prog(t, 3.5, 3.75));
+  $('keys').style.opacity = 1 - keysOut;
+  $('keys').style.transform = `scale(${lerp(1, .9, keysOut)})`;
+  const pp = easeBack(prog(t, 3.55, 4.05));
+  $('paletteWin').style.opacity = prog(t, 3.55, 3.75);
+  $('paletteWin').style.transform = `translateY(${lerp(40, 0, pp)}px) scale(${lerp(.9, 1, pp) + prog(t, 4.05, 5.7) * .02})`;
+
+  // 3. Browse: window rises, slow push-in, list turns into icons.
+  scene($('browse'), t, ...T.browse);
+  enter($('browseCap'), t, 5.75);
+  const bp = easeOut(prog(t, 5.8, 6.5));
+  $('browseWin').style.transform = `translateY(${lerp(260, 0, bp)}px) scale(${1 + prog(t, 6.5, 9.5) * .035})`;
+  $('browseWin').style.opacity = prog(t, 5.8, 6.1);
+  $('iconShot').style.opacity = easeInOut(prog(t, 7.8, 8.05));
+
+  // 4. Clean up: rises, then scrolls down the list of categories.
+  scene($('clean'), t, ...T.clean);
+  enter($('cleanCap'), t, 9.55);
+  const cp = easeOut(prog(t, 9.6, 10.3));
+  $('cleanWin').style.transform = `translateY(${lerp(260, 0, cp)}px)`;
+  $('cleanWin').style.opacity = prog(t, 9.6, 9.9);
+  $('cleanShot').style.transform = `translateY(${-easeInOut(prog(t, 10.4, 12.1)) * 470}px)`;
+
+  // 5. End card
+  scene($('end'), t, ...T.end);
+  const ep = easeBack(prog(t, 12.35, 12.95));
+  $('endIcon').style.transform = `scale(${lerp(.6, 1, ep)})`;
+  $('endIcon').style.opacity = prog(t, 12.35, 12.6);
+  enter($('endWord'), t, 12.55);
+  enter($('endTag'), t, 12.75);
+  enter($('endMeta'), t, 12.95);
+  enter($('endFine'), t, 13.15);
+};
+
+window.ready = Promise.all([...document.images].map(i => i.decode())).then(() => window.render(0));
+</script>
+</body>
+</html>

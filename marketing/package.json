@@ -1,0 +1,14 @@
+{
+  "name": "scout-marketing",
+  "private": true,
+  "description": "Scout's launch video, link-preview card and demo folder, rendered with headless Chrome.",
+  "type": "module",
+  "scripts": {
+    "video": "cd launch-video && node render.mjs ../scout-launch.mp4",
+    "share-card": "cd share-card && node og.mjs",
+    "demo-folder": "zsh demo-folder/build.sh"
+  },
+  "dependencies": {
+    "puppeteer-core": "^22.15.0"
+  }
+}

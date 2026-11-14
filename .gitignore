@@ -18,3 +18,9 @@ raycast/raycast-env.d.ts
 
 # Release builds (scripts/release.sh)
 dist/
+
+# Marketing renders (marketing/README.md)
+marketing/*.mp4
+marketing/launch-video/stills/
+marketing/share-card/og.png
+marketing/demo-folder/stage/
