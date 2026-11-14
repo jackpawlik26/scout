@@ -13,7 +13,7 @@ APP=build/Build/Products/Release/Scout.app
 IDENTITY="Scout Local Signing"
 if security find-identity -p codesigning | grep -q "$IDENTITY"; then
   codesign --force --options runtime --timestamp=none -s "$IDENTITY" "$APP/Contents/Helpers/scout"
-  codesign --force --options runtime --timestamp=none -s "$IDENTITY" "$APP"
+  codesign --force --options runtime --timestamp=none --entitlements Scout/Scout.entitlements -s "$IDENTITY" "$APP"
 else
   echo "warning: '$IDENTITY' certificate not found; permissions will reset on every install" >&2
 fi

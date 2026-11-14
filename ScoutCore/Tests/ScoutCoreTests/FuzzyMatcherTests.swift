@@ -30,15 +30,15 @@ import Testing
     }
 
     @Test func findsBestPlacementNotFirst() throws {
-        // "ib" should land on "ib-prep", not inside "library".
-        let m = try #require(FuzzyMatcher.match("ib", in: "library ib-prep"))
+        // "ux" should land on "ux-notes", not inside "library".
+        let m = try #require(FuzzyMatcher.match("ux", in: "library ux-notes"))
         #expect(m.indices == [8, 9])
     }
 
     @Test func spaceSeparatedWordsMustAllMatch() {
-        #expect(FuzzyMatcher.match("ib prep", in: "ib-prep") != nil)
-        #expect(FuzzyMatcher.match("prep ib", in: "ib-prep") != nil)
-        #expect(FuzzyMatcher.match("ib zzz", in: "ib-prep") == nil)
+        #expect(FuzzyMatcher.match("ux notes", in: "ux-notes") != nil)
+        #expect(FuzzyMatcher.match("notes ux", in: "ux-notes") != nil)
+        #expect(FuzzyMatcher.match("ux zzz", in: "ux-notes") == nil)
     }
 
     @Test func prefilterNeverRejectsRealMatches() {

@@ -29,7 +29,7 @@
 <main class="wrap">
   <header class="log-hero">
     <h1>Changelog</h1>
-    <p>Every build of Scout, newest first: what was added, changed, fixed and removed. Ten builds on November 13, 2026, from the first working version to now.</p>
+    <p>Every build of Scout, newest first: what was added, changed, fixed and removed, from the first working version to the first public release.</p>
   </header>
   <div class="log-tools">
     <div class="seg" role="group" aria-label="Show">
@@ -47,13 +47,40 @@
 
 <footer>
   <div class="wrap">
-    <span>Scout · a personal file browser for macOS</span>
+    <span>Scout · a free file browser for macOS</span>
     <nav aria-label="Footer"><a href="../#features">Features</a><a href="../#developers">Developers</a><a href="./">Changelog</a><a href="https://github.com/jackpawlik26/scout">GitHub</a></nav>
   </div>
 </footer>
 
 <script>
 const BUILDS = [
+  {
+    date: "Nov 14, 2026", time: "Public release", hash: "v0.1.0", title: "Scout 0.1: download it",
+    summary: "The first public release. Scout is now a one-click download from GitHub, and the code is open source under the MIT License.",
+    changes: [
+      ["added", "A real download: Scout.zip from GitHub Releases, for Apple silicon and Intel Macs, with simple install steps."],
+      ["changed", "A cleaner GitHub page: a friendly README, plus separate guides for shortcuts, power users and developers."],
+      ["fixed", "Show in Finder and Get Info (Finder) were blocked by macOS because Scout lacked permission to talk to Finder."],
+    ],
+  },
+  {
+    time: "6:07 PM", hash: "0c9c975", title: "Fast with huge folders",
+    summary: "A stress test with 10,000 and 50,000 files found where Scout slowed down, and fixed it.",
+    changes: [
+      ["changed", "Folders open 6–7× faster: 10,000 files in 0.16 seconds instead of 1, and 50,000 in 0.7 instead of 5."],
+      ["fixed", "Big folders stuttered while folder sizes filled in, because each new size re-sorted the whole list."],
+    ],
+  },
+  {
+    time: "5:58 PM", hash: "71fcd3f", title: "Tabs come back, and Move To",
+    summary: "The things you'd miss most when switching from Finder for good.",
+    changes: [
+      ["added", "Tabs and split view come back after you quit Scout, even with macOS's “Close windows when quitting an app” on."],
+      ["added", "Move To… <kbd>⇧⌘M</kbd> and Copy To… <kbd>⌥⇧⌘M</kbd>: type a few letters of the destination and press Return. Suggests the other pane and recent destinations."],
+      ["added", "Settings ▸ Open folders in Scout: folders from Spotlight, downloads and other apps open in Scout, as a new tab."],
+      ["fixed", "Show in Finder opened Scout instead of Finder when Scout handled “Show in Finder” for other apps."],
+    ],
+  },
   {
     time: "5:20 PM", hash: "7b8dfc1", title: "Menu bar, Siri and making it yours",
     summary: "The last of the Finder, FileOS and Tilde comparison list: quick access from the menu bar, Shortcuts actions, and ways to personalize folders and keys.",
@@ -213,7 +240,7 @@ const BUILDS = [
   list.innerHTML = BUILDS.map((b, i) => {
     const number = BUILDS.length - i;
     return '<article class="release" id="build-' + number + '">' +
-      '<aside><strong>Build ' + number + '</strong><span>Nov 13, 2026 · ' + b.time + '</span><code>' + b.hash + '</code>' +
+      '<aside><strong>Build ' + number + '</strong><span>' + (b.date || 'Nov 13, 2026') + ' · ' + b.time + '</span><code>' + b.hash + '</code>' +
       (i === 0 ? '<div><span class="latest-pill">Latest</span></div>' : '') + '</aside>' +
       '<div><h2>' + b.title + '</h2><p class="summary">' + b.summary + '</p><ul>' +
       b.changes.map(([type, text]) => '<li data-type="' + type + '"><span class="t">' + labels[type] + '</span><span>' + text + '</span></li>').join("") +

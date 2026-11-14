@@ -101,10 +101,40 @@ final class AppServices {
                 MainActor.assumeIsolated { self?.refreshVolumes() }
             })
         }
+        refreshLatestDownloads()
         Task {
             while !Task.isCancelled {
                 await rebuildIndex()
                 try? await Task.sleep(for: .seconds(30 * 60))
+            }
+        }
+    }
+
+    // MARK: - Latest downloads (menu bar)
+
+    /// The newest files in Downloads, for the menu bar icon's menu.
+    private(set) var latestDownloads: [FileItem] = []
+    @ObservationIgnored private var downloadsWatcher: DirectoryWatcher?
+
+    /// Read off the main thread: on a first launch, macOS holds the read until you answer
+    /// its "access your Downloads folder?" prompt, and the app must stay usable meanwhile.
+    func refreshLatestDownloads() {
+        let folder = home.appending(path: "Downloads", directoryHint: .isDirectory)
+        Task {
+            let latest = await Task.detached(priority: .utility) { () -> [FileItem]? in
+                guard let urls = try? FileManager.default.contentsOfDirectory(
+                    at: folder, includingPropertiesForKeys: [.addedToDirectoryDateKey], options: [.skipsHiddenFiles])
+                else { return nil }
+                func added(_ url: URL) -> Date {
+                    (try? url.resourceValues(forKeys: [.addedToDirectoryDateKey]).addedToDirectoryDate) ?? .distantPast
+                }
+                let newest = urls.map { ($0, added($0)) }.sorted { $0.1 > $1.1 }.prefix(8)
+                return newest.compactMap { LocalFileSource.item(for: $0.0) }
+            }.value
+            guard let latest else { return } // no access (yet)
+            latestDownloads = latest
+            if downloadsWatcher == nil {
+                downloadsWatcher = DirectoryWatcher(url: folder) { [weak self] in self?.refreshLatestDownloads() }
             }
         }
     }

@@ -6,20 +6,11 @@ struct MenuBarMenu: View {
     @Environment(AppServices.self) private var services
     @Environment(\.openWindow) private var openWindow
 
-    private var latestDownloads: [FileItem] {
-        let downloads = services.home.appending(path: "Downloads")
-        let urls = (try? FileManager.default.contentsOfDirectory(at: downloads, includingPropertiesForKeys: nil,
-                                                                 options: [.skipsHiddenFiles])) ?? []
-        return urls.compactMap(LocalFileSource.item(for:))
-            .sorted { ($0.dateAdded ?? .distantPast) > ($1.dateAdded ?? .distantPast) }
-            .prefix(8).map(\.self)
-    }
-
     var body: some View {
         Button("Jump to Folder or File…") { services.route(.jump(query: nil)) }
         Divider()
         Section("Latest Downloads") {
-            ForEach(latestDownloads) { item in
+            ForEach(services.latestDownloads) { item in
                 Button {
                     services.route(.open(path: item.path, newTab: false))
                 } label: {

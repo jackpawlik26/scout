@@ -1,0 +1,77 @@
+# Scout for power users
+
+Everything here is optional. Scout works fine without any of it.
+
+## Make Scout your main file browser
+
+Both switches are in **Settings ▸ Keyboard & System**:
+
+- **Use Scout for "Show in Finder"**: when another app reveals a file ("Show in Finder", "Reveal in Finder"), it opens in Scout. Apps notice the change after they restart.
+- **Open folders in Scout**: folders opened from Spotlight, a browser's downloads, other apps or Terminal's `open` command open in Scout, each as a new tab.
+
+Finder still runs the Desktop and the Open/Save dialogs inside other apps; no app can replace those. Scout's own **Show in Finder** (⌘R) always goes to Finder.
+
+## Links
+
+Any app, script or shortcut can control Scout with `scout://` links:
+
+| Link | What it does |
+|---|---|
+| `scout://open?path=~/Downloads` | Open a folder (a file path reveals the file) |
+| `scout://open?path=~/Downloads&newTab=1` | …in a new tab |
+| `scout://open?path=~/Downloads&split=1` | …in the other pane |
+| `scout://jump?query=taxes` | Open the ⌘K palette, already filled in |
+| `scout://workspace?name=Taxes` | Open a workspace |
+| `scout://recents` | Files you opened or downloaded in the last 30 days |
+| `scout://tidy?path=~/Downloads` | Show Tidy Folder's plan (nothing moves until you confirm) |
+| `scout://cleanup` | Open Clean Up |
+| `scout://packages` | Open Packages (Homebrew, npm) |
+| `scout://changes?path=~/Code/my-app` | Every changed file in a git repository |
+| `scout://settings` | Open Settings |
+| `scout://shortcuts` | Show the keyboard shortcuts |
+
+Try one from Terminal: `open "scout://open?path=~/Downloads"`.
+
+## Shortcuts app and Siri
+
+Scout adds actions to the Shortcuts app: Open in Scout, Open Workspace, Jump, Recents, Clean Up and Tidy Downloads.
+
+## The `scout` command
+
+Scout ships a command-line tool inside the app (`Scout.app/Contents/Helpers/scout`). To use it from Terminal, link it onto your PATH once:
+
+```sh
+mkdir -p ~/.local/bin
+ln -sf /Applications/Scout.app/Contents/Helpers/scout ~/.local/bin/scout
+```
+
+Then:
+
+```sh
+cd "$(scout jump proj)"      # cd to the best-matching folder, like zoxide
+scout rank proj --json       # ranked matches (same ranking as ⌘K)
+scout open . --new-tab       # open the current folder in Scout
+scout index                  # rebuild the folder index
+scout duplicates ~/Desktop   # list duplicate files (no folder = your whole home)
+```
+
+## Raycast
+
+The [`raycast/`](../raycast) folder is a Raycast extension with **Jump to Folder** and **Open Finder Selection in Scout**. It needs the `scout` command above. To load it, install [Node.js](https://nodejs.org), then:
+
+```sh
+cd raycast && npm install && npm run dev
+```
+
+Stop it with Ctrl-C; it stays installed in Raycast.
+
+## Where Scout keeps its data
+
+`~/Library/Application Support/Scout/`:
+
+- `folders.txt`: the folder index behind ⌘K, one path per line
+- `history.json`: folder visits (for "Most Used" ranking), ISO 8601 dates
+- `favorites.json`, `workspaces.json`, `saved-searches.json`: what their names say
+- `customizations.json`: folder colors, symbols, nicknames and pins
+
+Scout has no accounts, analytics or tracking. The only page that goes online is Packages, which asks Homebrew and npm whether updates exist.

@@ -15,3 +15,6 @@ raycast/raycast-env.d.ts
 !.dev.vars.example
 .env*
 !.env.example
+
+# Release builds (scripts/release.sh)
+dist/

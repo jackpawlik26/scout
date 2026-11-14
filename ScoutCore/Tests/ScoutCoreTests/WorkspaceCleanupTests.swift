@@ -14,7 +14,7 @@ import Testing
 
     @Test func roundTripsThroughStore() throws {
         let url = FileManager.default.temporaryDirectory.appending(path: "ws-\(UUID().uuidString).json")
-        let list = [Workspace(name: "IB Recruiting", symbol: "briefcase", paths: ["/x/ib-prep"])]
+        let list = [Workspace(name: "Taxes", symbol: "briefcase", paths: ["/x/taxes"])]
         try ScoutStore.saveWorkspaces(list, to: url)
         #expect(ScoutStore.loadWorkspaces(from: url) == list)
     }

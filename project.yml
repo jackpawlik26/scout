@@ -55,6 +55,7 @@ targets:
         # A file manager needs to see your whole disk, so no App Store sandbox.
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: Scout/Scout.entitlements
         # Ad-hoc signing for local builds. Set DEVELOPMENT_TEAM to your Apple ID team
         # so macOS remembers folder permissions between builds.
         CODE_SIGN_STYLE: Automatic
