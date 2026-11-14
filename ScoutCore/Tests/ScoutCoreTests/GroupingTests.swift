@@ -54,3 +54,28 @@ import Testing
         #expect(ItemGrouper.groups(items, by: .none).count == 1)
     }
 }
+
+@Suite struct FolderViewSettingTests {
+    @Test func olderEntriesWithNoneFollowTheDefault() {
+        // Saved before the default existed: "none" only meant "never chosen".
+        #expect(FolderViewSetting(saved: "name|1|none") == FolderViewSetting(sortField: "name", ascending: true, group: nil))
+        // A grouping someone picked stays theirs.
+        #expect(FolderViewSetting(saved: "added|0|dateAdded")?.group == .dateAdded)
+    }
+
+    @Test func currentFormatRoundTrips() {
+        let follows = FolderViewSetting(sortField: "size", ascending: false, group: nil)
+        #expect(follows.saved == "size|0|default|2")
+        #expect(FolderViewSetting(saved: follows.saved) == follows)
+
+        // Choosing None for one folder now sticks, even with a default set.
+        let none = FolderViewSetting(sortField: "name", ascending: true, group: GroupBy.none)
+        #expect(none.saved == "name|1|none|2")
+        #expect(FolderViewSetting(saved: none.saved)?.group == GroupBy.none)
+    }
+
+    @Test func junk() {
+        #expect(FolderViewSetting(saved: "") == nil)
+        #expect(FolderViewSetting(saved: "name|1") == nil)
+    }
+}

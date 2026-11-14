@@ -704,6 +704,9 @@ private struct SortMenuItems: View {
                 Picker("Group By", selection: $browser.groupBy) {
                     ForEach(GroupBy.folderChoices) { Text($0.title).tag($0) }
                 }
+                if browser.isFolder, !browser.followsDefaultGroup {
+                    Button("Use Default Grouping (\(browser.defaultGroupHere.title))") { browser.useDefaultGroup() }
+                }
             }
     }
 }

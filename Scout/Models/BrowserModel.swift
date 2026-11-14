@@ -83,14 +83,18 @@ final class BrowserModel: Identifiable {
     var filterText = "" { didSet { if filterText != oldValue { refreshDisplayed() } } }
     /// New tabs start from Settings' choices; the View menu changes one tab.
     var foldersFirst = UserDefaults.standard.object(forKey: "foldersFirst") as? Bool ?? true { didSet { refreshDisplayed() } }
-    /// Finder-style groups (Kind, Date Added…). Remembered per folder, like the sort.
+    /// Finder-style groups (Kind, Date Added…). Folders follow Settings' default grouping
+    /// until you pick one for that folder, which is then remembered, like the sort.
     var groupBy: GroupBy = .none {
         didSet {
             guard groupBy != oldValue else { return }
+            if !isApplyingFolderView { followsDefaultGroup = false }
             refreshDisplayed()
             rememberFolderView()
         }
     }
+    /// This folder's grouping comes from Settings (not chosen for this folder).
+    private(set) var followsDefaultGroup = true
     /// `displayedItems` split into labeled groups (one untitled group when not grouping).
     private(set) var displayedGroups: [ItemGroup] = []
     /// Folders opened in place in the list (disclosure arrows), and what's inside them.
@@ -284,36 +288,70 @@ final class BrowserModel: Identifiable {
 
     @ObservationIgnored private var isApplyingFolderView = false
 
-    /// Saved as "field|ascending|groupBy" per folder path.
+    /// Saved as "field|ascending|groupBy|2" per folder path, where groupBy is "default"
+    /// when the folder follows Settings. (Older entries had no "|2"; their "none" meant "never chosen".)
     private static let folderViewsKey = "folderViews"
+    /// Settings ▸ Browsing ▸ Group folders by.
+    static let defaultGroupKey = "defaultGroupBy"
+
+    /// The grouping Settings gives every folder (None unless you choose one).
+    static var defaultGroup: GroupBy {
+        let group = GroupBy(rawValue: UserDefaults.standard.string(forKey: defaultGroupKey) ?? "") ?? .none
+        return GroupBy.folderChoices.contains(group) ? group : .none
+    }
+
+    /// What a folder that follows the default is grouped by. With no default set,
+    /// Downloads keeps its own: grouped by day added.
+    var defaultGroupHere: GroupBy {
+        let group = Self.defaultGroup
+        if group == .none, location.filePath == services.homePath + "/Downloads" { return .dateAdded }
+        return group
+    }
 
     /// Restores this folder's sort and grouping (Downloads starts newest-added first, grouped by day).
     private func applyFolderView() {
         guard mode == .folder else { return }
         let saved = (UserDefaults.standard.dictionary(forKey: Self.folderViewsKey) as? [String: String])?[location.filePath]
-        var field = SortField.name, ascending = true, group = GroupBy.none
-        if let saved {
-            let parts = saved.split(separator: "|").map(String.init)
-            if parts.count == 3 {
-                field = SortField(rawValue: parts[0]) ?? .name
-                ascending = parts[1] == "1"
-                group = GroupBy(rawValue: parts[2]) ?? .none
-            }
+        var field = SortField.name, ascending = true
+        var group: GroupBy? // nil: follow the default
+        if let saved, let setting = FolderViewSetting(saved: saved) {
+            field = SortField(rawValue: setting.sortField) ?? .name
+            ascending = setting.ascending
+            group = setting.group
         } else if location.filePath == services.homePath + "/Downloads" {
             field = .added
             ascending = false
-            group = .dateAdded
         }
         isApplyingFolderView = true
         sort(by: field, ascending: ascending)
-        groupBy = group
+        followsDefaultGroup = group == nil
+        groupBy = group ?? defaultGroupHere
         isApplyingFolderView = false
+    }
+
+    /// Settings' default changed: folders that follow it regroup.
+    func defaultGroupChanged() {
+        guard mode == .folder, followsDefaultGroup else { return }
+        isApplyingFolderView = true
+        groupBy = defaultGroupHere
+        isApplyingFolderView = false
+    }
+
+    /// Drops this folder's own grouping so it follows Settings again.
+    func useDefaultGroup() {
+        guard mode == .folder else { return }
+        isApplyingFolderView = true
+        followsDefaultGroup = true
+        groupBy = defaultGroupHere
+        isApplyingFolderView = false
+        rememberFolderView()
     }
 
     private func rememberFolderView() {
         guard !isApplyingFolderView, mode == .folder else { return }
         var views = UserDefaults.standard.dictionary(forKey: Self.folderViewsKey) as? [String: String] ?? [:]
-        views[location.filePath] = "\(sortField?.rawValue ?? "name")|\(sortAscending ? 1 : 0)|\(groupBy.rawValue)"
+        views[location.filePath] = FolderViewSetting(sortField: sortField?.rawValue ?? "name", ascending: sortAscending,
+                                                     group: followsDefaultGroup ? nil : groupBy).saved
         UserDefaults.standard.set(views, forKey: Self.folderViewsKey)
     }
 

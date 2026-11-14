@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var accent = AccentChoice.saved
     @AppStorage("viewMode") private var viewMode = ViewMode.list.rawValue
     @AppStorage("foldersFirst") private var foldersFirst = true
+    @AppStorage(BrowserModel.defaultGroupKey) private var defaultGroup = GroupBy.none.rawValue
     @AppStorage("showHidden") private var showHidden = false
     @AppStorage("folderSizes") private var folderSizes = true
     @AppStorage("menuBarIcon") private var showsMenuBarIcon = true
@@ -141,6 +142,17 @@ struct SettingsView: View {
                     for tab in allTabs { tab.foldersFirst = on }
                 }))
                 .toggleStyle(.switch).labelsHidden()
+            }
+            Divider()
+            SettingRow("Group folders by", detail: "Every folder starts grouped this way. Pick a different grouping in a folder’s Sort menu to change just that folder.") {
+                Picker("", selection: Binding(get: { defaultGroup }, set: { value in
+                    defaultGroup = value
+                    for tab in allTabs { tab.defaultGroupChanged() }
+                })) {
+                    ForEach(GroupBy.folderChoices) { Text($0.title).tag($0.rawValue) }
+                }
+                .labelsHidden()
+                .fixedSize()
             }
             Divider()
             SettingRow("Show hidden files", detail: "Files whose names start with a dot. ⇧⌘. changes it for one tab.") {
