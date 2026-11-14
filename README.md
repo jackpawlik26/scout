@@ -41,7 +41,9 @@ After that, Scout opens like any other app. macOS will also ask whether Scout ca
 
 **Move things without dragging.** Select files, press ⇧⌘M, type a few letters of where they should go, and press Return. Every move, rename and trash can be undone with ⌘Z.
 
-**Keep things tidy.** Group a folder by kind or date, sort loose downloads into folders with one shortcut, rename dozens of files at once, and gather folders from anywhere onto one page with workspaces.
+**Keep things tidy.** Group a folder by kind or date, sort loose downloads into folders with one shortcut, and gather folders from anywhere onto one page with workspaces.
+
+**Rename hundreds of files in one go.** Select them and press Return: stack steps like replace (with regular expressions), add text, change case or a new name such as `Trip {n}` or `{created:yyyy-MM-dd} {name}`, watch the preview, and save it as a preset for next time.
 
 **See what's taking space.** The info panel shows what fills a folder. Clean Up finds old installers, big downloads, duplicate files and developer caches, and everything goes to the Trash, so nothing is lost by accident.
 

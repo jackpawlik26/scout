@@ -20,7 +20,7 @@ Press **⌘/** in Scout to see the most useful ones on screen. You can change 50
 | Space or ⌘Y | Quick Look |
 | Return | Rename |
 | ⇧⌘N / ⌃⌘N | New folder / new text file (File ▸ New Markdown File too) |
-| Return with several selected | Rename Items: find & replace, prefix/suffix, numbering, letter case, live preview |
+| Return with several selected | Rename Items: steps (replace with regex, add text, new name, remove characters, change case, trim), {variables} like {n} and {created}, presets, live preview |
 | ⌘⌫ | Move to Trash (⌘Z undoes) |
 | ⌘C / ⌘V / ⌥⌘V | Copy / paste / move here |
 | ⇧⌘M / ⌥⇧⌘M | Move to… / Copy to…: type a few letters of the destination in the palette, ↵ (⌘↵ also goes there, ⇥ switches move/copy) |

@@ -55,6 +55,20 @@
 <script>
 const BUILDS = [
   {
+    date: "Nov 14, 2026", time: "Scout 0.2", hash: "v0.2.0", title: "Rename presets, a new look, and a safety pass",
+    summary: "Everything from a pre-launch review: a security and data-safety audit, speed work, a calmer design and a much stronger Rename Items.",
+    changes: [
+      ["added", "Rename Items 2: stack steps (replace with regular expressions, add text, new name, remove characters, change case, trim spaces), use variables like {n}, {created:yyyy-MM-dd} and {parent}, and save presets. Four come built in."],
+      ["added", "A welcome card on first launch, and Settings ▸ Developer tools (git, Packages, Open in Terminal), off for new installs."],
+      ["changed", "A calmer design: one type scale, neutral grays, thin icons and neutral selection in the sidebar and tabs."],
+      ["changed", "The sidebar's Tags section shows only tags you use; Settings and Clean Up use the full window width."],
+      ["changed", "Faster: Empty Trash and Recents work in the background, folder sizes stop when you leave a folder, selection and menus no longer scan whole folders."],
+      ["fixed", "Security: a downloaded git repository could run a program when you browsed into it. Git now pauses there until you choose Trust This Repository."],
+      ["fixed", "Moving to another disk could delete files it failed to copy, and two same-named files moved together could collide. Both are fixed, with copies verified before originals are removed."],
+      ["fixed", "Copying a folder into itself, Replace trashing the item being moved, undo of swapped renames, Clean Up trashing every copy of a duplicate, and more."],
+    ],
+  },
+  {
     date: "Nov 14, 2026", time: "Public release", hash: "v0.1.0", title: "Scout 0.1: download it",
     summary: "The first public release. Scout is now a one-click download from GitHub, and the code is open source under the MIT License.",
     changes: [
