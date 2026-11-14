@@ -120,6 +120,9 @@ struct BrowserContent: View {
         .sheet(isPresented: $window.isGoToPathOpen) {
             GoToPathView(window: window)
         }
+        .sheet(item: $window.comparing) { request in
+            CompareView(window: window, request: request)
+        }
         .sheet(isPresented: Binding(get: { !welcomeShown }, set: { if !$0 { welcomeShown = true } })) {
             WelcomeView { welcomeShown = true }
         }

@@ -25,7 +25,12 @@ To search by it, type `from:` and part of a site or sender in ⌘K. It works on 
 
 Press ⇧↵ to open the results in a tab and save the search to the sidebar.
 
-## Commands in ⌘K
+## Compare and sync two folders
+
+Open two folders side by side (⌘D), then **View ▸ Compare Folders…**. Scout lists every file that's only on one side, newer on one side, or different, including subfolders (it skips hidden files and folders like `node_modules` and `.git`). **Check contents** reads files whose dates differ but sizes match, to see if they really changed.
+
+**Copy to Right →** or **← Copy to Left** copies new, newer and different files across, after showing what it will do. Files that are newer on the receiving side are never overwritten. Replaced files go to the Trash; turn on **Also move extra files on the receiving side to the Trash** to make the two folders match exactly.
+
 
 Type `>` in ⌘K to search every command in Scout's menus (New Folder, Group By, Triage, Show Hidden Files…) and run it with ↵. Commands that don't apply right now are dimmed. Without the `>`, commands whose names contain what you typed also appear under Folders.
 

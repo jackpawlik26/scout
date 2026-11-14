@@ -81,6 +81,17 @@ final class BrowserWindowModel {
     /// Scope to start the palette in (e.g. Files for ⇧⌘F).
     var paletteInitialScope: SearchScope?
     var isGoToPathOpen = false
+    /// Compare Folders: the left and right panes' folders.
+    var comparing: CompareRequest?
+
+    /// Compares the two panes' folders (both must be showing a folder).
+    func compareFolders() {
+        guard isSplit, panes.count == 2, panes[0].current.isFolder, panes[1].current.isFolder else {
+            current.alertMessage = "Open two folders side by side (⌘D) to compare them."
+            return
+        }
+        comparing = CompareRequest(left: panes[0].current.location, right: panes[1].current.location)
+    }
     /// The keyboard shortcuts sheet (⌘/).
     var isShortcutsOpen = false
     /// The window this model is shown in (set once SwiftUI puts it on screen).
@@ -357,4 +368,11 @@ struct WindowSession: Codable, Equatable {
 
 extension FocusedValues {
     @Entry var browserWindow: BrowserWindowModel?
+}
+
+/// The two folders Compare Folders is looking at.
+struct CompareRequest: Identifiable {
+    let id = UUID()
+    let left: URL
+    let right: URL
 }

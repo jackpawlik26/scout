@@ -110,6 +110,8 @@ struct ScoutCommands: Commands {
             Button("Switch to Other Pane") { window?.focusOtherPane() }
                 .customizableShortcut(.otherPane)
                 .disabled(window?.isSplit != true)
+            Button("Compare Folders…") { window?.compareFolders() }
+                .disabled(window?.isSplit != true)
             Button("Copy to Other Pane") { window?.transferToOtherPane(move: false) }
                 .keyboardShortcut(KeyEquivalent(Character(UnicodeScalar(NSF5FunctionKey)!)), modifiers: [])
                 .disabled(window?.isSplit != true)
