@@ -51,7 +51,7 @@ After that, Scout opens like any other app. macOS will also ask whether Scout ca
 
 **Made for the keyboard.** Almost everything has a shortcut, and you can change 50 of them. Press ⌘/ in Scout for the list, or see [all shortcuts](docs/SHORTCUTS.md).
 
-**For developers.** Git branch and file status in every folder, Open in Terminal or your editor, a page for your Homebrew and npm packages, `scout://` links, a `scout` command and a Raycast extension. See [Scout for power users](docs/POWER-USERS.md).
+**For developers.** Turn on **Settings ▸ Developer tools** for git branch and file status in every folder, Open in Terminal or your editor, and a page for your Homebrew and npm packages. There are also `scout://` links, a `scout` command and a Raycast extension. See [Scout for power users](docs/POWER-USERS.md).
 
 **Private.** No account, no tracking. Your files and Scout's index stay on your Mac.
 

@@ -11,6 +11,15 @@ Both switches are in **Settings ▸ Keyboard & System**:
 
 Finder still runs the Desktop and the Open/Save dialogs inside other apps; no app can replace those. Scout's own **Show in Finder** (⌘R) always goes to Finder.
 
+## Developer tools
+
+Turn on **Settings ▸ Developer tools** (it's off for new installs) for:
+
+- Git branch and status in the header, badges on changed files, and a Git card in the info panel. In a repository whose own settings could run programs, git waits until you click **Trust This Repository**.
+- **Packages** (⌥⌘P): everything Homebrew and npm installed, and what's outdated.
+- **Changes** (⌥⌘G): every changed file in the repository.
+- **Open in Terminal** (⌥⇧⌘T) and **Open in Editor** (⌥⇧⌘E), using the apps you pick in Settings.
+
 ## Links
 
 Any app, script or shortcut can control Scout with `scout://` links:
@@ -25,7 +34,7 @@ Any app, script or shortcut can control Scout with `scout://` links:
 | `scout://recents` | Files you opened or downloaded in the last 30 days |
 | `scout://tidy?path=~/Downloads` | Show Tidy Folder's plan (nothing moves until you confirm) |
 | `scout://cleanup` | Open Clean Up |
-| `scout://packages` | Open Packages (Homebrew, npm) |
+| `scout://packages` | Open Packages (Homebrew, npm; needs Developer tools) |
 | `scout://changes?path=~/Code/my-app` | Every changed file in a git repository |
 | `scout://settings` | Open Settings |
 | `scout://shortcuts` | Show the keyboard shortcuts |
