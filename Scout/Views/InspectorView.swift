@@ -113,6 +113,10 @@ private struct ItemInspector: View {
             if let source = item.source {
                 SourceCard(browser: browser, source: source)
             }
+            if !item.isDirectory {
+                VersionsCard(browser: browser, item: item)
+                    .id(item.id)
+            }
 
             HStack {
                 Button("Open") { browser.open([item.id]) }
@@ -141,6 +145,80 @@ private struct ItemInspector: View {
         if let size = item.size { return Format.bytes(size) }
         guard let folderSize else { return "Calculating…" }
         return (folderSize.isPartial ? "≥ " : "") + Format.bytes(folderSize.bytes)
+    }
+}
+
+// MARK: - Earlier versions
+
+/// Earlier versions macOS kept of a document, with Save a Copy and Restore. Hidden when there are none.
+private struct VersionsCard: View {
+    let browser: BrowserModel
+    let item: FileItem
+    @State private var versions: [FileVersions.Version] = []
+    @State private var showsAll = false
+    @State private var restoring: FileVersions.Version?
+
+    var body: some View {
+        Group {
+            if !versions.isEmpty {
+                Card(spacing: 6) {
+                    HStack {
+                        Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90").foregroundStyle(Color.textSubtle)
+                        Text("\(versions.count) earlier version\(versions.count == 1 ? "" : "s")").foregroundStyle(Color.textSubtle)
+                        Spacer()
+                        if versions.count > 3 {
+                            Button(showsAll ? "Fewer" : "Show All") { showsAll.toggle() }.buttonStyle(.link)
+                        }
+                    }
+                    .font(.ui(13))
+                    ForEach(showsAll ? versions : Array(versions.prefix(3))) { version in
+                        HStack(spacing: 8) {
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(version.date?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown date")
+                                if let computer = version.computer {
+                                    Text("from \(computer)").font(.ui(11)).foregroundStyle(Color.textSubtle)
+                                }
+                            }
+                            Spacer()
+                            Button("Save a Copy") { saveCopy(version) }
+                                .help("Save this version next to the file, leaving the file as it is")
+                            Button("Restore…") { restoring = version }
+                        }
+                        .font(.ui(12))
+                        .controlSize(.small)
+                    }
+                }
+            }
+        }
+        .task {
+            let url = item.url
+            versions = await Task.detached(priority: .utility) { FileVersions.list(url) }.value
+        }
+        .alert("Restore this version?", isPresented: Binding(get: { restoring != nil }, set: { if !$0 { restoring = nil } })) {
+            Button("Restore") { if let restoring { restore(restoring) } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("“\(item.name)” goes back to how it was then. What’s there now is kept as a version, so you can switch back.")
+        }
+    }
+
+    private func saveCopy(_ version: FileVersions.Version) {
+        do {
+            let copy = try FileVersions.saveCopy(version, of: item.url)
+            browser.reveal(copy)
+        } catch {
+            browser.alertMessage = error.localizedDescription
+        }
+    }
+
+    private func restore(_ version: FileVersions.Version) {
+        do {
+            try FileVersions.restore(version, of: item.url)
+            versions = FileVersions.list(item.url)
+            Task { await browser.reload() }
+        } catch {
+            browser.alertMessage = "Couldn’t restore that version: \(error.localizedDescription)"
+        }
     }
 }
 
