@@ -5,6 +5,8 @@ import Foundation
 /// What Scout did to some files.
 public enum FileAction: String, Codable, Sendable {
     case move, copy, rename, trash, tidy
+    /// A triage rule filed a new download on its own.
+    case rule
     /// Put an earlier action back (⌘Z, or Undo on the History page). Undoing an undo is a redo.
     case undo
 }
@@ -13,14 +15,18 @@ public enum FileAction: String, Codable, Sendable {
 public struct FileChange: Codable, Hashable, Sendable {
     public var from: String
     public var to: String
+    /// Where the file was downloaded from (e.g. "canvas.depaul.edu"), so triage can learn
+    /// "files from this site go here".
+    public var site: String?
 
-    public init(from: String, to: String) {
+    public init(from: String, to: String, site: String? = nil) {
         self.from = from
         self.to = to
+        self.site = site
     }
 
-    public init(_ pair: (URL, URL)) {
-        self.init(from: pair.0.filePath, to: pair.1.filePath)
+    public init(_ pair: (URL, URL), site: String? = nil) {
+        self.init(from: pair.0.filePath, to: pair.1.filePath, site: site)
     }
 }
 
@@ -32,13 +38,17 @@ public struct FileHistoryEntry: Codable, Hashable, Identifiable, Sendable {
     public var changes: [FileChange]
     /// For `.undo`: the entry it put back.
     public var undoes: UUID?
+    /// For `.rule`: the rule's name.
+    public var note: String?
 
-    public init(id: UUID = UUID(), date: Date = .now, action: FileAction, changes: [FileChange], undoes: UUID? = nil) {
+    public init(id: UUID = UUID(), date: Date = .now, action: FileAction, changes: [FileChange],
+                undoes: UUID? = nil, note: String? = nil) {
         self.id = id
         self.date = date
         self.action = action
         self.changes = changes
         self.undoes = undoes
+        self.note = note
     }
 }
 

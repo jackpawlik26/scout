@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Commands whose keyboard shortcut you can change in Settings ▸ Keyboard Shortcuts.
 enum ScoutShortcut: String, CaseIterable, Identifiable {
-    case newTab, moveTo, copyTo, newFolder, newTextFile, tidy, open, quickLook, infoPanel, showInFinder, getInfo, makeAlias, airDrop, terminal, editor, trash, closeTab, copyPath, moveHere, filter, splitView, swapPanes, otherPane, sidebar, listView, iconView, columnView, biggerIcons, smallerIcons, shelf, hiddenFiles, nextTab, previousTab, shortcutsSheet, back, forward, enclosingFolder, jump, findFiles, goToPath, recents, history, home, desktop, documents, downloads, applications, iCloud, addFavorites, cleanUp, packages, gitChanges, newWorkspace
+    case newTab, moveTo, copyTo, newFolder, newTextFile, tidy, open, quickLook, infoPanel, showInFinder, getInfo, makeAlias, airDrop, terminal, editor, trash, closeTab, copyPath, moveHere, filter, splitView, swapPanes, otherPane, sidebar, listView, iconView, columnView, biggerIcons, smallerIcons, shelf, hiddenFiles, nextTab, previousTab, shortcutsSheet, back, forward, enclosingFolder, jump, findFiles, goToPath, recents, history, triage, home, desktop, documents, downloads, applications, iCloud, addFavorites, cleanUp, packages, gitChanges, newWorkspace
 
     var id: Self { self }
 
@@ -52,6 +52,7 @@ enum ScoutShortcut: String, CaseIterable, Identifiable {
         case .goToPath: "Go to Path"
         case .recents: "Recents"
         case .history: "History"
+        case .triage: "Triage Downloads"
         case .home: "Home"
         case .desktop: "Desktop"
         case .documents: "Documents"
@@ -110,6 +111,7 @@ enum ScoutShortcut: String, CaseIterable, Identifiable {
         case .goToPath: KeyboardShortcut(KeyEquivalent("l"), modifiers: .command)
         case .recents: KeyboardShortcut(KeyEquivalent("r"), modifiers: [.command, .option])
         case .history: KeyboardShortcut(KeyEquivalent("y"), modifiers: [.command, .option])
+        case .triage: KeyboardShortcut(KeyEquivalent("j"), modifiers: [.command, .option])
         case .home: KeyboardShortcut(KeyEquivalent("h"), modifiers: [.command, .shift])
         case .desktop: KeyboardShortcut(KeyEquivalent("d"), modifiers: [.command, .shift])
         case .documents: KeyboardShortcut(KeyEquivalent("o"), modifiers: [.command, .shift])

@@ -223,8 +223,73 @@ final class AppServices {
             }.value
             guard let latest else { return } // no access (yet)
             latestDownloads = latest
+            runTriageRules(on: latest)
             if downloadsWatcher == nil {
                 downloadsWatcher = DirectoryWatcher(url: folder) { [weak self] in self?.refreshLatestDownloads() }
+            }
+        }
+    }
+
+    // MARK: - Triage rules
+
+    /// "Always do this" rules from Triage: new downloads that match go to a folder on their own.
+    private(set) var triageRules: [TriageRule] = ScoutStore.loadTriageRules()
+    /// New downloads the rules already looked at (so a file you moved back isn't filed again).
+    @ObservationIgnored private var triageSeen: Set<String> = []
+    @ObservationIgnored private var triageRecheck: Task<Void, Never>?
+
+    func addTriageRule(_ rule: TriageRule) {
+        triageRules.removeAll { $0.id == rule.id }
+        triageRules.append(rule)
+        saveTriageRules()
+    }
+
+    func updateTriageRule(_ rule: TriageRule) {
+        guard let index = triageRules.firstIndex(where: { $0.id == rule.id }) else { return }
+        triageRules[index] = rule
+        saveTriageRules()
+    }
+
+    func removeTriageRule(_ id: UUID) {
+        triageRules.removeAll { $0.id == id }
+        saveTriageRules()
+    }
+
+    private func saveTriageRules() { try? ScoutStore.saveTriageRules(triageRules) }
+
+    /// Files new downloads that match a rule. Only files that just arrived and have finished
+    /// downloading; each file is looked at once. Logged in History (as "Filed by a rule"), so
+    /// it can be undone there.
+    private func runTriageRules(on latest: [FileItem]) {
+        guard triageRules.contains(where: \.isEnabled) else { return }
+        let now = Date()
+        var waiting = false
+        var filed: [(rule: TriageRule, move: (URL, URL))] = []
+        for item in latest where !triageSeen.contains(item.path) {
+            guard TriageRule.isReady(item, now: now) else {
+                // Just arrived or still being written: look again shortly.
+                if let added = item.dateAdded, now.timeIntervalSince(added) < 60 { waiting = true }
+                continue
+            }
+            triageSeen.insert(item.path)
+            guard let rule = TriageRule.first(triageRules, matching: item.name, site: item.source?.site) else { continue }
+            let folder = URL.folder(rule.destination)
+            guard FileManager.default.fileExists(atPath: folder.filePath),
+                  let moved = try? fileSource.move(item.url, into: folder) else { continue }
+            filed.append((rule, (item.url, moved)))
+        }
+        for (rule, move) in filed { recordFiles(.rule, [move], note: rule.name) }
+        if !filed.isEmpty {
+            for model in windowModels.compactMap(\.model) {
+                for tab in model.panes.flatMap(\.tabs) { Task { await tab.reload() } }
+            }
+        }
+        if waiting {
+            triageRecheck?.cancel()
+            triageRecheck = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(6))
+                guard !Task.isCancelled else { return }
+                self?.refreshLatestDownloads()
             }
         }
     }
@@ -532,9 +597,13 @@ final class AppServices {
 
     /// Records what Scout just did to some files and returns the entry's id (for undo).
     @discardableResult
-    func recordFiles(_ action: FileAction, _ moves: [(URL, URL)], undoes: UUID? = nil) -> UUID? {
+    func recordFiles(_ action: FileAction, _ moves: [(URL, URL)], undoes: UUID? = nil, note: String? = nil) -> UUID? {
         guard !moves.isEmpty else { return nil }
-        let entry = FileHistoryEntry(action: action, changes: moves.map(FileChange.init), undoes: undoes)
+        // Where each file was downloaded from, so triage can learn "files from this site go here".
+        let changes = moves.map { move in
+            FileChange(move, site: action == .undo ? nil : DownloadSource.read(move.1)?.site)
+        }
+        let entry = FileHistoryEntry(action: action, changes: changes, undoes: undoes, note: note)
         fileHistory.append(entry)
         fileHistoryQueue.async { try? FileHistoryStore.append(entry) }
         return entry.id

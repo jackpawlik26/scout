@@ -179,6 +179,10 @@ struct SidebarView: View {
                             browser.showCleanup()
                         }
                         .help("Find space you can free up (⇧⌘K)")
+                        SidebarRow(title: "Triage Downloads", symbol: "tray.and.arrow.down", isSelected: browser.triageFolder != nil) {
+                            browser.showTriage()
+                        }
+                        .help("Go through new downloads one at a time and file them (⌥⌘J)")
                         SidebarRow(title: "History", symbol: "clock.arrow.circlepath", isSelected: browser.mode == .history) {
                             browser.showHistory()
                         }

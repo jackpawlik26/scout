@@ -272,6 +272,8 @@ final class BrowserWindowModel {
             current.showRecents()
         case .history:
             current.showHistory()
+        case .triage(let path):
+            current.showTriage(path.map { URL.folder(PathCompletion.expandTilde($0, home: services.homePath)).filePath })
         case .tidy(let rawPath):
             let folder = URL.folder(PathCompletion.expandTilde(rawPath, home: services.homePath))
             current.go(to: folder)

@@ -280,7 +280,7 @@ struct BrowserPane: View {
                 switch browser.mode {
                 case .search: Text("Search")
                 case .workspace: Text("Workspace")
-                case .cleanup, .packages, .history: Text("Tools")
+                case .cleanup, .packages, .history, .triage: Text("Tools")
                 case .settings: Text("Scout")
                 case .recents: Text("Last 30 days")
                 case .tag: Text("Tag")
@@ -329,6 +329,7 @@ struct BrowserPane: View {
         case .settings: "gearshape"
         case .recents: "clock"
         case .history: "clock.arrow.circlepath"
+        case .triage: "tray.and.arrow.down"
         case .tag: "tag"
         case .changes: "arrow.triangle.branch"
         }
@@ -503,6 +504,9 @@ struct BrowserPane: View {
             PackagesView(browser: browser)
         } else if browser.mode == .history {
             HistoryView(browser: browser)
+        } else if let folder = browser.triageFolder {
+            TriageView(window: window, browser: browser, folder: folder)
+                .id(folder)
         } else if browser.mode == .settings {
             SettingsView(window: window, browser: browser)
         } else if let error = browser.loadError {

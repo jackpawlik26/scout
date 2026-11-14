@@ -226,6 +226,7 @@ struct HistoryView: View {
         case .trash: return prefix + "Moved to the Trash from \(fromFolder)"
         case .copy: return prefix + "Copied from \(fromFolder) to \(toFolder)"
         case .tidy: return prefix + "Tidied into \(toFolder)"
+        case .rule: return prefix + "Filed into \(toFolder) by “\(match.entry.note ?? "a rule")”"
         case .move: return prefix + "Moved from \(fromFolder) to \(toFolder)"
         case .undo: return "Put back in \(toFolder)"
         }
@@ -263,6 +264,7 @@ struct HistoryView: View {
         case .copy: return "Copied \(one)\(into)"
         case .trash: return "Moved \(one) to the Trash"
         case .tidy: return "Tidied \(Self.count(changes.count)) in \(Self.name(parent(changes[0].from)))"
+        case .rule: return "Filed \(one)\(into) by a rule"
         case .rename:
             return changes.count == 1 ? "Renamed \(one) to “\(Self.name(changes[0].to))”" : "Renamed \(one)"
         case .undo: return "Put back \(Self.count(changes.count))"
@@ -270,7 +272,8 @@ struct HistoryView: View {
     }
 
     private func subtitle(of entry: FileHistoryEntry) -> String {
-        let time = entry.date.formatted(date: .omitted, time: .shortened)
+        var time = entry.date.formatted(date: .omitted, time: .shortened)
+        if entry.action == .rule, let rule = entry.note { time += " · “\(rule)”" }
         let from = Set(entry.changes.map { parent($0.from) })
         guard from.count == 1, let folder = from.first else { return time }
         return "\(time) · from \(display(folder))"
@@ -290,6 +293,7 @@ struct HistoryView: View {
         case .rename: return "character.cursor.ibeam"
         case .trash: return "trash"
         case .tidy: return "wand.and.sparkles"
+        case .rule: return "tray.and.arrow.down"
         case .undo: return "arrow.uturn.backward"
         }
     }

@@ -47,6 +47,7 @@ Any app, script or shortcut can control Scout with `scout://` links:
 | `scout://workspace?name=Taxes` | Open a workspace |
 | `scout://recents` | Files you opened or downloaded in the last 30 days |
 | `scout://history` | Everything Scout moved, copied, renamed or trashed |
+| `scout://triage?path=~/Downloads` | Triage a folder's files one at a time (no path: Downloads) |
 | `scout://tidy?path=~/Downloads` | Show Tidy Folder's plan (nothing moves until you confirm) |
 | `scout://cleanup` | Open Clean Up |
 | `scout://packages` | Open Packages (Homebrew, npm; needs Developer tools) |
@@ -95,6 +96,7 @@ Stop it with Ctrl-C; it stays installed in Raycast.
 
 - `folders.txt`: the folder index behind ⌘K, one path per line
 - `history.json`: folder visits (for "Most Used" ranking), ISO 8601 dates
+- `triage-rules.json`: Triage's "Always do this" rules (new downloads that match are filed on their own while Scout is open)
 - `file-history.jsonl`: what Scout moved, copied, renamed and trashed (the History page), one JSON entry per line, kept for a year
 - `favorites.json`, `workspaces.json`, `saved-searches.json`: what their names say
 - `customizations.json`: folder colors, symbols, nicknames and pins

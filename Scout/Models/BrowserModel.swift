@@ -51,6 +51,8 @@ enum BrowserMode: Equatable, Codable {
     case tag(String)
     /// Everything Scout moved, copied, renamed or trashed.
     case history
+    /// Going through a folder's loose files one at a time (the folder's path).
+    case triage(String)
 }
 
 /// A stop in a tab's Back/Forward history.
@@ -167,7 +169,15 @@ final class BrowserModel: Identifiable {
     }
 
     /// Clean Up and Packages: pages with their own layout instead of a file list.
-    var isToolPage: Bool { mode == .cleanup || mode == .packages || mode == .settings || mode == .history }
+    var isToolPage: Bool {
+        mode == .cleanup || mode == .packages || mode == .settings || mode == .history || triageFolder != nil
+    }
+
+    /// The folder Triage is going through.
+    var triageFolder: String? {
+        if case .triage(let path) = mode { return path }
+        return nil
+    }
 
     /// Items come from many folders, so views show where each one lives.
     var showsLocations: Bool {
@@ -215,6 +225,7 @@ final class BrowserModel: Identifiable {
         case .settings: return "Settings"
         case .recents: return "Recents"
         case .history: return "History"
+        case .triage(let path): return "Triage " + FileManager.default.displayName(atPath: path)
         case .tag(let name): return name
         case .changes(let root): return "Changes in " + FileManager.default.displayName(atPath: root)
         case .folder: break
@@ -380,6 +391,7 @@ final class BrowserModel: Identifiable {
         case .settings: showSettings()
         case .recents: showRecents()
         case .history: showHistory()
+        case .triage(let path): if FileManager.default.fileExists(atPath: path) { showTriage(path) }
         case .tag(let name): showTag(name)
         }
     }
@@ -412,6 +424,14 @@ final class BrowserModel: Identifiable {
         guard mode != .recents else { return }
         pushHistory()
         show(HistoryEntry(location: location, mode: .recents))
+    }
+
+    /// Goes through a folder's loose files one at a time (default: Downloads).
+    func showTriage(_ path: String? = nil) {
+        let folder = path ?? services.homePath + "/Downloads"
+        guard triageFolder != folder else { return }
+        pushHistory()
+        show(HistoryEntry(location: location, mode: .triage(folder)))
     }
 
     /// Everything Scout moved, copied, renamed or trashed, searchable, with Undo.
@@ -524,7 +544,7 @@ final class BrowserModel: Identifiable {
         case .workspace:
             loadWorkspace()
             return
-        case .cleanup, .packages, .settings, .history:
+        case .cleanup, .packages, .settings, .history, .triage:
             spotlight = nil
             spotlightAdded = nil
             watcher = nil

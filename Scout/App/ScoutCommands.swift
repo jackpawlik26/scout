@@ -202,6 +202,12 @@ struct ScoutCommands: Commands {
                     .customizableShortcut(.recents)
                 Button("History") { browser?.showHistory() }
                     .customizableShortcut(.history)
+                Button("Triage Downloads") { browser?.showTriage() }
+                    .customizableShortcut(.triage)
+                Button("Triage This Folder") {
+                    if let browser, browser.isFolder { browser.showTriage(browser.location.filePath) }
+                }
+                .disabled(browser?.isFolder != true)
                 Button("Home") { browser?.go(to: services.home) }
                     .customizableShortcut(.home)
                 Button("Desktop") { browser?.go(to: services.home.appending(path: "Desktop")) }
