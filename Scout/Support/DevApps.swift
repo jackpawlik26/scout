@@ -72,3 +72,10 @@ struct DevApp: Identifiable, Hashable {
         NSWorkspace.shared.open([url], withApplicationAt: appURL, configuration: NSWorkspace.OpenConfiguration())
     }
 }
+
+/// Settings ▸ Developer tools: git status and badges, the Packages page, and Open in
+/// Terminal/Editor. Off for new installs (see `AppServices.applyFirstRunDefaults`).
+enum DeveloperTools {
+    static let key = "developerTools"
+    static var isOn: Bool { UserDefaults.standard.bool(forKey: key) }
+}

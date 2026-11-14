@@ -35,8 +35,42 @@ final class AppServices {
 
     var allTags: [FileTag] { FileTag.standard + customTags }
 
+    /// Tags actually on your files (from Spotlight, plus any seen while browsing), for the
+    /// sidebar. Empty for people who don't use tags, so the section stays hidden.
+    private(set) var tagsInUse: [FileTag] = []
+
+    func refreshTagsInUse() {
+        let home = homePath
+        Task {
+            let found = await Self.findUsedTags(home: home)
+            addTagsInUse(found)
+        }
+    }
+
+    private func addTagsInUse(_ tags: some Sequence<FileTag>) {
+        var byName = Dictionary(tagsInUse.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
+        for tag in tags where byName[tag.name] == nil { byName[tag.name] = tag }
+        guard byName.count != tagsInUse.count else { return }
+        let order = FileTag.standard.map(\.name)
+        tagsInUse = byName.values.sorted {
+            let a = order.firstIndex(of: $0.name) ?? order.count, b = order.firstIndex(of: $1.name) ?? order.count
+            return a != b ? a < b : $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        }
+    }
+
+    @concurrent nonisolated private static func findUsedTags(home: String) async -> [FileTag] {
+        guard let output = CommandRunner.run("/usr/bin/mdfind", ["-onlyin", home, "kMDItemUserTags == *"], timeout: 15)
+        else { return [] }
+        var found: [String: FileTag] = [:]
+        for path in output.split(separator: "\n").prefix(3_000) {
+            for tag in Tags.read(URL(filePath: String(path))) where found[tag.name] == nil { found[tag.name] = tag }
+        }
+        return Array(found.values)
+    }
+
     /// Remembers tags that aren't Finder's built-in colors so they show in menus and the sidebar.
     func noteTags(_ tags: some Sequence<FileTag>) {
+        addTagsInUse(tags)
         let known = Set(allTags.map(\.name))
         let new = tags.filter { !known.contains($0.name) }
         guard !new.isEmpty else { return }
@@ -88,7 +122,21 @@ final class AppServices {
 
     private struct WeakWindow { weak var model: BrowserWindowModel? }
 
+    /// Settings that differ for new installs: developer tools off, a welcome card, and a
+    /// shorter sidebar. People who used Scout before keep what they had.
+    static func applyFirstRunDefaults() {
+        let defaults = UserDefaults.standard
+        guard defaults.object(forKey: DeveloperTools.key) == nil else { return }
+        let returning = FileManager.default.fileExists(atPath: ScoutStore.historyURL.filePath)
+        defaults.set(returning, forKey: DeveloperTools.key)
+        defaults.set(returning, forKey: "welcomeShown")
+        if !returning, defaults.string(forKey: "collapsedSections") == nil {
+            defaults.set("Locations", forKey: "collapsedSections")
+        }
+    }
+
     init() {
+        Self.applyFirstRunDefaults()
         frecency = ScoutStore.loadHistory()
         savedSearches = ScoutStore.loadSavedSearches()
         workspaces = ScoutStore.loadWorkspaces()
@@ -103,6 +151,7 @@ final class AppServices {
             })
         }
         refreshLatestDownloads()
+        refreshTagsInUse()
         Task {
             // A recent index (or a quick relaunch) doesn't need a fresh scan of the whole home folder.
             if let built = ScoutStore.indexDate(), !folders.isEmpty {

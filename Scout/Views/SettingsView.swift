@@ -26,6 +26,7 @@ struct SettingsView: View {
     @AppStorage("jumpHotKey") private var jumpHotKey = GlobalHotKey.Preset.optionSpace.rawValue
     @State private var hotKeyTaken = false
     @State private var isDefaultBrowser = DefaultFileBrowser.isScout
+    @AppStorage(DeveloperTools.key) private var developerTools = false
     @State private var opensFolders = FolderHandler.isScout
     @State private var folderHandlerNote: String?
     @State private var opensAtLogin = SMAppService.mainApp.status == .enabled
@@ -246,11 +247,21 @@ struct SettingsView: View {
 
     private var developerCard: some View {
         SettingsCard("Developer", symbol: "chevron.left.forwardslash.chevron.right") {
+            SettingRow("Developer tools", detail: "Git status and badges in repositories, the Packages page (Homebrew, npm), and Open in Terminal or your code editor.") {
+                Toggle("", isOn: Binding(get: { developerTools }, set: { on in
+                    developerTools = on
+                    for tab in allTabs { tab.refreshGit() }
+                }))
+                .toggleStyle(.switch).labelsHidden()
+            }
+            if developerTools {
+            Divider()
             appPicker("Terminal", detail: "Open in Terminal (⌥⇧⌘T) and package upgrades", kind: .terminal,
                       current: DevApp.preferredTerminal, selection: $terminalApp)
             Divider()
             appPicker("Code editor", detail: "Open in Editor (⌥⇧⌘E)", kind: .editor,
                       current: DevApp.preferredEditor, selection: $editorApp)
+            }
         }
     }
 

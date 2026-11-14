@@ -7,6 +7,7 @@ struct SidebarView: View {
     let browser: BrowserModel
     @Environment(AppServices.self) private var services
     @AppStorage("collapsedSections") private var collapsedRaw = ""
+    @AppStorage(DeveloperTools.key) private var developerTools = false
     @State private var isConfirmingEmptyTrash = false
     @State private var sidebarMessage: String?
 
@@ -141,10 +142,12 @@ struct SidebarView: View {
                             }
                         }
                     }
+                    if !services.tagsInUse.isEmpty {
                     section("Tags") {
-                        ForEach(services.allTags) { tag in
+                        ForEach(services.tagsInUse) { tag in
                             TagSidebarRow(tag: tag, isSelected: browser.tagName == tag.name) { browser.showTag(tag.name) }
                         }
+                    }
                     }
                     section("Locations") {
                         ForEach(services.locations) { place in
@@ -176,10 +179,12 @@ struct SidebarView: View {
                             browser.showCleanup()
                         }
                         .help("Find space you can free up (⇧⌘K)")
-                        SidebarRow(title: "Packages", symbol: "shippingbox", isSelected: browser.mode == .packages) {
-                            browser.showPackages()
+                        if developerTools {
+                            SidebarRow(title: "Packages", symbol: "shippingbox", isSelected: browser.mode == .packages) {
+                                browser.showPackages()
+                            }
+                            .help("Homebrew and npm: what’s installed and what’s outdated (⌥⌘P)")
                         }
-                        .help("Homebrew and npm: what’s installed and what’s outdated (⌥⌘P)")
                     }
                 }
                 .padding(.horizontal, 10)
@@ -202,7 +207,9 @@ struct SidebarView: View {
         .contextMenu {
             Button("Open in New Tab") { window.newTab(at: place.url) }
             Button("Show in Finder") { FinderBridge.reveal([place.url]) }
-            Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser.openInTerminal(place.url) }
+            if developerTools {
+                Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser.openInTerminal(place.url) }
+            }
             OpenInMenu(url: place.url)
             extraMenu()
         }

@@ -62,6 +62,8 @@ struct BrowserContent: View {
     @Environment(AppServices.self) private var services
     @AppStorage(Transparency.amountKey) private var transparency = 0.0
     @State private var newWorkspaceName = ""
+    /// The welcome card, once, on a new install.
+    @AppStorage("welcomeShown") private var welcomeShown = true
 
     var body: some View {
         let browser = window.current
@@ -117,6 +119,9 @@ struct BrowserContent: View {
         .onWindowKey(.keypadEnter, modifiers: .control, perform: openSelection)
         .sheet(isPresented: $window.isGoToPathOpen) {
             GoToPathView(window: window)
+        }
+        .sheet(isPresented: Binding(get: { !welcomeShown }, set: { if !$0 { welcomeShown = true } })) {
+            WelcomeView { welcomeShown = true }
         }
         .alert("New Workspace", isPresented: newWorkspaceBinding) {
             TextField("Name", text: $newWorkspaceName)

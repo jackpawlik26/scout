@@ -561,6 +561,7 @@ private extension View {
 
 /// Right-click menu. `urls` empty = clicked on empty space.
 struct FileContextMenu: View {
+    @AppStorage(DeveloperTools.key) private var developerTools = false
     let window: BrowserWindowModel
     let browser: BrowserModel
     let urls: Set<URL>
@@ -581,7 +582,9 @@ struct FileContextMenu: View {
                 Button("Paste") { browser.paste(move: false) }
                 Divider()
             }
-            Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser.openInTerminal() }
+            if developerTools {
+                Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser.openInTerminal() }
+            }
             OpenInMenu(url: browser.location)
             Button("Show in Finder") { FinderBridge.reveal([browser.location]) }
             Button("Copy Path") { copy(browser.location.filePath) }
@@ -694,7 +697,7 @@ struct FileContextMenu: View {
                 browser.showFinderInfo()
             }
             if items.count == 1, let item = items.first {
-                if item.isNavigable {
+                if item.isNavigable, developerTools {
                     Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser.openInTerminal(item.url) }
                 }
                 OpenInMenu(url: item.url)

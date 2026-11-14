@@ -1546,7 +1546,7 @@ final class BrowserModel: Identifiable {
     func refreshGit() {
         gitTask?.cancel()
         let path = changesRoot ?? (isFolder ? location.filePath : nil)
-        guard let path, let root = Git.repositoryRoot(containing: path) else {
+        guard DeveloperTools.isOn, let path, let root = Git.repositoryRoot(containing: path) else {
             if git != nil { git = nil }
             if untrustedRepo != nil { untrustedRepo = nil }
             return

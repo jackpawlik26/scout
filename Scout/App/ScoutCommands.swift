@@ -9,6 +9,7 @@ struct ScoutCommands: Commands {
     @AppStorage("appearance") private var appearance = AppAppearance.system.rawValue
     @AppStorage("iconSize") private var iconSize = 64.0
     @AppStorage("columnHeaders") private var columnHeaders = true
+    @AppStorage(DeveloperTools.key) private var developerTools = false
 
     private var browser: BrowserModel? { window?.current }
 
@@ -63,10 +64,12 @@ struct ScoutCommands: Commands {
                 .disabled(browser?.selection.isEmpty ?? true)
             Button("Extract Here") { browser?.extractSelection() }
                 .disabled(!(browser?.canExtractSelection ?? false))
-            Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser?.openInTerminal() }
-                .customizableShortcut(.terminal)
-            Button("Open in \(DevApp.preferredEditor?.name ?? "Editor")") { browser?.openInEditor() }
-                .customizableShortcut(.editor)
+            if developerTools {
+                Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser?.openInTerminal() }
+                    .customizableShortcut(.terminal)
+                Button("Open in \(DevApp.preferredEditor?.name ?? "Editor")") { browser?.openInEditor() }
+                    .customizableShortcut(.editor)
+            }
             Divider()
             Button("Move to Trash") { trashOrDeleteText() }
                 .customizableShortcut(.trash)
@@ -220,11 +223,13 @@ struct ScoutCommands: Commands {
                 Divider()
                 Button("Clean Up") { browser?.showCleanup() }
                     .customizableShortcut(.cleanUp)
-                Button("Packages") { browser?.showPackages() }
-                    .customizableShortcut(.packages)
-                Button("Git Changes") { browser?.showChanges() }
-                    .customizableShortcut(.gitChanges)
-                    .disabled(browser?.git == nil)
+                if developerTools {
+                    Button("Packages") { browser?.showPackages() }
+                        .customizableShortcut(.packages)
+                    Button("Git Changes") { browser?.showChanges() }
+                        .customizableShortcut(.gitChanges)
+                        .disabled(browser?.git == nil)
+                }
                 Divider()
                 Button("New Workspace…") { window.newWorkspacePaths = browser?.selectedItems.map(\.path) ?? [] }
                     .customizableShortcut(.newWorkspace)
