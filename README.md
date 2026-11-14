@@ -40,7 +40,9 @@ brew install xcodegen
 ./scripts/install.sh
 ```
 
-That builds Scout, puts it in Applications, opens it, and adds the `scout` command to `~/.local/bin`. To update later, run `git pull && ./scripts/install.sh` in the same folder. More in [Developing Scout](docs/DEVELOPING.md).
+That builds Scout, puts it in Applications, opens it, and adds the `scout` command to `~/.local/bin`. To update later, run `git pull && ./scripts/install.sh` in the same folder.
+
+**[Full guide: Build Scout from source](docs/BUILDING.md)**, covering requirements, one-time Xcode setup, building a specific release, updating, troubleshooting and uninstalling.
 
 **Optional:** in Scout's **Settings** (⌘,), turn on **Open folders in Scout** and **Use Scout for "Show in Finder"** to make Scout your everyday file browser, and **Open at login** to keep ⌥Space ready.
 
@@ -86,6 +88,7 @@ That builds Scout, puts it in Applications, opens it, and adds the `scout` comma
 - [What's new](https://github.com/jackpawlik26/scout/releases): every release and its changes
 - [Keyboard shortcuts](docs/SHORTCUTS.md)
 - [Scout for power users](docs/POWER-USERS.md): links, Shortcuts app, the `scout` command, Raycast
-- [Developing Scout](docs/DEVELOPING.md): build it yourself, how the code is organized, making a release
+- [Build Scout from source](docs/BUILDING.md): requirements, steps, troubleshooting
+- [Developing Scout](docs/DEVELOPING.md): how the code is organized, making a release
 
 Scout is open source under the [MIT License](LICENSE).

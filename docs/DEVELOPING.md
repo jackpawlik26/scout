@@ -1,5 +1,7 @@
 # Developing Scout
 
+Just want to build and use it? See [Build Scout from source](BUILDING.md).
+
 ## What you need
 
 - A Mac with macOS 26 or later

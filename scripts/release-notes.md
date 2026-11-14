@@ -8,6 +8,8 @@
 
 Needs macOS 26 or later. Works on Apple silicon and Intel Macs.
 
+Prefer to build it yourself? With Xcode 26 and Homebrew, it's `git clone`, `brew install xcodegen` and `./scripts/install.sh`, with no "Open Anyway" step. See [Build Scout from source](https://github.com/jackpawlik26/scout/blob/main/docs/BUILDING.md).
+
 ### New
 - **Rename Items 2.** Select files and press Return. Stack steps (replace with regular expressions and `$1` groups, add text, new name, remove characters, change case, trim spaces), use variables like `{n}`, `{created:yyyy-MM-dd}`, `{parent}` and `{width}`, and save presets. Four come built in.
 - **A calmer design.** One type scale, neutral grays, thin icons.
