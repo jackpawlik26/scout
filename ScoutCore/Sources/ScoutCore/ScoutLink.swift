@@ -8,6 +8,7 @@ import Foundation
 ///     scout://jump?query=taxes                   open the ⌘K palette, optionally pre-filled
 ///     scout://workspace?name=Taxes               open a workspace by name
 ///     scout://cleanup                            open Clean Up
+///     scout://history                            what Scout moved, renamed and trashed
 ///     scout://packages                           open Packages (Homebrew, npm)
 ///     scout://settings                           open Settings
 ///     scout://shortcuts                          show the keyboard shortcuts
@@ -21,6 +22,7 @@ public enum ScoutLink: Equatable, Sendable {
     case settings
     case shortcuts
     case recents
+    case history
     /// Shows Tidy Folder's plan for a folder (nothing moves until you confirm).
     case tidy(path: String)
     case changes(path: String)
@@ -54,6 +56,8 @@ public enum ScoutLink: Equatable, Sendable {
             self = .shortcuts
         case "recents", "recent":
             self = .recents
+        case "history":
+            self = .history
         case "tidy":
             self = .tidy(path: query["path"].flatMap { $0.isEmpty ? nil : $0 } ?? "~/Downloads")
         case "changes":
@@ -89,6 +93,8 @@ public enum ScoutLink: Equatable, Sendable {
             components.host = "shortcuts"
         case .recents:
             components.host = "recents"
+        case .history:
+            components.host = "history"
         case .tidy(let path):
             components.host = "tidy"
             components.queryItems = [URLQueryItem(name: "path", value: path)]

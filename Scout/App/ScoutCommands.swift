@@ -200,6 +200,8 @@ struct ScoutCommands: Commands {
                 let services = window.services
                 Button("Recents") { browser?.showRecents() }
                     .customizableShortcut(.recents)
+                Button("History") { browser?.showHistory() }
+                    .customizableShortcut(.history)
                 Button("Home") { browser?.go(to: services.home) }
                     .customizableShortcut(.home)
                 Button("Desktop") { browser?.go(to: services.home.appending(path: "Desktop")) }

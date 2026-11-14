@@ -1,6 +1,6 @@
 # Keyboard shortcuts
 
-Press **⌘/** in Scout to see the most useful ones on screen. You can change 50 of them in **Settings ▸ Keyboard Shortcuts** (Scout sorts out any clashes for you).
+Press **⌘/** in Scout to see the most useful ones on screen. You can change 51 of them in **Settings ▸ Keyboard Shortcuts** (Scout sorts out any clashes for you).
 
 | Keys | Action |
 |---|---|
@@ -36,8 +36,9 @@ Press **⌘/** in Scout to see the most useful ones on screen. You can change 50
 | Menu bar 🔭 | Jump, latest downloads, favorites, workspaces, Recents, Clean Up, Shelf (turn off in Settings) |
 | Shortcuts app / Siri | Open in Scout, Open Workspace, Jump, Recents, Clean Up, Tidy Downloads |
 | Right-click ▸ Customize | Folder color and symbol, nickname, Pin to Top (Scout-only) |
-| Settings ▸ Keyboard Shortcuts | Change any of 50 shortcuts; clashes are resolved for you |
+| Settings ▸ Keyboard Shortcuts | Change any of 51 shortcuts; clashes are resolved for you |
 | ⌥⌘R | Recents: files opened or downloaded in the last 30 days, grouped by day |
+| ⌥⌘Y | History: everything Scout moved, copied, renamed or trashed, searchable, with Undo |
 | ⌥⌘T | Tidy Folder: plan, then move loose files into folders by kind (⌘Z undoes) |
 | Right-click ▸ Tags | Finder-compatible colored tags; sidebar Tags lists everything with a tag |
 | ⌘D / ⌘U / ⌥⇥ | Split view / swap panes / switch pane |

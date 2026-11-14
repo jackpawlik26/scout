@@ -270,6 +270,8 @@ final class BrowserWindowModel {
             current.showSettings()
         case .recents:
             current.showRecents()
+        case .history:
+            current.showHistory()
         case .tidy(let rawPath):
             let folder = URL.folder(PathCompletion.expandTilde(rawPath, home: services.homePath))
             current.go(to: folder)

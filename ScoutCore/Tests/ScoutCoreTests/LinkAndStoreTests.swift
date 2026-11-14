@@ -28,7 +28,7 @@ import Testing
         #expect(ScoutLink(url: URL(string: "scout://tidy")!) == .tidy(path: "~/Downloads"))
         for link in [ScoutLink.open(path: "/Users/alex/My Files & Stuff", newTab: true), .jump(query: "study prep"), .jump(query: nil),
                      .workspace(name: "Taxes"), .cleanup, .open(path: "/x", newTab: false, split: true),
-                     .packages, .settings, .shortcuts, .recents, .tidy(path: "~/Downloads"), .changes(path: "~/Scout")] {
+                     .packages, .settings, .shortcuts, .recents, .history, .tidy(path: "~/Downloads"), .changes(path: "~/Scout")] {
             #expect(ScoutLink(url: link.url) == link)
         }
     }

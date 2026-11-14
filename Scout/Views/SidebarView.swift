@@ -179,6 +179,10 @@ struct SidebarView: View {
                             browser.showCleanup()
                         }
                         .help("Find space you can free up (⇧⌘K)")
+                        SidebarRow(title: "History", symbol: "clock.arrow.circlepath", isSelected: browser.mode == .history) {
+                            browser.showHistory()
+                        }
+                        .help("Everything Scout moved, renamed or trashed, with Undo (⌥⌘Y)")
                         if developerTools {
                             SidebarRow(title: "Packages", symbol: "shippingbox", isSelected: browser.mode == .packages) {
                                 browser.showPackages()

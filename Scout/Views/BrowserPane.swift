@@ -280,7 +280,7 @@ struct BrowserPane: View {
                 switch browser.mode {
                 case .search: Text("Search")
                 case .workspace: Text("Workspace")
-                case .cleanup, .packages: Text("Tools")
+                case .cleanup, .packages, .history: Text("Tools")
                 case .settings: Text("Scout")
                 case .recents: Text("Last 30 days")
                 case .tag: Text("Tag")
@@ -328,6 +328,7 @@ struct BrowserPane: View {
         case .packages: "shippingbox"
         case .settings: "gearshape"
         case .recents: "clock"
+        case .history: "clock.arrow.circlepath"
         case .tag: "tag"
         case .changes: "arrow.triangle.branch"
         }
@@ -500,6 +501,8 @@ struct BrowserPane: View {
             CleanupView(browser: browser)
         } else if browser.mode == .packages {
             PackagesView(browser: browser)
+        } else if browser.mode == .history {
+            HistoryView(browser: browser)
         } else if browser.mode == .settings {
             SettingsView(window: window, browser: browser)
         } else if let error = browser.loadError {
@@ -589,7 +592,9 @@ struct BrowserPane: View {
         let count = browser.displayedItems.count
         let noun = browser.search == nil ? "item" : "result"
         if !browser.selection.isEmpty { return "\(browser.selection.count) of \(count) selected" }
-        return "\(count) \(noun)\(count == 1 ? "" : "s")"
+        let fresh = browser.isFolder ? browser.newPaths.count : 0
+        let new = fresh > 0 ? " · \(fresh) new since your last visit" : ""
+        return "\(count) \(noun)\(count == 1 ? "" : "s")\(new)"
     }
 
     private var renameBinding: Binding<Bool> {

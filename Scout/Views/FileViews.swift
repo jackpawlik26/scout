@@ -71,6 +71,7 @@ struct FileTableView: View {
                     }
                     TagDots(tags: item.tags)
                     CloudBadge(state: item.cloud)
+                    if browser.isNew(item) { NewDot() }
                     if let state = browser.gitState(item) {
                         Spacer(minLength: 4)
                         GitBadge(state: state, isFolder: item.isNavigable)
@@ -878,5 +879,16 @@ private struct WorkspaceMenu: View {
                 Task { await browser.reload() }
             }
         }
+    }
+}
+
+/// Marks a file that arrived since you last opened its folder.
+struct NewDot: View {
+    var body: some View {
+        Circle()
+            .fill(Color.accentColor)
+            .frame(width: 6, height: 6)
+            .help("New since your last visit")
+            .accessibilityLabel("New")
     }
 }

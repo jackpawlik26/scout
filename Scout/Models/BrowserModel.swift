@@ -49,6 +49,8 @@ enum BrowserMode: Equatable, Codable {
     case recents
     /// Everything with a Finder tag.
     case tag(String)
+    /// Everything Scout moved, copied, renamed or trashed.
+    case history
 }
 
 /// A stop in a tab's Back/Forward history.
@@ -161,7 +163,7 @@ final class BrowserModel: Identifiable {
     }
 
     /// Clean Up and Packages: pages with their own layout instead of a file list.
-    var isToolPage: Bool { mode == .cleanup || mode == .packages || mode == .settings }
+    var isToolPage: Bool { mode == .cleanup || mode == .packages || mode == .settings || mode == .history }
 
     /// Items come from many folders, so views show where each one lives.
     var showsLocations: Bool {
@@ -208,6 +210,7 @@ final class BrowserModel: Identifiable {
         case .packages: return "Packages"
         case .settings: return "Settings"
         case .recents: return "Recents"
+        case .history: return "History"
         case .tag(let name): return name
         case .changes(let root): return "Changes in " + FileManager.default.displayName(atPath: root)
         case .folder: break
@@ -338,6 +341,7 @@ final class BrowserModel: Identifiable {
         case .packages: showPackages()
         case .settings: showSettings()
         case .recents: showRecents()
+        case .history: showHistory()
         case .tag(let name): showTag(name)
         }
     }
@@ -370,6 +374,13 @@ final class BrowserModel: Identifiable {
         guard mode != .recents else { return }
         pushHistory()
         show(HistoryEntry(location: location, mode: .recents))
+    }
+
+    /// Everything Scout moved, copied, renamed or trashed, searchable, with Undo.
+    func showHistory() {
+        guard mode != .history else { return }
+        pushHistory()
+        show(HistoryEntry(location: location, mode: .history))
     }
 
     func showSettings() {
@@ -475,7 +486,7 @@ final class BrowserModel: Identifiable {
         case .workspace:
             loadWorkspace()
             return
-        case .cleanup, .packages, .settings:
+        case .cleanup, .packages, .settings, .history:
             spotlight = nil
             spotlightAdded = nil
             watcher = nil
@@ -529,7 +540,10 @@ final class BrowserModel: Identifiable {
             needsPermission = false
             freeSpace = try? target.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
                 .volumeAvailableCapacityForImportantUsage
-            if recordVisit { services.recordVisit(target) }
+            if recordVisit {
+                markNew(since: services.lastVisit(target.filePath))
+                services.recordVisit(target)
+            }
             refreshGit()
             measureFolderSizes(generation: generation)
             refreshExpanded()
@@ -557,6 +571,29 @@ final class BrowserModel: Identifiable {
     }
 
     func reload() async { await load(recordVisit: false) }
+
+    // MARK: - New since your last visit
+
+    /// Files that arrived between your last visit to this folder and this one (not ones
+    /// Scout put here itself). Empty on a first visit, when everything would count.
+    private(set) var newPaths: Set<String> = []
+
+    func isNew(_ item: FileItem) -> Bool { !newPaths.isEmpty && newPaths.contains(item.path) }
+
+    private func markNew(since lastVisit: Date?) {
+        guard let lastVisit else {
+            newPaths = []
+            return
+        }
+        let now = Date()
+        let movedByScout = Set(services.fileHistory.entries.reversed()
+            .prefix { $0.date > lastVisit }
+            .flatMap { $0.changes.map(\.to) })
+        newPaths = Set(items.filter { item in
+            guard let added = item.dateAdded, added > lastVisit, added <= now else { return false }
+            return !movedByScout.contains(item.path)
+        }.map(\.path))
+    }
 
     /// Fills in folder sizes one at a time (shared cache with the info panel), so the
     /// Size column shows them and sorting by size works. Settings can turn this off.
@@ -1003,7 +1040,7 @@ final class BrowserModel: Identifiable {
                 errors.append(error.localizedDescription)
             }
         }
-        registerUndoMoves(moves, name: "Rename \(moves.count) Items")
+        registerUndoMoves(moves, name: "Rename \(moves.count) Items", entry: services.recordFiles(.rename, moves))
         if !errors.isEmpty { alertMessage = errors.joined(separator: "\n") }
         let renamed = Set(moves.map(\.1.filePath))
         Task {
@@ -1131,10 +1168,12 @@ final class BrowserModel: Identifiable {
                 errors.append(error.localizedDescription)
             }
         }
+        let entry = services.recordFiles(.tidy, done)
         if let undoManager, !done.isEmpty {
             undoManager.registerUndo(withTarget: self) { model in
                 MainActor.assumeIsolated {
-                    for (from, to) in done { try? fm.moveItem(at: to, to: from) }
+                    let (reversed, _) = Self.moveBack(done)
+                    model.services.recordFiles(.undo, reversed, undoes: entry)
                     for folder in made where (try? fm.contentsOfDirectory(atPath: folder.filePath))?.isEmpty == true {
                         try? fm.removeItem(at: folder)
                     }
@@ -1267,7 +1306,8 @@ final class BrowserModel: Identifiable {
     func rename(_ item: FileItem, to newName: String) {
         do {
             let renamed = try services.fileSource.rename(item.url, to: newName)
-            registerUndoMoves([(item.url, renamed)], name: "Rename")
+            let move = [(item.url, renamed)]
+            registerUndoMoves(move, name: "Rename", entry: services.recordFiles(.rename, move))
             pendingSelection = renamed.filePath
             Task { await reload() }
         } catch {
@@ -1315,7 +1355,7 @@ final class BrowserModel: Identifiable {
                 errors.append("\(url.lastPathComponent): \(error.localizedDescription)")
             }
         }
-        registerUndoMoves(moves, name: actionName)
+        registerUndoMoves(moves, name: actionName, entry: services.recordFiles(.trash, moves))
         if !errors.isEmpty { alertMessage = errors.joined(separator: "\n") }
         Task { await reload() }
         return moves.count
@@ -1459,15 +1499,16 @@ final class BrowserModel: Identifiable {
 
             // 3. Undo, errors, refresh, select what arrived.
             if move {
-                registerUndoMoves(results, name: "Move")
-            } else if let undoManager, !results.isEmpty {
-                let copies = results.map(\.1)
-                undoManager.registerUndo(withTarget: self) { model in
-                    MainActor.assumeIsolated {
-                        for url in copies { _ = try? model.services.fileSource.trash(url) }
+                registerUndoMoves(results, name: "Move", entry: services.recordFiles(.move, results))
+            } else {
+                let entry = services.recordFiles(.copy, results)
+                if let undoManager, !results.isEmpty {
+                    let copies = results.map(\.1)
+                    undoManager.registerUndo(withTarget: self) { model in
+                        MainActor.assumeIsolated { model.trashCopies(copies, undoing: entry) }
                     }
+                    undoManager.setActionName("Copy")
                 }
-                undoManager.setActionName("Copy")
             }
             if !errors.isEmpty, !transfer.isCancelled { alertMessage = errors.joined(separator: "\n") }
             await reload()
@@ -1534,40 +1575,80 @@ final class BrowserModel: Identifiable {
     }
 
     /// Records that items moved from → to. Undo moves them back (and Redo forward again).
-    private func registerUndoMoves(_ moves: [(URL, URL)], name: String) {
+    /// `entry` is the File History entry for the move, so the undo is recorded against it.
+    private func registerUndoMoves(_ moves: [(URL, URL)], name: String, entry: UUID?) {
         guard let undoManager, !moves.isEmpty else { return }
         undoManager.registerUndo(withTarget: self) { model in
             MainActor.assumeIsolated {
-                // Two steps through temporary names, so renames that swapped or shifted
-                // names (a↔b) can be undone. moveItem never overwrites anything.
-                let fm = FileManager.default
-                var staged: [(from: URL, temp: URL, to: URL)] = []
-                var errors: [String] = []
-                for (from, to) in moves {
-                    let temp = to.deletingLastPathComponent().appending(path: ".scout-undo-\(UUID().uuidString)")
-                    do {
-                        try fm.moveItem(at: to, to: temp)
-                        staged.append((from, temp, to))
-                    } catch {
-                        errors.append(error.localizedDescription)
-                    }
-                }
-                var reversed: [(URL, URL)] = []
-                for entry in staged {
-                    do {
-                        try fm.moveItem(at: entry.temp, to: entry.from)
-                        reversed.append((entry.to, entry.from))
-                    } catch {
-                        try? fm.moveItem(at: entry.temp, to: entry.to) // put it back
-                        errors.append(error.localizedDescription)
-                    }
-                }
+                let (reversed, errors) = Self.moveBack(moves)
                 if !errors.isEmpty { model.alertMessage = errors.joined(separator: "\n") }
-                model.registerUndoMoves(reversed, name: name)
+                let undo = model.services.recordFiles(.undo, reversed, undoes: entry)
+                model.registerUndoMoves(reversed, name: name, entry: undo)
                 Task { await model.reload() }
             }
         }
         undoManager.setActionName(name)
+    }
+
+    /// Moves items back from → to's `to` to their `from`. Returns the moves made (to → from).
+    /// Two steps through temporary names, so renames that swapped or shifted names (a↔b)
+    /// can be undone. `moveItem` never overwrites anything.
+    static func moveBack(_ moves: [(URL, URL)]) -> (moved: [(URL, URL)], errors: [String]) {
+        let fm = FileManager.default
+        var staged: [(from: URL, temp: URL, to: URL)] = []
+        var errors: [String] = []
+        for (from, to) in moves {
+            let temp = to.deletingLastPathComponent().appending(path: ".scout-undo-\(UUID().uuidString)")
+            do {
+                try fm.moveItem(at: to, to: temp)
+                staged.append((from, temp, to))
+            } catch {
+                errors.append(error.localizedDescription)
+            }
+        }
+        var moved: [(URL, URL)] = []
+        for entry in staged {
+            do {
+                try fm.moveItem(at: entry.temp, to: entry.from)
+                moved.append((entry.to, entry.from))
+            } catch {
+                try? fm.moveItem(at: entry.temp, to: entry.to) // put it back
+                errors.append(error.localizedDescription)
+            }
+        }
+        return (moved, errors)
+    }
+
+    /// Undoes a copy: the copies go to the Trash.
+    private func trashCopies(_ copies: [URL], undoing entry: UUID?) {
+        var trashed: [(URL, URL)] = []
+        for url in copies {
+            if let place = try? services.fileSource.trash(url) { trashed.append((url, place)) }
+        }
+        services.recordFiles(.undo, trashed, undoes: entry)
+        Task { await reload() }
+    }
+
+    // MARK: - File History
+
+    /// Undoes an entry from the History page, even one from an earlier session.
+    func undoFromHistory(_ entry: FileHistoryEntry) {
+        let fm = FileManager.default
+        if let blocker = services.fileHistory.undoBlocker(for: entry, exists: { fm.fileExists(atPath: $0) }) {
+            alertMessage = "Can’t undo this: \(blocker)"
+            return
+        }
+        if entry.action == .copy {
+            trashCopies(entry.changes.map { URL(filePath: $0.to) }.filter { fm.fileExists(atPath: $0.filePath) },
+                        undoing: entry.id)
+            return
+        }
+        let moves = entry.changes.map { (URL(filePath: $0.from), URL(filePath: $0.to)) }
+        let (moved, errors) = Self.moveBack(moves)
+        let undo = services.recordFiles(.undo, moved, undoes: entry.id)
+        registerUndoMoves(moved, name: "Undo", entry: undo)
+        if !errors.isEmpty { alertMessage = errors.joined(separator: "\n") }
+        Task { await reload() }
     }
 
     // MARK: - Other apps

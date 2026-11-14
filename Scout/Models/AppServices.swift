@@ -152,6 +152,7 @@ final class AppServices {
         }
         refreshLatestDownloads()
         refreshTagsInUse()
+        loadFileHistory()
         Task {
             // A recent index (or a quick relaunch) doesn't need a fresh scan of the whole home folder.
             if let built = ScoutStore.indexDate(), !folders.isEmpty {
@@ -504,6 +505,50 @@ final class AppServices {
 
     func isSaved(_ search: SavedSearch) -> Bool {
         savedSearches.contains { $0.id == search.id }
+    }
+
+    // MARK: - File history
+
+    /// Everything Scout moved, copied, renamed or trashed (the History page). Loaded in
+    /// the background at launch.
+    private(set) var fileHistory = FileHistory()
+    /// Reads and writes `file-history.jsonl` in order, off the main thread.
+    @ObservationIgnored private let fileHistoryQueue = DispatchQueue(label: "Scout file history", qos: .utility)
+
+    private func loadFileHistory() {
+        fileHistoryQueue.async { [weak self] in
+            var loaded = FileHistoryStore.load()
+            if loaded.prune() { try? FileHistoryStore.save(loaded) }
+            let entries = loaded.entries
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    // Anything recorded while loading goes after what was on disk.
+                    self.fileHistory = FileHistory(entries: entries + self.fileHistory.entries)
+                }
+            }
+        }
+    }
+
+    /// Records what Scout just did to some files and returns the entry's id (for undo).
+    @discardableResult
+    func recordFiles(_ action: FileAction, _ moves: [(URL, URL)], undoes: UUID? = nil) -> UUID? {
+        guard !moves.isEmpty else { return nil }
+        let entry = FileHistoryEntry(action: action, changes: moves.map(FileChange.init), undoes: undoes)
+        fileHistory.append(entry)
+        fileHistoryQueue.async { try? FileHistoryStore.append(entry) }
+        return entry.id
+    }
+
+    /// Forgets everything on the History page.
+    func clearFileHistory() {
+        fileHistory = FileHistory()
+        fileHistoryQueue.async { try? FileHistoryStore.save(FileHistory()) }
+    }
+
+    /// When you last opened a folder before now, if Scout remembers (for "new since your last visit").
+    func lastVisit(_ path: String) -> Date? {
+        frecency.entries[path]?.last
     }
 
     // MARK: - Visit history
