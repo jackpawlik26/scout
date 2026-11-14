@@ -153,6 +153,7 @@ final class AppServices {
         refreshLatestDownloads()
         refreshTagsInUse()
         loadFileHistory()
+        startImageTextIndex()
         Task {
             // A recent index (or a quick relaunch) doesn't need a fresh scan of the whole home folder.
             if let built = ScoutStore.indexDate(), !folders.isEmpty {
@@ -570,6 +571,69 @@ final class AppServices {
 
     func isSaved(_ search: SavedSearch) -> Bool {
         savedSearches.contains { $0.id == search.id }
+    }
+
+    // MARK: - Text in images (⌘K finds screenshots by what they say)
+
+    /// What Vision read from images in Desktop, Documents, Downloads and Pictures.
+    @ObservationIgnored private(set) var imageText = ImageTextIndex()
+    @ObservationIgnored private var imageTextSearch: SpotlightSearch?
+
+    /// Images whose text contains every word of `query`, newest first.
+    func imageTextMatches(_ query: String) -> [FileHit] {
+        imageText.matches(query).map { path in
+            FileHit(path: path, name: (path as NSString).lastPathComponent,
+                    modified: imageText.entries[path]?.modified, contentType: "public.image")
+        }
+    }
+
+    /// Loads what was read before, then reads new and changed images in the background, a
+    /// few minutes after launch and at low priority. Images only in iCloud or OneDrive are
+    /// skipped (reading them would download them).
+    private func startImageTextIndex() {
+        Task {
+            imageText = await Task.detached(priority: .utility) { ImageTextIndex.load() }.value
+            try? await Task.sleep(for: .seconds(120))
+            let roots = ["Desktop", "Documents", "Downloads", "Pictures"].map { URL.folder(homePath + "/" + $0) }
+            let home = homePath
+            imageTextSearch = SpotlightSearch(
+                queryString: #"kMDItemContentTypeTree == "public.image" && kMDItemFSSize < 26214400"#,
+                scopes: roots, live: false, newestFirst: true
+            ) { hits in
+                hits.filter { !FileHitRanker.isNoise($0.path, home: home) }.prefix(ImageTextIndex.maxImages).map { $0 }
+            } onResults: { [weak self] hits, finished in
+                guard finished, let self else { return }
+                self.imageTextSearch = nil
+                Task { await self.readImages(hits) }
+            }
+        }
+    }
+
+    private func readImages(_ hits: [FileHit]) async {
+        var index = imageText
+        index.keep(only: Set(hits.map(\.path)))
+        let pending = hits.filter { hit in index.needsReading(hit.path, modified: hit.modified ?? .distantPast) }
+        let total = await Task.detached(priority: .background) { () -> ImageTextIndex in
+            var index = index
+            for (count, hit) in pending.enumerated() {
+                let url = URL(filePath: hit.path)
+                guard Self.isOnDisk(url) else { continue }
+                let text = await OnDeviceAI.imageText(url, fast: true) ?? ""
+                index.set(hit.path, modified: hit.modified ?? .distantPast, text: text)
+                if count % 200 == 199 { try? index.save() }
+            }
+            try? index.save()
+            return index
+        }.value
+        imageText = total
+    }
+
+    /// False for iCloud / OneDrive files that are only in the cloud.
+    nonisolated static func isOnDisk(_ url: URL) -> Bool {
+        let path = url.filePath
+        guard path.contains("/Library/Mobile Documents/") || path.contains("/Library/CloudStorage/") else { return true }
+        let status = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]).ubiquitousItemDownloadingStatus
+        return status == nil || status == .current || status == .downloaded
     }
 
     // MARK: - File history

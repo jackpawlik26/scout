@@ -9,6 +9,9 @@ struct BatchRenameView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var pipeline = RenamePipeline()
     @State private var imageSizes: [URL: (Int, Int)] = [:]
+    /// {about}: short names from the on-device model, filled in as each file is read.
+    @State private var descriptions: [URL: String] = [:]
+    @State private var describing: Int?
     @State private var isSavingPreset = false
     @State private var presetName = ""
     @State private var showsVariables = false
@@ -18,7 +21,7 @@ struct BatchRenameView: View {
             let size = imageSizes[item.url]
             return RenameContext(name: item.name, parent: item.url.deletingLastPathComponent().lastPathComponent,
                                  created: item.dateCreated, modified: item.dateModified, added: item.dateAdded,
-                                 width: size?.0, height: size?.1)
+                                 width: size?.0, height: size?.1, about: descriptions[item.url])
         }
     }
 
@@ -46,6 +49,7 @@ struct BatchRenameView: View {
             return true
         }
         .task(id: pipeline.needsImageSize) { await loadImageSizes() }
+        .task(id: pipeline.needsDescriptions) { await loadDescriptions() }
         .alert("Save Preset", isPresented: $isSavingPreset) {
             TextField("Name", text: $presetName)
             Button("Save") {
@@ -66,6 +70,15 @@ struct BatchRenameView: View {
         HStack(spacing: 10) {
             Text("Rename \(items.count) Items").font(.ui(18, .medium)).foregroundStyle(Color.textStrong)
             Spacer()
+            if pipeline.needsDescriptions {
+                if !OnDeviceAI.isAvailable {
+                    Label("{about} needs Apple Intelligence, so names stay as they are", systemImage: "sparkles")
+                        .font(.ui(12)).foregroundStyle(Color.textSubtle)
+                } else if let describing {
+                    ProgressView().controlSize(.small)
+                    Text("Reading \(describing) of \(items.count)…").font(.ui(12)).foregroundStyle(Color.textSubtle)
+                }
+            }
             Menu {
                 Section("Built In") {
                     ForEach(RenamePreset.builtIn) { preset in
@@ -250,8 +263,20 @@ struct BatchRenameView: View {
                 dismiss()
             }
             .keyboardShortcut(.defaultAction)
-            .disabled(changed == 0 || !problems.isEmpty || pipeline.problem != nil)
+            .disabled(changed == 0 || !problems.isEmpty || pipeline.problem != nil || describing != nil)
         }
+    }
+
+    /// {about} reads each file and asks the on-device model for a short name, one at a time;
+    /// the preview fills in as they arrive.
+    private func loadDescriptions() async {
+        guard pipeline.needsDescriptions, OnDeviceAI.isAvailable else { return }
+        for (index, item) in items.enumerated() where descriptions[item.url] == nil {
+            guard !Task.isCancelled else { break }
+            describing = index + 1
+            if let name = await OnDeviceAI.describe(item.url) { descriptions[item.url] = name }
+        }
+        describing = nil
     }
 
     /// {width} and {height} need each image opened, so only when a step uses them.

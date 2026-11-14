@@ -15,6 +15,12 @@ struct CommandPalette: View {
     @State private var kind: KindFilter?
     @State private var date: DateFilter?
     @State private var inThisFolder = false
+    /// "Ask Scout": the date range the model found, and what you typed before it rewrote the query.
+    @State private var after: Date?
+    @State private var before: Date?
+    @State private var askedFrom: String?
+    @State private var isAsking = false
+    @State private var askError: String?
 
     @State private var folders: [RankedFolder] = []
     @State private var files: [RankedHit] = []
@@ -28,7 +34,12 @@ struct CommandPalette: View {
 
     private var spec: SearchSpec {
         SearchSpec(query: query, scope: scope, kind: kind, date: date,
-                   withinPath: inThisFolder ? window.current.location.filePath : nil)
+                   withinPath: inThisFolder ? window.current.location.filePath : nil, after: after, before: before)
+    }
+
+    /// Offer "Ask Scout" for descriptions ("the lease I signed last spring").
+    private var canAsk: Bool {
+        destination == nil && askedFrom == nil && SearchPlan.looksLikeQuestion(query) && OnDeviceAI.isAvailable
     }
 
     private var rows: [PaletteItem] {
@@ -53,6 +64,7 @@ struct CommandPalette: View {
                     }
                 }
                 searchField
+                if canAsk || isAsking || askedFrom != nil || askError != nil { askBar }
                 if destination == nil {
                     FilterBar(scope: $scope, kind: $kind, date: $date, inThisFolder: $inThisFolder,
                               folderName: window.current.location.lastPathComponent)
@@ -90,7 +102,10 @@ struct CommandPalette: View {
             window.paletteInitialQuery = ""
         }
         .task(id: spec) { await search(spec) }
-        .onChange(of: query) { destinationError = nil }
+        .onChange(of: query) {
+            destinationError = nil
+            askError = nil
+        }
         .onChange(of: services.isIndexing) { Task { await searchFolders(spec) } }
     }
 
@@ -115,6 +130,10 @@ struct CommandPalette: View {
                     return .handled
                 }
                 .onKeyPress(.return, phases: .down) { press in
+                    if press.modifiers.contains(.option), canAsk {
+                        ask()
+                        return .handled
+                    }
                     activate(modifiers: press.modifiers)
                     return .handled
                 }
@@ -125,6 +144,66 @@ struct CommandPalette: View {
         .padding(.horizontal, 14)
         .padding(.top, 14)
         .padding(.bottom, 10)
+    }
+
+    /// "✨ Ask Scout" while you type a description; then what it understood, with a way back.
+    private var askBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "sparkles").foregroundStyle(Color.accentColor)
+            if isAsking {
+                Text("Working out what you mean…").foregroundStyle(Color.textSubtle)
+                ProgressView().controlSize(.small)
+            } else if let askError {
+                Text(askError).foregroundStyle(Color.textSubtle)
+            } else if let askedFrom {
+                Text("Searching for \(spec.summary)").lineLimit(1).truncationMode(.middle)
+                Spacer(minLength: 8)
+                Button("Use “\(askedFrom)” instead") { undoAsk() }
+                    .buttonStyle(.link)
+                    .lineLimit(1)
+            } else {
+                Button { ask() } label: {
+                    Text("Ask Scout what you mean").fontWeight(.medium)
+                }
+                .buttonStyle(.link)
+                Text("⌥↵ · on this Mac").foregroundStyle(Color.textSubtle)
+            }
+            Spacer(minLength: 0)
+        }
+        .font(.ui(12))
+        .padding(.horizontal, 14)
+        .padding(.bottom, 8)
+    }
+
+    /// Asks the on-device model what the description means, then searches for that.
+    private func ask() {
+        let original = query
+        isAsking = true
+        askError = nil
+        Task {
+            defer { isAsking = false }
+            guard let plan = try? await OnDeviceAI.searchPlan(for: original), let planned = plan.spec() else {
+                askError = "Couldn’t work that out. Try fewer, more specific words."
+                return
+            }
+            guard query == original else { return } // you kept typing
+            askedFrom = original
+            scope = planned.scope
+            kind = planned.kind
+            after = planned.after
+            before = planned.before
+            query = planned.query
+        }
+    }
+
+    private func undoAsk() {
+        guard let original = askedFrom else { return }
+        askedFrom = nil
+        after = nil
+        before = nil
+        kind = nil
+        scope = .all
+        query = original
     }
 
     private var placeholder: String {
@@ -253,9 +332,18 @@ struct CommandPalette: View {
         }
         let home = services.homePath
         isSearchingFiles = true
+        // Screenshots and images whose text matches (Spotlight reads text in only a few).
+        let imageHits = spec.kind == nil || spec.kind == .images
+            ? (spec.date == nil && spec.after == nil && spec.before == nil && spec.source == nil
+                ? services.imageTextMatches(spec.nameQuery).filter { hit in
+                    spec.withinPath.map { hit.path.hasPrefix($0 + "/") } ?? true
+                } : [])
+            : []
         spotlight = SpotlightSearch(spec: spec, home: home, live: false) { hits in
             // Ranked in the background. In "All", folders come from Scout's index instead.
-            let fileHits = spec.scope == .all ? hits.filter { !$0.isFolder } : hits
+            var fileHits = spec.scope == .all ? hits.filter { !$0.isFolder } : hits
+            let found = Set(fileHits.map(\.path))
+            fileHits += imageHits.filter { !found.contains($0.path) }
             return FileHitRanker.rank(fileHits, query: spec.nameQuery, home: home, limit: 40)
         } onResults: { ranked, finished in
             files = ranked

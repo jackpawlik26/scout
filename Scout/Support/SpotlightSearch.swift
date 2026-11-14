@@ -60,7 +60,7 @@ nonisolated final class SpotlightSearch: @unchecked Sendable {
     /// `process` runs in the background on each batch; `onResults` gets its output on the main thread.
     @MainActor
     init?<Output: Sendable>(
-        queryString: String, scopes: [Any], live: Bool,
+        queryString: String, scopes: [Any], live: Bool, newestFirst: Bool = false,
         process: @escaping @Sendable (_ hits: [FileHit]) -> Output,
         onResults: @escaping @MainActor (_ output: Output, _ finished: Bool) -> Void
     ) {
@@ -79,6 +79,10 @@ nonisolated final class SpotlightSearch: @unchecked Sendable {
         query.searchScopes = scopes
         query.notificationBatchingInterval = 0.2
         query.valueListAttributes = Self.attributes
+        if newestFirst {
+            // So the result cap keeps the newest files rather than an arbitrary few.
+            query.sortDescriptors = [NSSortDescriptor(key: NSMetadataItemFSContentChangeDateKey, ascending: false)]
+        }
         query.operationQueue = queue
         weakSelf = self
 

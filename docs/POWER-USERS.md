@@ -25,7 +25,12 @@ To search by it, type `from:` and part of a site or sender in ⌘K. It works on 
 
 Press ⇧↵ to open the results in a tab and save the search to the sidebar.
 
-## Developer tools
+## Ask Scout (on-device AI)
+
+On Macs with Apple Intelligence, type a description in ⌘K, like *the lease I signed last spring* or *screenshots of error messages*, and click **Ask Scout what you mean** (or press ⌥↵). Apple's on-device model turns it into a search (words, a kind and a date range) and Scout shows what it understood, with a way back to your own words. Nothing leaves your Mac.
+
+In **Rename Items**, the `{about}` variable (and the built-in **Smart names** preset) names each file by what's in it: text in images, the start of PDFs and text files. Files the model can't read keep their names.
+
 
 Turn on **Settings ▸ Developer tools** (it's off for new installs) for:
 
@@ -96,6 +101,7 @@ Stop it with Ctrl-C; it stays installed in Raycast.
 
 - `folders.txt`: the folder index behind ⌘K, one path per line
 - `history.json`: folder visits (for "Most Used" ranking), ISO 8601 dates
+- `image-text.json`: text Scout read from your images and screenshots (Desktop, Documents, Downloads, Pictures), so ⌘K can find them by what they say. Read on this Mac with Apple's Vision; cloud-only files are skipped
 - `triage-rules.json`: Triage's "Always do this" rules (new downloads that match are filed on their own while Scout is open)
 - `file-history.jsonl`: what Scout moved, copied, renamed and trashed (the History page), one JSON entry per line, kept for a year
 - `favorites.json`, `workspaces.json`, `saved-searches.json`: what their names say

@@ -121,6 +121,11 @@ public struct RenamePipeline: Codable, Hashable, Sendable {
     public var needsImageSize: Bool {
         steps.contains { ($0.text + $0.replacement).contains("{width") || ($0.text + $0.replacement).contains("{height") }
     }
+
+    /// True when a step uses {about} (each file is read and described).
+    public var needsDescriptions: Bool {
+        steps.contains { ($0.text + $0.replacement).contains("{about") }
+    }
 }
 
 /// A saved rename.
@@ -156,6 +161,9 @@ public struct RenamePreset: Codable, Hashable, Identifiable, Sendable {
             p.includeExtension = true
             return p
         }(), isBuiltIn: true),
+        RenamePreset(name: "Smart names (on-device AI)", pipeline: RenamePipeline(steps: [
+            RenameStep(.newName, text: "{about}"),
+        ]), isBuiltIn: true),
     ]
 }
 
@@ -170,9 +178,11 @@ public struct RenameContext: Sendable {
     public var added: Date?
     public var width: Int?
     public var height: Int?
+    /// {about}: a short name for what's in the file, from the on-device model.
+    public var about: String?
 
     public init(name: String, parent: String = "", created: Date? = nil, modified: Date? = nil,
-                added: Date? = nil, width: Int? = nil, height: Int? = nil) {
+                added: Date? = nil, width: Int? = nil, height: Int? = nil, about: String? = nil) {
         self.name = name
         self.parent = parent
         self.created = created
@@ -180,6 +190,7 @@ public struct RenameContext: Sendable {
         self.added = added
         self.width = width
         self.height = height
+        self.about = about
     }
 
     #if canImport(ImageIO)
@@ -195,7 +206,7 @@ public struct RenameContext: Sendable {
 }
 
 public enum RenameVariable: CaseIterable, Sendable {
-    case name, ext, number, parent, created, modified, added, today, now, width, height, uuid
+    case name, ext, number, parent, created, modified, added, today, now, width, height, about, uuid
 
     public var token: String {
         switch self {
@@ -210,6 +221,7 @@ public enum RenameVariable: CaseIterable, Sendable {
         case .now: "{now}"
         case .width: "{width}"
         case .height: "{height}"
+        case .about: "{about}"
         case .uuid: "{uuid}"
         }
     }
@@ -227,6 +239,7 @@ public enum RenameVariable: CaseIterable, Sendable {
         case .now: "Date and time now"
         case .width: "Image width"
         case .height: "Image height"
+        case .about: "What it’s about (on-device AI)"
         case .uuid: "Unique ID"
         }
     }
@@ -428,6 +441,8 @@ struct Variables {
         case "now": return date(now, "yyyy-MM-dd HHmm")
         case "width": return item.width.map(String.init) ?? ""
         case "height": return item.height.map(String.init) ?? ""
+        // Until (or unless) a description arrives, keep the original name rather than none.
+        case "about": return cased(item.about.flatMap { $0.isEmpty ? nil : $0 } ?? stem)
         case "uuid": return String(UUID().uuidString.prefix(8)).lowercased()
         default: return nil
         }

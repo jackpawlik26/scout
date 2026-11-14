@@ -102,14 +102,19 @@ public struct SearchSpec: Codable, Hashable, Sendable {
     public var date: DateFilter?
     /// Only search inside this folder (and its subfolders).
     public var withinPath: String?
+    /// Changed on or after / before this moment (from "Ask Scout": "last spring").
+    public var after: Date?
+    public var before: Date?
 
     public init(query: String = "", scope: SearchScope = .all, kind: KindFilter? = nil,
-                date: DateFilter? = nil, withinPath: String? = nil) {
+                date: DateFilter? = nil, withinPath: String? = nil, after: Date? = nil, before: Date? = nil) {
         self.query = query
         self.scope = scope
         self.kind = kind
         self.date = date
         self.withinPath = withinPath
+        self.after = after
+        self.before = before
     }
 
     /// The words to look for in names and contents (`from:` filters left out).
@@ -137,7 +142,7 @@ public struct SearchSpec: Codable, Hashable, Sendable {
     }
 
     /// Has a filter that only Spotlight can answer (kind, date or source).
-    public var hasFileFilters: Bool { kind != nil || date != nil || source != nil }
+    public var hasFileFilters: Bool { kind != nil || date != nil || source != nil || after != nil || before != nil }
 
     /// Nothing to search for yet.
     public var isEmpty: Bool { words.isEmpty && !hasFileFilters }
@@ -158,9 +163,23 @@ public struct SearchSpec: Codable, Hashable, Sendable {
         if let kind { parts.append(kind.title) }
         if let date { parts.append(date.title) }
         if let source { parts.append("from \(source)") }
+        if let range = dateRangeTitle { parts.append(range) }
         if scope == .folders { parts.append("Folders") }
         if let withinPath { parts.append("in \((withinPath as NSString).lastPathComponent)") }
         return parts.isEmpty ? "Search" : parts.joined(separator: " · ")
+    }
+}
+
+extension SearchSpec {
+    /// "Mar 1 – May 31, 2026", "since Nov 1", "before Jan 2025".
+    public var dateRangeTitle: String? {
+        let style = Date.FormatStyle.dateTime.month(.abbreviated).day().year()
+        switch (after, before) {
+        case let (a?, b?): return "\(a.formatted(style)) – \(b.addingTimeInterval(-1).formatted(style))"
+        case let (a?, nil): return "since \(a.formatted(style))"
+        case let (nil, b?): return "before \(b.formatted(style))"
+        default: return nil
+        }
     }
 }
 
@@ -204,6 +223,9 @@ public enum SpotlightQueryBuilder {
             clauses.append("kMDItemWhereFroms == \"*\(escape(source))*\"cd")
         }
 
+        if let after = spec.after { clauses.append("kMDItemFSContentChangeDate >= \(time(after))") }
+        if let before = spec.before { clauses.append("kMDItemFSContentChangeDate < \(time(before))") }
+
         if let date = spec.date {
             let time = date.daysBack == 0 ? "$time.today" : "$time.today(-\(date.daysBack))"
             clauses.append("kMDItemFSContentChangeDate >= \(time)")
@@ -216,6 +238,11 @@ public enum SpotlightQueryBuilder {
         }
 
         return clauses.joined(separator: " && ")
+    }
+
+    /// `$time.iso(2026-03-01T06:00:00Z)`
+    static func time(_ date: Date) -> String {
+        "$time.iso(\(date.formatted(.iso8601)))"
     }
 
     public static func escape(_ s: String) -> String {
