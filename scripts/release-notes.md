@@ -1,4 +1,4 @@
-**Scout 0.2.1**: sturdier icons (about a 1.5-pixel stroke instead of 1), on top of everything in 0.2: rename presets, a new look, and a safety pass.
+**Scout 0.2.2**: select and drag several files like Finder. Dragging a selection onto a folder moves all of it (in list, icon and column views), Shift with the arrow keys or Shift-click selects a range, and the toolbar no longer jumbles after closing a split view. Plus everything in 0.2: rename presets, a new look, and a safety pass.
 
 ### Install
 1. Download **Scout.zip** below and open it.

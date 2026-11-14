@@ -55,6 +55,16 @@
 <script>
 const BUILDS = [
   {
+    date: "Nov 14, 2026", time: "Scout 0.2.2", hash: "v0.2.2", title: "Select and drag like Finder",
+    summary: "Fixes for selecting and moving several files at once, found in launch-day testing.",
+    changes: [
+      ["fixed", "Dragging several selected files onto a folder now moves all of them, in list, icon and column views. Dropping on a folder in list view didn't work at all before."],
+      ["fixed", "In icon and column views, Shift with the arrow keys grows the selection, and Shift-click selects everything in between. ⌘-click still adds or removes one file."],
+      ["fixed", "After closing a split view, the view, sort and filter buttons at the top could pile on top of each other until the window was resized."],
+      ["changed", "New screenshots on the website and GitHub."],
+    ],
+  },
+  {
     date: "Nov 14, 2026", time: "Scout 0.2.1", hash: "v0.2.1", title: "Sturdier icons",
     summary: "A small follow-up to 0.2.",
     changes: [

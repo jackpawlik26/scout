@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="site/assets/list.jpg" alt="Scout showing a folder grouped by kind, with the info panel open" width="860">
+  <img src="site/assets/list.jpg" alt="Scout's list view: client folders expanded in place, with a PDF previewed in the info panel" width="860">
 </p>
 
 ## Install
@@ -35,9 +35,11 @@ After that, Scout opens like any other app. macOS will also ask whether Scout ca
 
 **Find anything in a few keystrokes.** Press ⌥Space in any app, or ⌘K inside Scout, and type a few letters. Folders you use most come first; files are found by name or by what's inside them. Filter by kind or date, and save searches you repeat.
 
-<p align="center"><img src="site/assets/palette.jpg" alt="The Scout palette finding a folder" width="720"></p>
+<p align="center"><img src="site/assets/palette.jpg" alt="The Scout palette finding files inside a folder" width="560"></p>
 
 **Browse your way.** Tabs, split view (⌘D), list, icons or columns, and folders that open in place. Tabs and splits come back after you quit, just like Finder.
+
+<p align="center"><img src="site/assets/split.jpg" alt="Split view: a folder on the left and its Inbox on the right" width="720"></p>
 
 **Move things without dragging.** Select files, press ⇧⌘M, type a few letters of where they should go, and press Return. Every move, rename and trash can be undone with ⌘Z.
 
@@ -51,7 +53,11 @@ After that, Scout opens like any other app. macOS will also ask whether Scout ca
 
 **Made for the keyboard.** Almost everything has a shortcut, and you can change 50 of them. Press ⌘/ in Scout for the list, or see [all shortcuts](docs/SHORTCUTS.md).
 
+<p align="center"><img src="site/assets/shortcuts.jpg" alt="Scout's keyboard shortcuts sheet" width="720"></p>
+
 **For developers.** Turn on **Settings ▸ Developer tools** for git branch and file status in every folder, Open in Terminal or your editor, and a page for your Homebrew and npm packages. There are also `scout://` links, a `scout` command and a Raycast extension. See [Scout for power users](docs/POWER-USERS.md).
+
+<p align="center"><img src="site/assets/packages.jpg" alt="The Packages page listing Homebrew and npm packages with available updates" width="720"></p>
 
 **Private.** No account, no tracking. Your files and Scout's index stay on your Mac.
 
