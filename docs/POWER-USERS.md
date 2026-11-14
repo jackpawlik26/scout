@@ -118,6 +118,7 @@ Stop it with Ctrl-C; it stays installed in Raycast.
 
 - `folders.txt`: the folder index behind ⌘K, one path per line
 - `history.json`: folder visits (for "Most Used" ranking), ISO 8601 dates
+- `opens.json`: the last 2,000 files you opened through Scout, for the info panel's "Used around the same time"
 - `image-text.json`: text Scout read from your images and screenshots (Desktop, Documents, Downloads, Pictures), so ⌘K can find them by what they say. Read on this Mac with Apple's Vision; cloud-only files are skipped
 - `triage-rules.json`: Triage's "Always do this" rules (new downloads that match are filed on their own while Scout is open)
 - `file-history.jsonl`: what Scout moved, copied, renamed and trashed (the History page), one JSON entry per line, kept for a year

@@ -636,6 +636,22 @@ final class AppServices {
         return status == nil || status == .current || status == .downloaded
     }
 
+    // MARK: - Files opened through Scout (for "Related")
+
+    @ObservationIgnored private(set) lazy var openLog = OpenLog.load()
+    @ObservationIgnored private var openLogSave: Task<Void, Never>?
+
+    func recordOpen(_ url: URL) {
+        openLog.record(url.filePath)
+        openLogSave?.cancel()
+        let snapshot = openLog
+        openLogSave = Task {
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+            await Task.detached(priority: .utility) { try? snapshot.save() }.value
+        }
+    }
+
     // MARK: - File history
 
     /// Everything Scout moved, copied, renamed or trashed (the History page). Loaded in

@@ -500,7 +500,12 @@ struct CommandPalette: View {
         }
         let commandHeld = modifiers.contains(.command)
         if selected.isFile {
-            if commandHeld { window.current.reveal(url) } else { NSWorkspace.shared.open(url) }
+            if commandHeld {
+                window.current.reveal(url)
+            } else {
+                NSWorkspace.shared.open(url)
+                services.recordOpen(url)
+            }
         } else {
             if commandHeld { window.newTab(at: url) } else { window.current.go(to: url) }
         }

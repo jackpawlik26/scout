@@ -116,6 +116,8 @@ private struct ItemInspector: View {
             if !item.isDirectory {
                 VersionsCard(browser: browser, item: item)
                     .id(item.id)
+                RelatedCard(browser: browser, item: item)
+                    .id(item.id)
             }
 
             HStack {
@@ -145,6 +147,81 @@ private struct ItemInspector: View {
         if let size = item.size { return Format.bytes(size) }
         guard let folderSize else { return "Calculating…" }
         return (folderSize.isPartial ? "≥ " : "") + Format.bytes(folderSize.bytes)
+    }
+}
+
+// MARK: - Related files
+
+/// Files you had open around the same time as this one, in any app. Hidden when there are none.
+private struct RelatedCard: View {
+    let browser: BrowserModel
+    let item: FileItem
+    @State private var related: [String] = []
+    @State private var search: SpotlightSearch?
+
+    var body: some View {
+        Group {
+            if !related.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Used around the same time")
+                        .font(.ui(12).weight(.medium))
+                        .foregroundStyle(Color.textSubtle)
+                    Card(spacing: 4) {
+                        ForEach(related, id: \.self) { path in
+                            HStack(spacing: 8) {
+                                Button { browser.reveal(URL(filePath: path)) } label: {
+                                    HStack(spacing: 8) {
+                                        Image(nsImage: IconCache.icon(forPath: path))
+                                            .resizable().frame(width: 18, height: 18)
+                                        VStack(alignment: .leading, spacing: 0) {
+                                            Text((path as NSString).lastPathComponent).lineLimit(1).truncationMode(.middle)
+                                            Text(PathDisplay.display((path as NSString).deletingLastPathComponent,
+                                                                     home: browser.services.homePath))
+                                                .font(.ui(11)).foregroundStyle(Color.textSubtle)
+                                                .lineLimit(1).truncationMode(.head)
+                                        }
+                                        Spacer(minLength: 0)
+                                    }
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .help("Show in Scout")
+                                Button { NSWorkspace.shared.open(URL(filePath: path)) } label: {
+                                    Image(systemName: "arrow.up.forward.app")
+                                }
+                                .buttonStyle(.plain).foregroundStyle(Color.textSubtle)
+                                .help("Open")
+                            }
+                            .font(.ui(13))
+                        }
+                    }
+                }
+            }
+        }
+        .task {
+            let services = browser.services
+            let (url, path, home) = (item.url, item.path, services.homePath)
+            let opens = services.openLog
+            let history = services.fileHistory
+            let exists: @Sendable ([String]) -> [String] = { paths in
+                paths.filter { FileManager.default.fileExists(atPath: $0) }
+            }
+            // Scout's own signals first (instant), then Spotlight's when it answers.
+            let (used, quick) = await Task.detached(priority: .utility) { () -> (Date?, [String]) in
+                let used = NSMetadataItem(url: url)?.value(forAttribute: NSMetadataItemLastUsedDateKey) as? Date
+                return (used, exists(RelatedFiles.rank(path: path, opens: opens, history: history, home: home)))
+            }.value
+            related = quick
+            guard let used else { return }
+            search = SpotlightSearch(queryString: RelatedFiles.query(around: used),
+                                     scopes: [NSMetadataQueryUserHomeScope], live: false) { hits in
+                exists(RelatedFiles.rank(path: path, opens: opens, history: history,
+                                         spotlightUsed: used, spotlightHits: hits, home: home))
+            } onResults: { found, finished in
+                related = found
+                if finished { search = nil }
+            }
+        }
     }
 }
 

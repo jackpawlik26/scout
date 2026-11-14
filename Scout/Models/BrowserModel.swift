@@ -1047,7 +1047,10 @@ final class BrowserModel: Identifiable {
             return
         }
         for folder in folders { pane?.newTab(at: folder.url) }
-        for file in files { NSWorkspace.shared.open(file.url) }
+        for file in files {
+            NSWorkspace.shared.open(file.url)
+            services.recordOpen(file.url)
+        }
     }
 
     func openSelection() { open(selection) }
