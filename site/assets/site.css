@@ -182,3 +182,8 @@ footer a:hover { color: var(--fg); }
 .badge.m { color: #E28A2B; background: rgba(226, 138, 43, 0.15); }
 .badge.u { color: var(--added); background: color-mix(in srgb, var(--added) 15%, transparent); }
 .empty { padding: 60px 0; text-align: center; color: var(--faint); }
+
+/* Small screens: the nav's GitHub button shrinks to its icon. */
+@media (max-width: 560px) {
+  .nav-gh-label { display: none; }
+}
