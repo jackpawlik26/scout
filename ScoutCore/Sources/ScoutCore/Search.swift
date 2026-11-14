@@ -112,12 +112,32 @@ public struct SearchSpec: Codable, Hashable, Sendable {
         self.withinPath = withinPath
     }
 
+    /// The words to look for in names and contents (`from:` filters left out).
     public var words: [String] {
+        tokens.filter { Self.sourceValue($0) == nil }
+    }
+
+    /// The words as one string, for ranking names against.
+    public var nameQuery: String { words.joined(separator: " ") }
+
+    /// Where the files came from, written in the query as `from:site`
+    /// (e.g. `from:canvas.depaul.edu`, `from:github`, or a Mail sender).
+    public var source: String? {
+        tokens.lazy.compactMap(Self.sourceValue).first
+    }
+
+    private var tokens: [String] {
         query.split(whereSeparator: \.isWhitespace).map(String.init)
     }
 
-    /// Has a filter that only Spotlight can answer (kind or date).
-    public var hasFileFilters: Bool { kind != nil || date != nil }
+    /// "from:github.com" → "github.com"; nil for any other word (or a bare "from:").
+    static func sourceValue(_ token: String) -> String? {
+        guard token.count > 5, token.lowercased().hasPrefix("from:") else { return nil }
+        return String(token.dropFirst(5))
+    }
+
+    /// Has a filter that only Spotlight can answer (kind, date or source).
+    public var hasFileFilters: Bool { kind != nil || date != nil || source != nil }
 
     /// Nothing to search for yet.
     public var isEmpty: Bool { words.isEmpty && !hasFileFilters }
@@ -137,6 +157,7 @@ public struct SearchSpec: Codable, Hashable, Sendable {
         if !words.isEmpty { parts.append("“\(words.joined(separator: " "))”") }
         if let kind { parts.append(kind.title) }
         if let date { parts.append(date.title) }
+        if let source { parts.append("from \(source)") }
         if scope == .folders { parts.append("Folders") }
         if let withinPath { parts.append("in \((withinPath as NSString).lastPathComponent)") }
         return parts.isEmpty ? "Search" : parts.joined(separator: " · ")
@@ -176,6 +197,11 @@ public enum SpotlightQueryBuilder {
         if let kind = spec.kind {
             let types = kind.contentTypes.map { "kMDItemContentTypeTree == \"\($0)\"" }
             clauses.append(types.count == 1 ? types[0] : "(" + types.joined(separator: " || ") + ")")
+        }
+
+        if let source = spec.source {
+            // Matches the file's address, the page it came from, or a Mail sender.
+            clauses.append("kMDItemWhereFroms == \"*\(escape(source))*\"cd")
         }
 
         if let date = spec.date {

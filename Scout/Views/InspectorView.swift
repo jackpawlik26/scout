@@ -110,6 +110,10 @@ private struct ItemInspector: View {
                 }
             }
 
+            if let source = item.source {
+                SourceCard(browser: browser, source: source)
+            }
+
             HStack {
                 Button("Open") { browser.open([item.id]) }
                 Button("Quick Look") { browser.toggleQuickLook() }
@@ -137,6 +141,64 @@ private struct ItemInspector: View {
         if let size = item.size { return Format.bytes(size) }
         guard let folderSize else { return "Calculating…" }
         return (folderSize.isPartial ? "≥ " : "") + Format.bytes(folderSize.bytes)
+    }
+}
+
+// MARK: - Where it came from
+
+/// Where a download or Mail attachment came from, with a way back to it.
+private struct SourceCard: View {
+    let browser: BrowserModel
+    let source: DownloadSource
+
+    var body: some View {
+        Card {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Image(systemName: source.isMail ? "envelope" : "globe")
+                    .foregroundStyle(Color.textSubtle)
+                Text(source.isMail ? "From Mail" : "Downloaded from")
+                    .foregroundStyle(Color.textSubtle)
+                Spacer(minLength: 8)
+                Text(source.summary ?? "")
+                    .fontWeight(.medium)
+                    .lineLimit(1).truncationMode(.middle)
+                    .textSelection(.enabled)
+            }
+            .font(.ui(13))
+            if let subject = source.subject {
+                Text(subject).font(.ui(12)).foregroundStyle(Color.textSubtle).lineLimit(2)
+            }
+            if let fileHost = source.fileSite, fileHost != source.site {
+                Text("File served by \(fileHost)").font(.ui(12)).foregroundStyle(Color.textSubtle).lineLimit(1)
+            }
+            HStack(spacing: 8) {
+                if let url = source.openURL {
+                    Button(source.pageURL == nil && source.fileURL == nil ? "Show in Mail" : "Open Page") {
+                        NSWorkspace.shared.open(url)
+                    }
+                    .help(url.absoluteString)
+                }
+                if let link = source.pageURL ?? source.fileURL {
+                    Button("Copy Link") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(link.absoluteString, forType: .string)
+                    }
+                }
+                Spacer(minLength: 0)
+                if let site = source.site {
+                    Button("More from \(site)") { showMore(from: site) }
+                        .buttonStyle(.link)
+                        .lineLimit(1)
+                        .help("Every file you downloaded from \(site)")
+                }
+            }
+            .controlSize(.small)
+        }
+    }
+
+    private func showMore(from site: String) {
+        let spec = SearchSpec(query: "from:\(site)", scope: .files)
+        browser.showSearch(SavedSearch(name: "From \(site)", spec: spec))
     }
 }
 

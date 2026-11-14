@@ -11,6 +11,20 @@ Both switches are in **Settings ▸ Keyboard & System**:
 
 Finder still runs the Desktop and the Open/Save dialogs inside other apps; no app can replace those. Scout's own **Show in Finder** (⌘R) always goes to Finder.
 
+## Where files came from
+
+When a browser downloads a file or Mail saves an attachment, macOS records where it came from. Scout shows it in the info panel (**Downloaded from canvas.depaul.edu**), with **Open Page**, **Copy Link** and **More from** that site. You can also add a **Source** column to the list: right-click the column headers.
+
+To search by it, type `from:` and part of a site or sender in ⌘K. It works on its own or with other words:
+
+| Search | Finds |
+|---|---|
+| `from:github` | Everything you downloaded from GitHub |
+| `syllabus from:canvas.depaul.edu` | Files named or mentioning "syllabus" that came from Canvas |
+| `from:jane@example.com` | Attachments saved from Jane's emails |
+
+Press ⇧↵ to open the results in a tab and save the search to the sidebar.
+
 ## Developer tools
 
 Turn on **Settings ▸ Developer tools** (it's off for new installs) for:

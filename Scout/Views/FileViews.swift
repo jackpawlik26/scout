@@ -107,6 +107,14 @@ struct FileTableView: View {
             .customizationID("tags")
             .defaultVisibility(.hidden)
 
+            TableColumn("Source", value: \.sourceSortKey, comparator: .localizedStandard) { item in
+                Text(item.source?.summary ?? "").foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                    .help(item.source?.openURL?.absoluteString ?? "")
+            }
+            .width(min: 60, ideal: 120)
+            .customizationID("source")
+            .defaultVisibility(.hidden)
+
             TableColumn("Size", value: \.sizeSortKey) { item in
                 Text(Format.size(item))
                     .foregroundStyle(.tertiary)

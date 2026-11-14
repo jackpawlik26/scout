@@ -96,6 +96,7 @@ public struct LocalFileSource: FileSource {
         #if canImport(Darwin)
         // Reading the tag attribute directly is several times faster than `.tagNamesKey`.
         item.tags = Tags.read(url)
+        if !isDirectory { item.source = DownloadSource.read(url) }
         #endif
         if cloud, v.isUbiquitousItem == true {
             if v.ubiquitousItemIsDownloading == true {

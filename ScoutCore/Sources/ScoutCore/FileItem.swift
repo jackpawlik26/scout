@@ -31,6 +31,8 @@ public struct FileItem: Identifiable, Hashable, Sendable {
     public var tags: [FileTag] = []
     /// For iCloud / OneDrive / other cloud files: whether it's on this Mac.
     public var cloud: CloudState?
+    /// Where a download or Mail attachment came from, when macOS recorded it.
+    public var source: DownloadSource?
 
     public init(
         url: URL,
@@ -70,6 +72,7 @@ public struct FileItem: Identifiable, Hashable, Sendable {
     public var modifiedSortKey: Date { dateModified ?? .distantPast }
     public var createdSortKey: Date { dateCreated ?? .distantPast }
     public var addedSortKey: Date { dateAdded ?? .distantPast }
+    public var sourceSortKey: String { source?.summary ?? "" }
 }
 
 /// Where a cloud file's contents are.
