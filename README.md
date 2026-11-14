@@ -85,6 +85,7 @@ That builds Scout, puts it in Applications, opens it, and adds the `scout` comma
 
 ## More
 
+- [Scout docs](https://scout.jackpawlik.workers.dev/docs/): everything Scout can do, on one page
 - [What's new](https://github.com/jackpawlik26/scout/releases): every release and its changes
 - [Keyboard shortcuts](docs/SHORTCUTS.md)
 - [Scout for power users](docs/POWER-USERS.md): links, Shortcuts app, the `scout` command, Raycast
