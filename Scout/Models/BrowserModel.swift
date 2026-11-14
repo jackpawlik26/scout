@@ -1426,6 +1426,72 @@ final class BrowserModel: Identifiable {
         NSPasteboard.general.writeObjects(urls)
     }
 
+    // MARK: - Your actions (scripts)
+
+    /// Runs one of your scripts on the selection (or nothing selected: no arguments), in this
+    /// folder, off the main thread. Shows what it printed, or why it failed.
+    func run(_ action: UserAction, on urls: [URL]? = nil) {
+        let paths = (urls ?? selectedItems.map(\.url)).map(\.filePath)
+        let folder = isFolder ? location : services.home
+        activity = "Running \(action.title)…"
+        Task {
+            let result = await Self.runScript(action, paths: paths, in: folder)
+            activity = nil
+            switch result {
+            case .success(let output):
+                if !output.isEmpty { alertMessage = "\(action.title)\n\n\(output)" }
+            case .failure(let message):
+                alertMessage = "“\(action.title)” didn’t finish: \(message)"
+            }
+            await reload()
+        }
+    }
+
+    enum ScriptResult { case success(String), failure(String) }
+
+    @concurrent nonisolated private static func runScript(_ action: UserAction, paths: [String], in folder: URL) async -> ScriptResult {
+        let process = Process()
+        process.executableURL = URL(filePath: action.launchPath)
+        process.arguments = action.arguments(for: paths)
+        process.currentDirectoryURL = folder
+        var environment = ProcessInfo.processInfo.environment
+        environment["SCOUT_FOLDER"] = folder.filePath
+        process.environment = environment
+        let out = Pipe(), err = Pipe()
+        process.standardOutput = out
+        process.standardError = err
+        do {
+            try process.run()
+        } catch {
+            return .failure(error.localizedDescription)
+        }
+        // Read before waiting, so a chatty script can't fill the pipe and stall.
+        let output = out.fileHandleForReading.readDataToEndOfFile()
+        let errors = err.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        func text(_ data: Data) -> String {
+            let s = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+            return s.count > 2000 ? String(s.prefix(2000)) + "…" : s
+        }
+        if process.terminationStatus != 0 {
+            let message = text(errors).isEmpty ? text(output) : text(errors)
+            return .failure(message.isEmpty ? "it stopped with code \(process.terminationStatus)." : message)
+        }
+        return .success(text(output))
+    }
+
+    /// Opens the Actions folder (making it, with an example script, the first time).
+    func openActionsFolder() {
+        let folder = UserAction.folder
+        let fm = FileManager.default
+        if !fm.fileExists(atPath: folder.filePath) {
+            try? fm.createDirectory(at: folder, withIntermediateDirectories: true)
+            let example = folder.appending(path: "count-lines.sh")
+            try? UserAction.example.write(to: example, atomically: true, encoding: .utf8)
+        }
+        go(to: folder)
+    }
+
     func copyPaths() {
         let paths = selectedItems.isEmpty ? [location.filePath] : selectedItems.map(\.path)
         NSPasteboard.general.clearContents()

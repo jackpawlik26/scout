@@ -23,6 +23,8 @@ struct CommandPalette: View {
     @State private var askError: String?
 
     @State private var folders: [RankedFolder] = []
+    /// Menu commands and your scripts, read when the palette opens (so "can it run now?" is current).
+    @State private var commands: [PaletteCommand] = []
     @State private var files: [RankedHit] = []
     @State private var isSearchingFiles = false
     @State private var spotlight: SpotlightSearch?
@@ -42,9 +44,32 @@ struct CommandPalette: View {
         destination == nil && askedFrom == nil && SearchPlan.looksLikeQuestion(query) && OnDeviceAI.isAvailable
     }
 
+    /// Typing ">" first lists only commands, like other command palettes.
+    private var isCommandMode: Bool { destination == nil && query.hasPrefix(">") }
+
     private var rows: [PaletteItem] {
+        if isCommandMode { return matchingCommands(String(query.dropFirst()), limit: 60) }
         let folderLimit = scope == .folders ? 50 : (files.isEmpty ? 30 : 6)
-        return folders.prefix(folderLimit).map(PaletteItem.folder) + files.map(PaletteItem.file)
+        let commandRows = scope == .all && destination == nil ? matchingCommands(query, limit: 4, strict: true) : []
+        return folders.prefix(folderLimit).map(PaletteItem.folder) + commandRows + files.map(PaletteItem.file)
+    }
+
+    /// Commands whose name matches. `strict` (mixed in with folders and files): the typed text
+    /// must appear in the name, so commands don't crowd out what you're looking for.
+    private func matchingCommands(_ text: String, limit: Int, strict: Bool = false) -> [PaletteItem] {
+        let q = text.trimmingCharacters(in: .whitespaces)
+        if q.isEmpty { return strict ? [] : commands.filter(\.isEnabled).prefix(limit).map { .command($0, []) } }
+        if strict, q.count < 3 { return [] }
+        return commands
+            .compactMap { command -> (PaletteCommand, FuzzyMatch)? in
+                if strict, command.title.range(of: q, options: [.caseInsensitive, .diacriticInsensitive]) == nil { return nil }
+                return FuzzyMatcher.match(q, in: command.title).map { (command, $0) }
+            }
+            .sorted { a, b in
+                a.0.isEnabled != b.0.isEnabled ? a.0.isEnabled : a.1.score > b.1.score
+            }
+            .prefix(limit)
+            .map { .command($0.0, $0.1.indices) }
     }
 
     private var selected: PaletteItem? {
@@ -80,6 +105,15 @@ struct CommandPalette: View {
             .padding(.top, 64)
         }
         .onAppear {
+            commands = MenuCommands.all() + UserAction.load().map { action in
+                PaletteCommand(id: "action:\(action.id)", title: "Run “\(action.title)”", detail: "Your action",
+                               shortcut: "", symbol: "terminal", isEnabled: true) { [window] in
+                    window.current.run(action)
+                }
+            } + [PaletteCommand(id: "action:folder", title: "Open Actions Folder", detail: "Your actions",
+                                shortcut: "", symbol: "folder.badge.gearshape", isEnabled: true) { [window] in
+                    window.current.openActionsFolder()
+                }]
             if !window.paletteInitialQuery.isEmpty { query = window.paletteInitialQuery }
             if let initialScope = window.paletteInitialScope { scope = initialScope }
             window.paletteInitialQuery = ""
@@ -271,9 +305,12 @@ struct CommandPalette: View {
             if index == 0 { return suggested > 0 ? "Suggested" : "Most Used" }
             return index == suggested ? "Most Used" : nil
         }
-        if index > 0, rows[index - 1].isFile == current.isFile { return nil }
-        if current.isFile { return "Files" }
-        return spec.isEmpty ? "Most Used" : "Folders"
+        if index > 0, rows[index - 1].section == current.section { return nil }
+        switch current.section {
+        case 2: return "Files"
+        case 1: return "Commands"
+        default: return spec.isEmpty ? "Most Used" : "Folders"
+        }
     }
 
     private var footer: some View {
@@ -283,6 +320,8 @@ struct CommandPalette: View {
                 hint("↵", "\(verb) here")
                 hint("⌘↵", "\(verb) and go there")
                 hint("⇥", destination.copy ? "move instead" : "copy instead")
+            } else if let selected, case .command = selected {
+                hint("↵", "run")
             } else if let selected {
                 if selected.isFile {
                     hint("↵", "open")
@@ -316,6 +355,13 @@ struct CommandPalette: View {
 
     private func search(_ spec: SearchSpec) async {
         selectedIndex = 0
+        if isCommandMode {
+            spotlight = nil
+            folders = []
+            files = []
+            isSearchingFiles = false
+            return
+        }
         // Stop the last search now, so it can't deliver stale results (or keep Spotlight busy).
         spotlight = nil
         await searchFolders(spec)
@@ -439,6 +485,12 @@ struct CommandPalette: View {
             return
         }
         guard let selected else { return }
+        if case .command(let command, _) = selected {
+            guard command.isEnabled else { return }
+            close()
+            command.run()
+            return
+        }
         let url = URL(filePath: selected.path)
         guard FileManager.default.fileExists(atPath: selected.path) else {
             services.forget(selected.path)
@@ -476,11 +528,14 @@ struct CommandPalette: View {
 enum PaletteItem: Identifiable {
     case folder(RankedFolder)
     case file(RankedHit)
+    /// A menu command or one of your scripts, with the letters of its name that matched.
+    case command(PaletteCommand, [Int])
 
     var id: String {
         switch self {
         case .folder(let f): "d:" + f.folder.path
         case .file(let h): "f:" + h.hit.path
+        case .command(let c, _): "c:" + c.id
         }
     }
 
@@ -488,6 +543,16 @@ enum PaletteItem: Identifiable {
         switch self {
         case .folder(let f): f.folder.path
         case .file(let h): h.hit.path
+        case .command: ""
+        }
+    }
+
+    /// Folders, commands, files: for section headers.
+    var section: Int {
+        switch self {
+        case .folder: 0
+        case .command: 1
+        case .file(let h): h.hit.isFolder ? 0 : 2
         }
     }
 
@@ -505,9 +570,15 @@ private struct PaletteRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(nsImage: icon)
-                .resizable()
-                .frame(width: 22, height: 22)
+            if case .command(let command, _) = item {
+                Image(systemName: command.symbol)
+                    .font(.system(size: 14))
+                    .frame(width: 22, height: 22)
+            } else {
+                Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: 22, height: 22)
+            }
             VStack(alignment: .leading, spacing: 1) {
                 Text(highlighted).lineLimit(1)
                 Text(subtitle)
@@ -517,7 +588,13 @@ private struct PaletteRow: View {
                     .truncationMode(.head)
             }
             Spacer()
+            if case .command(let command, _) = item, !command.shortcut.isEmpty {
+                Text(command.shortcut)
+                    .font(.ui(12))
+                    .foregroundStyle(isSelected ? AnyShapeStyle(.white.opacity(0.85)) : AnyShapeStyle(.secondary))
+            }
         }
+        .opacity(isDisabledCommand ? 0.45 : 1)
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .foregroundStyle(isSelected ? .white : .primary)
@@ -525,17 +602,28 @@ private struct PaletteRow: View {
         .contentShape(Rectangle())
     }
 
-    private var name: String { (item.path as NSString).lastPathComponent }
+    private var name: String {
+        if case .command(let command, _) = item { return command.title }
+        return (item.path as NSString).lastPathComponent
+    }
+
+    private var isDisabledCommand: Bool {
+        if case .command(let command, _) = item { return !command.isEnabled }
+        return false
+    }
 
     private var icon: NSImage {
         switch item {
         case .folder(let f): IconCache.icon(forPath: f.folder.path)
         case .file(let h): IconCache.icon(forPath: h.hit.path, contentType: h.hit.contentType, isFolder: h.hit.isFolder)
+        case .command: NSImage()
         }
     }
 
     private var subtitle: String {
         switch item {
+        case .command(let command, _):
+            return command.isEnabled ? command.detail : command.detail + " · not available here"
         case .folder(let f):
             return f.folder.displayPath
         case .file(let h):
@@ -553,6 +641,7 @@ private struct PaletteRow: View {
         switch item {
         case .folder(let f): indices = f.nameIndices
         case .file(let h): indices = h.nameIndices
+        case .command(_, let matched): indices = matched
         }
         let matched = Set(indices)
         var output = AttributedString()

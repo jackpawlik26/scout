@@ -25,7 +25,19 @@ To search by it, type `from:` and part of a site or sender in ⌘K. It works on 
 
 Press ⇧↵ to open the results in a tab and save the search to the sidebar.
 
-## Ask Scout (on-device AI)
+## Commands in ⌘K
+
+Type `>` in ⌘K to search every command in Scout's menus (New Folder, Group By, Triage, Show Hidden Files…) and run it with ↵. Commands that don't apply right now are dimmed. Without the `>`, commands whose names contain what you typed also appear under Folders.
+
+## Your own actions (scripts)
+
+Put scripts in `~/Library/Application Support/Scout/Actions/` (⌘K ▸ **Open Actions Folder** makes it, with an example). Each shows up in ⌘K as **Run "…"** and in the right-click menu under **Run Action**.
+
+- The selected files are passed as arguments; the folder you're looking at is the current directory (also `$SCOUT_FOLDER`).
+- `.sh`/`.zsh`/`.bash`, `.py`, `.rb`, `.js` and `.applescript` run with their usual interpreter; any other file needs to be executable.
+- Anything the script prints is shown when it finishes; if it fails, you see why.
+- Scripts run as you, with your permissions. Only put scripts there that you trust.
+
 
 On Macs with Apple Intelligence, type a description in ⌘K, like *the lease I signed last spring* or *screenshots of error messages*, and click **Ask Scout what you mean** (or press ⌥↵). Apple's on-device model turns it into a search (words, a kind and a date range) and Scout shows what it understood, with a way back to your own words. Nothing leaves your Mac.
 

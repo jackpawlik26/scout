@@ -679,6 +679,13 @@ struct FileContextMenu: View {
             Divider()
             TagsMenu(browser: browser, items: items)
             CustomizeMenu(browser: browser, items: items)
+            Menu("Run Action") {
+                ForEach(UserAction.load()) { action in
+                    Button(action.title) { browser.run(action, on: items.map(\.url)) }
+                }
+                Divider()
+                Button("Open Actions Folder") { browser.openActionsFolder() }
+            }
             Button("Add to Shelf") {
                 browser.services.addToShelf(items.map(\.url))
                 openWindow(id: "shelf")
