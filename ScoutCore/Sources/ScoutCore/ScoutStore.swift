@@ -15,6 +15,7 @@ public enum ScoutStore {
     public static var workspacesURL: URL { directory.appending(path: "workspaces.json") }
     public static var favoritesURL: URL { directory.appending(path: "favorites.json") }
     public static var customizationsURL: URL { directory.appending(path: "customizations.json") }
+    public static var renamePresetsURL: URL { directory.appending(path: "rename-presets.json") }
 
     public static func loadCustomizations(from url: URL = customizationsURL) -> Customizations {
         guard let data = try? Data(contentsOf: url) else { return Customizations() }
@@ -52,6 +53,19 @@ public enum ScoutStore {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try write(encoder.encode(workspaces), to: url)
+    }
+
+    // MARK: Rename presets
+
+    public static func loadRenamePresets(from url: URL = renamePresetsURL) -> [RenamePreset] {
+        guard let data = try? Data(contentsOf: url) else { return [] }
+        return (try? JSONDecoder().decode([RenamePreset].self, from: data)) ?? []
+    }
+
+    public static func saveRenamePresets(_ presets: [RenamePreset], to url: URL = renamePresetsURL) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try write(encoder.encode(presets), to: url)
     }
 
     // MARK: Saved searches

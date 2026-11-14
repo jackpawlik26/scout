@@ -166,6 +166,25 @@ final class AppServices {
         }
     }
 
+    // MARK: - Rename presets
+
+    /// Your saved renames (rename-presets.json); Scout's built-in ones come first in menus.
+    private(set) var renamePresets: [RenamePreset] = ScoutStore.loadRenamePresets()
+
+    func saveRenamePreset(name: String, pipeline: RenamePipeline) {
+        if let index = renamePresets.firstIndex(where: { $0.name.caseInsensitiveCompare(name) == .orderedSame }) {
+            renamePresets[index].pipeline = pipeline
+        } else {
+            renamePresets.append(RenamePreset(name: name, pipeline: pipeline))
+        }
+        try? ScoutStore.saveRenamePresets(renamePresets)
+    }
+
+    func deleteRenamePreset(_ id: UUID) {
+        renamePresets.removeAll { $0.id == id }
+        try? ScoutStore.saveRenamePresets(renamePresets)
+    }
+
     // MARK: - Trusted git repositories
 
     private static let trustedReposKey = "trustedRepositories"
