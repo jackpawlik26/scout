@@ -351,10 +351,8 @@ struct CleanupView: View {
             search = SpotlightSearch(
                 queryString: "kMDItemFSSize > 524288000 && kMDItemContentType != \"public.folder\"",
                 scopes: [NSMetadataQueryUserHomeScope], live: false
-            ) { hits, finished in
-                guard finished, !done else { return }
-                done = true
-                let items = hits
+            ) { hits in
+                hits
                     .filter { !FileHitRanker.isNoise($0.path, home: home) && !$0.path.hasPrefix(home + "/.Trash/") }
                     .compactMap { hit -> CleanupItem? in
                         let size = (try? URL(filePath: hit.path).resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
@@ -363,6 +361,9 @@ struct CleanupView: View {
                         return CleanupItem(path: hit.path, name: hit.name, bytes: Int64(size), detail: parent)
                     }
                     .sorted { $0.bytes > $1.bytes }
+            } onResults: { items, finished in
+                guard finished, !done else { return }
+                done = true
                 continuation.resume(returning: Array(items.prefix(30)))
                 search = nil
             }

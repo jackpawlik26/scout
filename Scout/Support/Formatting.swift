@@ -63,6 +63,19 @@ enum IconCache {
         return image
     }
 
+    /// For search results: plain files share their type's icon (fast, cached once per type);
+    /// folders and packages, which can have their own icons, are read by path.
+    static func icon(forPath path: String, contentType: String?, isFolder: Bool) -> NSImage {
+        guard !isFolder, let contentType, let type = UTType(contentType), !type.conforms(to: .package) else {
+            return icon(forPath: path)
+        }
+        let key = "type:\(contentType)" as NSString
+        if let cached = cache.object(forKey: key) { return cached }
+        let image = NSWorkspace.shared.icon(for: type)
+        cache.setObject(image, forKey: key)
+        return image
+    }
+
     static func icon(forPath path: String) -> NSImage {
         if let cached = cache.object(forKey: path as NSString) { return cached }
         let image = NSWorkspace.shared.icon(forFile: path)

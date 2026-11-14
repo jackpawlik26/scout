@@ -681,11 +681,12 @@ final class BrowserModel: Identifiable {
         let home = services.homePath
         let escaped = SpotlightQueryBuilder.escape(name)
         spotlight = SpotlightSearch(queryString: "kMDItemUserTags == \"\(escaped)\"",
-                                    scopes: [NSMetadataQueryUserHomeScope], live: true) { [weak self] hits, finished in
-            guard let self, generation == self.loadGeneration else { return }
-            self.items = hits.filter { !FileHitRanker.isNoise($0.path, home: home) }
-                .compactMap { LocalFileSource.item(for: URL(filePath: $0.path)) }
+                                    scopes: [NSMetadataQueryUserHomeScope], live: true) { hits in
+            LocalFileSource.items(at: hits.filter { !FileHitRanker.isNoise($0.path, home: home) }.map { URL(filePath: $0.path) })
                 .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        } onResults: { [weak self] items, finished in
+            guard let self, generation == self.loadGeneration else { return }
+            self.items = items
             if finished { self.isSearching = false }
         }
         if spotlight == nil {
@@ -724,11 +725,14 @@ final class BrowserModel: Identifiable {
         needsPermission = false
         isSearching = true
         let home = services.homePath
-        let query = saved.spec.query
-        spotlight = SpotlightSearch(spec: saved.spec, home: home, live: true) { [weak self] hits, finished in
-            guard let self, generation == self.loadGeneration else { return }
+        let query = saved.spec.nameQuery
+        spotlight = SpotlightSearch(spec: saved.spec, home: home, live: true) { hits in
+            // Ranking and reading 500 files from disk happen in the background.
             let ranked = FileHitRanker.rank(hits, query: query, home: home, limit: 500)
-            self.items = ranked.compactMap { LocalFileSource.item(for: URL(filePath: $0.hit.path)) }
+            return LocalFileSource.items(at: ranked.map { URL(filePath: $0.hit.path) })
+        } onResults: { [weak self] items, finished in
+            guard let self, generation == self.loadGeneration else { return }
+            self.items = items
             if finished { self.isSearching = false }
         }
         if spotlight == nil {
