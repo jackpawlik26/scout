@@ -18,6 +18,11 @@ struct BrowserPane: View {
     @State private var workspaceName = ""
     @State private var newTagName = ""
     @State private var nickname = ""
+    /// The header's width, and the full controls' width when last shown (with what they held). They
+    /// pick between the full and compact controls (ViewThatFits kept a stale layout after a
+    /// split closed, drawing the buttons on top of each other).
+    @State private var headerWidth: CGFloat = 0
+    @State private var measuredControls: (width: CGFloat, key: String) = (0, "")
 
     /// Only built while Quick Look is open (it's every item in the folder).
     private var quickLookItems: [URL] {
@@ -153,15 +158,40 @@ struct BrowserPane: View {
 
             WindowDragArea().frame(minWidth: 12, maxHeight: 40)
 
-            ViewThatFits(in: .horizontal) {
-                fullControls
+            if usesCompactControls {
                 compactControls
+            } else {
+                fullControls
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { measuredControls = ($0, controlsKey) }
             }
         }
         .padding(.leading, 12)
         .padding(.trailing, 10)
         .padding(.top, 10)
         .padding(.bottom, 10)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { headerWidth = $0 }
+    }
+
+    /// Compact when the full controls would squeeze the title below ~140pt. Back/forward,
+    /// spacing, padding and the drag area take about 120pt.
+    private var usesCompactControls: Bool {
+        guard headerWidth > 0 else { return false }
+        let measured = measuredControls.key == controlsKey ? measuredControls.width : 0
+        return headerWidth < 120 + 140 + max(measured, estimatedFullControlsWidth)
+    }
+
+    /// What changes the full controls' width; a measurement only counts while this matches.
+    private var controlsKey: String {
+        "\(browser.git?.status.headName ?? "-")|\(browser.isToolPage)|\(window.isSplit)"
+    }
+
+    /// Used until the full controls have been measured (e.g. a window that opens split).
+    private var estimatedFullControlsWidth: CGFloat {
+        var width: CGFloat = 38  // info panel button
+        if !browser.isToolPage { width += 92 + 38 + 38 }  // view switcher, sort, filter
+        if window.isSplit { width += 38 }
+        if browser.git != nil { width += 130 }
+        return width
     }
 
     /// Header controls when there's room.
