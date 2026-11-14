@@ -445,10 +445,18 @@ private struct FolderSummary: View {
                 StackedBar(parts: parts, total: sum)
                     .padding(.vertical, 2)
 
-                Text("What takes the space")
-                    .font(.ui(12).weight(.medium))
-                    .foregroundStyle(Color.textSubtle)
-                    .padding(.top, 4)
+                HStack {
+                    Text("What takes the space")
+                        .font(.ui(12).weight(.medium))
+                        .foregroundStyle(Color.textSubtle)
+                    Spacer()
+                    if browser.isFolder {
+                        Button("Disk Map") { browser.showDiskMap() }
+                            .buttonStyle(.link).font(.ui(12))
+                            .help("See what fills this folder as blocks, and go into the big ones")
+                    }
+                }
+                .padding(.top, 4)
                 ForEach(parts, id: \.0) { category, bytes in
                     HStack(spacing: 8) {
                         Circle().fill(category.color).frame(width: 8, height: 8)

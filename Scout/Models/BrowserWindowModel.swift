@@ -283,6 +283,9 @@ final class BrowserWindowModel {
             current.showRecents()
         case .history:
             current.showHistory()
+        case .diskMap(let path):
+            current.showDiskMap(path.map { URL.folder(PathCompletion.expandTilde($0, home: services.homePath)).filePath }
+                                ?? services.homePath)
         case .triage(let path):
             current.showTriage(path.map { URL.folder(PathCompletion.expandTilde($0, home: services.homePath)).filePath })
         case .tidy(let rawPath):

@@ -10,6 +10,7 @@ import Foundation
 ///     scout://cleanup                            open Clean Up
 ///     scout://history                            what Scout moved, renamed and trashed
 ///     scout://triage?path=~/Downloads            go through a folder's files one at a time
+///     scout://diskmap?path=~                     what fills a folder, as blocks
 ///     scout://packages                           open Packages (Homebrew, npm)
 ///     scout://settings                           open Settings
 ///     scout://shortcuts                          show the keyboard shortcuts
@@ -26,6 +27,8 @@ public enum ScoutLink: Equatable, Sendable {
     case history
     /// Triage: a folder's loose files one at a time (nil: Downloads).
     case triage(path: String?)
+    /// Disk Map of a folder (nil: your home folder).
+    case diskMap(path: String?)
     /// Shows Tidy Folder's plan for a folder (nothing moves until you confirm).
     case tidy(path: String)
     case changes(path: String)
@@ -63,6 +66,8 @@ public enum ScoutLink: Equatable, Sendable {
             self = .history
         case "triage":
             self = .triage(path: query["path"].flatMap { $0.isEmpty ? nil : $0 })
+        case "diskmap", "disk-map":
+            self = .diskMap(path: query["path"].flatMap { $0.isEmpty ? nil : $0 })
         case "tidy":
             self = .tidy(path: query["path"].flatMap { $0.isEmpty ? nil : $0 } ?? "~/Downloads")
         case "changes":
@@ -102,6 +107,9 @@ public enum ScoutLink: Equatable, Sendable {
             components.host = "history"
         case .triage(let path):
             components.host = "triage"
+            if let path { components.queryItems = [URLQueryItem(name: "path", value: path)] }
+        case .diskMap(let path):
+            components.host = "diskmap"
             if let path { components.queryItems = [URLQueryItem(name: "path", value: path)] }
         case .tidy(let path):
             components.host = "tidy"

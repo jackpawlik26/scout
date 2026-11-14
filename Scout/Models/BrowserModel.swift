@@ -53,6 +53,8 @@ enum BrowserMode: Equatable, Codable {
     case history
     /// Going through a folder's loose files one at a time (the folder's path).
     case triage(String)
+    /// What fills a folder, as blocks sized by space (the folder's path).
+    case diskMap(String)
 }
 
 /// A stop in a tab's Back/Forward history.
@@ -171,6 +173,13 @@ final class BrowserModel: Identifiable {
     /// Clean Up and Packages: pages with their own layout instead of a file list.
     var isToolPage: Bool {
         mode == .cleanup || mode == .packages || mode == .settings || mode == .history || triageFolder != nil
+            || diskMapFolder != nil
+    }
+
+    /// The folder the Disk Map starts from.
+    var diskMapFolder: String? {
+        if case .diskMap(let path) = mode { return path }
+        return nil
     }
 
     /// The folder Triage is going through.
@@ -226,6 +235,7 @@ final class BrowserModel: Identifiable {
         case .recents: return "Recents"
         case .history: return "History"
         case .triage(let path): return "Triage " + FileManager.default.displayName(atPath: path)
+        case .diskMap(let path): return "Disk Map: " + FileManager.default.displayName(atPath: path)
         case .tag(let name): return name
         case .changes(let root): return "Changes in " + FileManager.default.displayName(atPath: root)
         case .folder: break
@@ -392,6 +402,7 @@ final class BrowserModel: Identifiable {
         case .recents: showRecents()
         case .history: showHistory()
         case .triage(let path): if FileManager.default.fileExists(atPath: path) { showTriage(path) }
+        case .diskMap(let path): if FileManager.default.fileExists(atPath: path) { showDiskMap(path) }
         case .tag(let name): showTag(name)
         }
     }
@@ -424,6 +435,14 @@ final class BrowserModel: Identifiable {
         guard mode != .recents else { return }
         pushHistory()
         show(HistoryEntry(location: location, mode: .recents))
+    }
+
+    /// What fills a folder (default: this one, or your home folder).
+    func showDiskMap(_ path: String? = nil) {
+        let folder = path ?? (isFolder ? location.filePath : services.homePath)
+        guard diskMapFolder != folder else { return }
+        pushHistory()
+        show(HistoryEntry(location: location, mode: .diskMap(folder)))
     }
 
     /// Goes through a folder's loose files one at a time (default: Downloads).
@@ -544,7 +563,7 @@ final class BrowserModel: Identifiable {
         case .workspace:
             loadWorkspace()
             return
-        case .cleanup, .packages, .settings, .history, .triage:
+        case .cleanup, .packages, .settings, .history, .triage, .diskMap:
             spotlight = nil
             spotlightAdded = nil
             watcher = nil

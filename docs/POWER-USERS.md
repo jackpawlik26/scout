@@ -69,6 +69,7 @@ Any app, script or shortcut can control Scout with `scout://` links:
 | `scout://workspace?name=Taxes` | Open a workspace |
 | `scout://recents` | Files you opened or downloaded in the last 30 days |
 | `scout://history` | Everything Scout moved, copied, renamed or trashed |
+| `scout://diskmap?path=~` | Disk Map: what fills a folder, as blocks you can click into (no path: your home folder) |
 | `scout://triage?path=~/Downloads` | Triage a folder's files one at a time (no path: Downloads) |
 | `scout://tidy?path=~/Downloads` | Show Tidy Folder's plan (nothing moves until you confirm) |
 | `scout://cleanup` | Open Clean Up |

@@ -78,6 +78,8 @@ struct CleanupView: View {
                     ProgressView().controlSize(.small)
                     Text("Looking…").foregroundStyle(Color.textSubtle)
                 }
+                Button("Disk Map") { browser.showDiskMap(browser.services.homePath) }
+                    .help("See what fills your home folder as blocks")
             }
             if let capacity, capacity.total > 0 {
                 GeometryReader { geo in

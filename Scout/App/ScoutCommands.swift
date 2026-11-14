@@ -233,6 +233,7 @@ struct ScoutCommands: Commands {
                 Divider()
                 Button("Clean Up") { browser?.showCleanup() }
                     .customizableShortcut(.cleanUp)
+                Button("Disk Map") { browser?.showDiskMap() }
                 if developerTools {
                     Button("Packages") { browser?.showPackages() }
                         .customizableShortcut(.packages)
