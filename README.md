@@ -29,6 +29,19 @@
 
 After that, Scout opens like any other app. macOS will also ask whether Scout can see your Downloads, Desktop and Documents folders: click **Allow** (it's a file browser, so it needs to). To skip those questions, give Scout **Full Disk Access** in System Settings ▸ Privacy & Security. To get a newer version later, download it again and replace the old one in Applications.
 
+### Or build it yourself
+
+If you have [Xcode](https://apps.apple.com/app/xcode/id497799835) 26 or later and [Homebrew](https://brew.sh), you can build Scout from this repository instead. A Mac you built it on trusts it, so there's no "Open Anyway" step:
+
+```sh
+git clone https://github.com/jackpawlik26/scout.git
+cd scout
+brew install xcodegen
+./scripts/install.sh
+```
+
+That builds Scout, puts it in Applications, opens it, and adds the `scout` command to `~/.local/bin`. To update later, run `git pull && ./scripts/install.sh` in the same folder. More in [Developing Scout](docs/DEVELOPING.md).
+
 **Optional:** in Scout's **Settings** (⌘,), turn on **Open folders in Scout** and **Use Scout for "Show in Finder"** to make Scout your everyday file browser, and **Open at login** to keep ⌥Space ready.
 
 ## What it does

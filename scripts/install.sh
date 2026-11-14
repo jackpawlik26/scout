@@ -15,7 +15,9 @@ if security find-identity -p codesigning | grep -q "$IDENTITY"; then
   codesign --force --options runtime --timestamp=none -s "$IDENTITY" "$APP/Contents/Helpers/scout"
   codesign --force --options runtime --timestamp=none --entitlements Scout/Scout.entitlements -s "$IDENTITY" "$APP"
 else
-  echo "warning: '$IDENTITY' certificate not found; permissions will reset on every install" >&2
+  # Without it the build stays ad-hoc signed: it works, but macOS may ask for folder access
+  # again after each rebuild.
+  echo "note: no '$IDENTITY' certificate, so macOS may ask for folder access again after a rebuild (see docs/DEVELOPING.md)" >&2
 fi
 
 osascript -e 'tell application "Scout" to quit' 2>/dev/null || true
