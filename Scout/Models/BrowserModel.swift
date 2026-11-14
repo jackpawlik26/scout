@@ -769,6 +769,59 @@ final class BrowserModel: Identifiable {
     func select(_ item: FileItem) {
         selection = [item.id]
         scrollTarget = item.id
+        selectionAnchor = item.id
+        selectionCursor = item.id
+    }
+
+    // MARK: Icon and column view selection (the list view's table does this itself)
+
+    /// Where a ⇧ range starts, and the item the arrow keys move from.
+    @ObservationIgnored private var selectionAnchor: URL?
+    @ObservationIgnored private var selectionCursor: URL?
+
+    /// A click: ⌘ adds or removes one item, ⇧ selects everything from the last plain click.
+    func click(_ item: FileItem, in order: [FileItem], modifiers: NSEvent.ModifierFlags) {
+        if modifiers.contains(.shift), let range = range(to: item, in: order) {
+            selection = range
+            selectionCursor = item.id
+        } else if modifiers.contains(.command) || modifiers.contains(.shift) {
+            if selection.contains(item.id) { selection.remove(item.id) } else { selection.insert(item.id) }
+            selectionAnchor = item.id
+            selectionCursor = item.id
+        } else {
+            selection = [item.id]
+            selectionAnchor = item.id
+            selectionCursor = item.id
+        }
+    }
+
+    /// An arrow key landed on `item`; with ⇧ the selection grows (or shrinks) to it.
+    func moveSelection(to item: FileItem, in order: [FileItem], extend: Bool) {
+        if extend, let range = range(to: item, in: order) {
+            selection = range
+            selectionCursor = item.id
+            scrollTarget = item.id
+        } else {
+            select(item)
+        }
+    }
+
+    /// The position the arrow keys move from: the last item moved to, else the last selected.
+    func cursorIndex(in order: [FileItem]) -> Int? {
+        if let cursor = selectionCursor, selection.contains(cursor),
+           let index = order.firstIndex(where: { $0.id == cursor }) { return index }
+        return order.lastIndex { selection.contains($0.id) }
+    }
+
+    /// Everything between the anchor and `item`, or nil when there's no anchor on screen.
+    private func range(to item: FileItem, in order: [FileItem]) -> Set<URL>? {
+        if selectionAnchor == nil || !selection.contains(selectionAnchor!) {
+            selectionAnchor = cursorIndex(in: order).map { order[$0].id }
+        }
+        guard let anchor = selectionAnchor,
+              let from = order.firstIndex(where: { $0.id == anchor }),
+              let to = order.firstIndex(where: { $0.id == item.id }) else { return nil }
+        return Set(order[min(from, to)...max(from, to)].map(\.id))
     }
 
     private func watch(_ folder: URL) {

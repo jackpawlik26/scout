@@ -71,8 +71,8 @@ struct ColumnBrowserView: View {
         .focusEffectDisabled()
         .onAppear { isFocused = true }
         .onChange(of: browser.location) { if !isEditingText { isFocused = true } }
-        .onKeyPress(.upArrow) { move(-1) }
-        .onKeyPress(.downArrow) { move(1) }
+        .onKeyPress(.upArrow, phases: [.down, .repeat]) { move(-1, extend: $0.modifiers.contains(.shift)) }
+        .onKeyPress(.downArrow, phases: [.down, .repeat]) { move(1, extend: $0.modifiers.contains(.shift)) }
         .onKeyPress(.rightArrow) {
             guard let item = browser.selectedItems.first, item.isNavigable else { return .ignored }
             browser.go(to: item.url)
@@ -119,12 +119,13 @@ struct ColumnBrowserView: View {
                                                     urls: browser.selection.contains(item.id) ? browser.selection : [item.id])
                                 }
                             }
-                            .draggable(item.url)
+                            .draggable(containerItemID: item.id)
                             .folderDropTarget(item, browser: browser)
                     }
                 }
                 .padding(6)
             }
+            .fileDragContainer(browser)
             .onAppear { if let highlighted { proxy.scrollTo(highlighted, anchor: .center) } }
             .onChange(of: browser.scrollTarget) { _, target in
                 if isCurrent, let target { proxy.scrollTo(target) }
@@ -150,21 +151,19 @@ struct ColumnBrowserView: View {
         } else if !isCurrent {
             browser.go(to: folder, select: item.url)
         } else {
-            let flags = NSEvent.modifierFlags
-            if flags.contains(.command) || flags.contains(.shift) {
-                if browser.selection.contains(item.id) { browser.selection.remove(item.id) } else { browser.selection.insert(item.id) }
-            } else {
-                browser.selection = [item.id]
-            }
+            browser.click(item, in: browser.displayedItems, modifiers: NSApp.currentEvent?.modifierFlags ?? NSEvent.modifierFlags)
         }
     }
 
-    private func move(_ offset: Int) -> KeyPress.Result {
+    private func move(_ offset: Int, extend: Bool) -> KeyPress.Result {
         let items = browser.displayedItems
         guard !items.isEmpty else { return .ignored }
-        let current = items.lastIndex { browser.selection.contains($0.id) }
-        let next = current.map { max(0, min(items.count - 1, $0 + offset)) } ?? 0
-        browser.select(items[next])
+        guard let current = browser.cursorIndex(in: items) else {
+            browser.select(items[0])
+            return .handled
+        }
+        let next = max(0, min(items.count - 1, current + offset))
+        browser.moveSelection(to: items[next], in: items, extend: extend)
         return .handled
     }
 

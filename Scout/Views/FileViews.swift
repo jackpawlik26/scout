@@ -78,7 +78,6 @@ struct FileTableView: View {
                 }
                 .opacity(item.isHidden ? 0.55 : 1)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .folderDropTarget(item, browser: browser)
             }
             .width(min: 120, ideal: 150)
             .customizationID("name")
@@ -119,15 +118,13 @@ struct FileTableView: View {
         } rows: {
             if browser.groupBy == .none {
                 ForEach(browser.displayedItems) { item in
-                    TableRow(item)
-                        .itemProvider { NSItemProvider(contentsOf: item.url) }
+                    row(item)
                 }
             } else {
                 ForEach(browser.displayedGroups) { group in
                     Section {
                         ForEach(group.items) { item in
-                            TableRow(item)
-                                .itemProvider { NSItemProvider(contentsOf: item.url) }
+                            row(item)
                         }
                     } header: {
                         GroupHeader(title: group.title, count: group.items.count)
@@ -162,6 +159,23 @@ struct FileTableView: View {
             return []
         }
         .onPasteCommand(of: [.fileURL]) { _ in browser.paste(move: false) }
+    }
+}
+
+extension FileTableView {
+    /// A row drags its file (the table drags every selected row together). Dropping on a
+    /// folder row moves into that folder; on a file row, into the folder being shown.
+    fileprivate func row(_ item: FileItem) -> some TableRowContent<FileItem> {
+        TableRow(item)
+            .draggable(item.url)
+            .dropDestination(for: URL.self) { urls in
+                if item.isNavigable {
+                    _ = browser.receiveDrop(urls, into: item.url)
+                } else {
+                    let incoming = urls.filter { $0.deletingLastPathComponent().filePath != browser.location.filePath }
+                    if !incoming.isEmpty { _ = browser.receiveDrop(incoming) }
+                }
+            }
     }
 }
 
@@ -214,16 +228,17 @@ struct FileGridView: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .onChange(of: browser.scrollTarget) { _, target in scroll(proxy, to: target, browser) }
         }
+        .fileDragContainer(browser)
         .contentShape(Rectangle())
         .onTapGesture { browser.selection = [] }
         .contextMenu { FileContextMenu(window: window, browser: browser, urls: []) }
         .focusable()
         .focused($isFocused)
         .focusEffectDisabled()
-        .onKeyPress(.leftArrow) { move(.left) }
-        .onKeyPress(.rightArrow) { move(.right) }
-        .onKeyPress(.upArrow) { move(.up) }
-        .onKeyPress(.downArrow) { move(.down) }
+        .onKeyPress(.leftArrow, phases: [.down, .repeat]) { move(.left, extend: $0.modifiers.contains(.shift)) }
+        .onKeyPress(.rightArrow, phases: [.down, .repeat]) { move(.right, extend: $0.modifiers.contains(.shift)) }
+        .onKeyPress(.upArrow, phases: [.down, .repeat]) { move(.up, extend: $0.modifiers.contains(.shift)) }
+        .onKeyPress(.downArrow, phases: [.down, .repeat]) { move(.down, extend: $0.modifiers.contains(.shift)) }
         .fileKeyboardShortcuts(browser)
         .onCopyCommand {
             browser.copySelectionToPasteboard()
@@ -243,7 +258,7 @@ struct FileGridView: View {
                     FileContextMenu(window: window, browser: browser,
                                     urls: browser.selection.contains(item.id) ? browser.selection : [item.id])
                 }
-                .onDrag { NSItemProvider(contentsOf: item.url) ?? NSItemProvider() }
+                .draggable(containerItemID: item.id)
                 .folderDropTarget(item, browser: browser)
         }
     }
@@ -260,12 +275,13 @@ struct FileGridView: View {
 
     private enum Direction { case left, right, up, down }
 
-    /// Arrow keys move the selection through the grid, row by row within each section.
-    private func move(_ direction: Direction) -> KeyPress.Result {
+    /// Arrow keys move the selection through the grid, row by row within each section;
+    /// with ⇧ they grow it.
+    private func move(_ direction: Direction, extend: Bool) -> KeyPress.Result {
         let sections = sections
         let flat = sections.flatMap(\.self)
         guard !flat.isEmpty else { return .ignored }
-        guard let current = flat.lastIndex(where: { browser.selection.contains($0.id) }) else {
+        guard let current = browser.cursorIndex(in: flat) else {
             browser.select(flat[0])
             return .handled
         }
@@ -303,7 +319,7 @@ struct FileGridView: View {
                 }
             }
         }
-        browser.select(flat[target])
+        browser.moveSelection(to: flat[target], in: flat, extend: extend)
         return .handled
     }
 
@@ -313,13 +329,7 @@ struct FileGridView: View {
             browser.open([item.id])
             return
         }
-        let flags = NSEvent.modifierFlags
-        if flags.contains(.command) || flags.contains(.shift) {
-            if browser.selection.contains(item.id) { browser.selection.remove(item.id) }
-            else { browser.selection.insert(item.id) }
-        } else {
-            browser.selection = [item.id]
-        }
+        browser.click(item, in: sections.flatMap(\.self), modifiers: NSApp.currentEvent?.modifierFlags ?? NSEvent.modifierFlags)
     }
 }
 
@@ -380,6 +390,16 @@ private struct GridCell: View {
 }
 
 extension View {
+    /// Dragging an icon drags the whole selection when it's part of it (else just that item),
+    /// as file URLs: moved within a disk, copied elsewhere, like Finder. Items mark themselves
+    /// with `.draggable(containerItemID: item.id)`.
+    func fileDragContainer(_ browser: BrowserModel) -> some View {
+        dragContainer(for: URL.self, itemID: \.self) { ids in ids }
+            .dragContainerSelection(Array(browser.selection))
+            .dragConfiguration(DragConfiguration(operationsWithinApp: .init(allowCopy: true, allowMove: true),
+                                                 operationsOutsideApp: .init(allowCopy: true, allowMove: true)))
+    }
+
     /// Folders accept drops (files move into them) and open after a moment's hover while
     /// dragging ("spring-loaded"), so you can drop deeper. Files are left as they are.
     func folderDropTarget(_ item: FileItem, browser: BrowserModel) -> some View {
