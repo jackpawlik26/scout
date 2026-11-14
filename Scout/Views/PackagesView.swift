@@ -100,7 +100,7 @@ struct PackagesView: View {
         return Card(spacing: 0) {
             HStack(spacing: 10) {
                 Image(systemName: source.symbol)
-                    .font(.system(size: 15, weight: .light))
+                    .font(.system(size: 15, weight: .regular))
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 2) {
@@ -176,7 +176,7 @@ struct PackagesView: View {
                 Button("Copy Uninstall Command") { copy(package.uninstallCommand) }
             } label: {
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 12, weight: .light))
+                    .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(Color.textSubtle)
                     .frame(width: 24, height: 24)
                     .contentShape(Rectangle())

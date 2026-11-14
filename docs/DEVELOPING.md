@@ -57,7 +57,7 @@ All in `Scout/Support/Theme.swift`, so new views stay consistent:
 - **Type:** SF Pro (the system font), regular and medium only, at 12, 13 (base), 14, 16, 18 and 24 points. Use `.font(.ui(13))` or `.font(.ui(16, .medium))`.
 - **Text colors:** `Color.textStrong` (#292929, titles and names), `Color.textDefault` (#5D5D5D, body), `Color.textSubtle` (#7F7F7F, hints and captions), each with a dark-mode value.
 - **Surfaces:** `Color.bgSelected` (#F5F5F5 on white) for hovered and selected rows, tabs and chips; `Color.hairline` (#F2F2F2) for borders; `chrome`, `canvas` and `raised` for the window frame, cards and panels.
-- **Icons:** SF Symbols at `.light` weight (`.regular` below 11 points), for a thin 1-pixel look.
+- **Icons:** SF Symbols at `.regular` weight (`.medium` at 10 points and below), for an even 1.5-pixel stroke.
 - The accent color is for focus, the list selection and primary buttons only. File lists keep the system's `.primary`/`.secondary` styles so selected rows turn white on the accent.
 
 ## Gotchas

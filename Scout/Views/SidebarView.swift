@@ -164,7 +164,7 @@ struct SidebarView: View {
                             .overlay(alignment: .trailing) {
                                 if place.isEjectable {
                                     Button { eject(place) } label: {
-                                        Image(systemName: "eject.fill").font(.system(size: 10, weight: .regular)).foregroundStyle(Color.textSubtle)
+                                        Image(systemName: "eject.fill").font(.system(size: 10, weight: .medium)).foregroundStyle(Color.textSubtle)
                                             .frame(width: 22, height: 22).contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain)
@@ -243,7 +243,7 @@ struct SidebarRow: View {
         Button(action: action) {
             HStack(spacing: 9) {
                 Image(systemName: symbol)
-                    .font(.system(size: 13, weight: .light))
+                    .font(.system(size: 13, weight: .regular))
                     .frame(width: 18)
                     .foregroundStyle(isSelected ? Color.textStrong : Color.textSubtle)
                 Text(title)
@@ -357,13 +357,13 @@ private struct SectionHeader: View {
                 Text(title)
                     .font(.system(size: 12, weight: .medium))
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 8, weight: .regular))
+                    .font(.system(size: 8, weight: .medium))
                     .rotationEffect(.degrees(isCollapsed ? 0 : 90))
                     .opacity(isHovering || isCollapsed ? 1 : 0)
                 Spacer()
                 if let add {
                     Button(action: add) {
-                        Image(systemName: "plus").font(.system(size: 10, weight: .regular))
+                        Image(systemName: "plus").font(.system(size: 10, weight: .medium))
                             .frame(width: 18, height: 18)
                     }
                     .buttonStyle(.plain)
@@ -390,7 +390,7 @@ private struct SidebarSearchButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 7) {
-                Image(systemName: "magnifyingglass").font(.system(size: 12, weight: .light))
+                Image(systemName: "magnifyingglass").font(.system(size: 12, weight: .regular))
                 Text("Search").font(.system(size: 13))
                 Spacer()
                 KeyCap(text: "⌘K")
@@ -417,7 +417,7 @@ private struct StorageMeter: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image(systemName: "internaldrive").font(.system(size: 11, weight: .light))
+                Image(systemName: "internaldrive").font(.system(size: 11, weight: .regular))
                 Text(volumeName).font(.system(size: 12, weight: .medium)).lineLimit(1)
                 Spacer()
                 if isIndexing {

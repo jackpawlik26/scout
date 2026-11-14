@@ -17,7 +17,7 @@ struct ShelfView: View {
         VStack(spacing: 0) {
             if items.isEmpty {
                 VStack(spacing: 8) {
-                    Image(systemName: "tray.and.arrow.down").font(.system(size: 28, weight: .light)).foregroundStyle(Color.textSubtle)
+                    Image(systemName: "tray.and.arrow.down").font(.system(size: 28, weight: .regular)).foregroundStyle(Color.textSubtle)
                     Text("Drop files here").font(.ui(13, .medium))
                     Text("Collect files from different folders, then copy or move them together.")
                         .font(.ui(12)).foregroundStyle(Color.textSubtle).multilineTextAlignment(.center)

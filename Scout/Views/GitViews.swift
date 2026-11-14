@@ -47,7 +47,7 @@ struct GitChip: View {
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: "arrow.triangle.branch")
-                    .font(.system(size: 11, weight: .light))
+                    .font(.system(size: 11, weight: .regular))
                 Text(status.headName)
                     .font(.system(size: 12, weight: .medium))
                     .lineLimit(1)

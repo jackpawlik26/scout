@@ -218,12 +218,12 @@ private struct TabButton: View {
             if let iconPath {
                 Image(nsImage: IconCache.icon(forPath: iconPath)).resizable().frame(width: 15, height: 15)
             } else {
-                Image(systemName: "square.stack.3d.up").font(.system(size: 11, weight: .light))
+                Image(systemName: "square.stack.3d.up").font(.system(size: 11, weight: .regular))
             }
             Text(title).font(.system(size: 13, weight: isSelected ? .medium : .regular)).lineLimit(1)
             Spacer(minLength: 0)
             Button(action: close) {
-                Image(systemName: "xmark").font(.system(size: 8.5, weight: .regular))
+                Image(systemName: "xmark").font(.system(size: 8.5, weight: .medium))
                     .frame(width: 16, height: 16)
                     .background(Circle().fill(isHovering ? Color.bgSelected : .clear))
             }

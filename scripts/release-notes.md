@@ -1,4 +1,4 @@
-**Scout 0.2**: rename presets, a new look, and a safety pass.
+**Scout 0.2.1**: sturdier icons (about a 1.5-pixel stroke instead of 1), on top of everything in 0.2: rename presets, a new look, and a safety pass.
 
 ### Install
 1. Download **Scout.zip** below and open it.

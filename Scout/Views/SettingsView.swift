@@ -104,10 +104,10 @@ struct SettingsView: View {
             SettingRow("Transparency", detail: transparency == 0 ? "Solid. Slide to let your desktop show through."
                        : "\(Int((transparency * 100).rounded()))%. Content cards stay a bit more solid so text stays readable.") {
                 HStack(spacing: 8) {
-                    Image(systemName: "square.fill").font(.system(size: 10, weight: .regular)).foregroundStyle(Color.textSubtle)
+                    Image(systemName: "square.fill").font(.system(size: 10, weight: .medium)).foregroundStyle(Color.textSubtle)
                     Slider(value: $transparency, in: 0...1, step: 0.05)
                         .frame(width: 180)
-                    Image(systemName: "square.dashed").font(.system(size: 10, weight: .regular)).foregroundStyle(Color.textSubtle)
+                    Image(systemName: "square.dashed").font(.system(size: 10, weight: .medium)).foregroundStyle(Color.textSubtle)
                 }
             }
             Divider()

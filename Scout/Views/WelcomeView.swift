@@ -70,7 +70,7 @@ struct WelcomeView: View {
                       @ViewBuilder extra: () -> some View = { EmptyView() }) -> some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: symbol)
-                .font(.system(size: 16, weight: .light))
+                .font(.system(size: 16, weight: .regular))
                 .foregroundStyle(Color.textStrong)
                 .frame(width: 32, height: 32)
                 .background(RoundedRectangle(cornerRadius: 8).fill(Color.bgSelected))

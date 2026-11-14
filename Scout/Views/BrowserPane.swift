@@ -226,7 +226,7 @@ struct BrowserPane: View {
                 ))
             } label: {
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 13, weight: .light))
+                    .font(.system(size: 13, weight: .regular))
                     .foregroundStyle(Color.textSubtle)
                     .frame(width: 28, height: 28)
                     .contentShape(Rectangle())
@@ -258,7 +258,7 @@ struct BrowserPane: View {
                 case .folder:
                     ForEach(Array(parentCrumbs.enumerated()), id: \.offset) { index, url in
                         if index > 0 {
-                            Image(systemName: "chevron.compact.right").font(.system(size: 9, weight: .regular))
+                            Image(systemName: "chevron.compact.right").font(.system(size: 9, weight: .medium))
                         }
                         CrumbButton(title: Self.displayName(url)) { browser.go(to: url) }
                     }
@@ -272,7 +272,7 @@ struct BrowserPane: View {
             HStack(spacing: 7) {
                 if let symbol = modeSymbol {
                     Image(systemName: symbol)
-                        .font(.system(size: 15, weight: .light))
+                        .font(.system(size: 15, weight: .regular))
                         .foregroundStyle(Color.accentColor)
                         .frame(width: 20)
                 } else {
@@ -616,9 +616,9 @@ private struct IconSizeSlider: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            Image(systemName: "square.grid.3x3").font(.system(size: 9, weight: .regular))
+            Image(systemName: "square.grid.3x3").font(.system(size: 9, weight: .medium))
             Slider(value: $iconSize, in: 32...160, step: 8).frame(width: 90).controlSize(.mini)
-            Image(systemName: "square.grid.2x2").font(.system(size: 11, weight: .light))
+            Image(systemName: "square.grid.2x2").font(.system(size: 11, weight: .regular))
         }
         .padding(.trailing, 8)
         .help("Icon size (⌘+ / ⌘−)")
@@ -633,7 +633,7 @@ private struct SortMenu: View {
             SortMenuItems(browser: browser)
         } label: {
             Image(systemName: browser.groupBy == .none ? "arrow.up.arrow.down" : "square.split.1x2")
-                .font(.system(size: 13, weight: .light))
+                .font(.system(size: 13, weight: .regular))
                 .foregroundStyle(browser.groupBy == .none ? Color.secondary : Color.accentColor)
                 .frame(width: 28, height: 28)
                 .contentShape(Rectangle())

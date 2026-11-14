@@ -201,7 +201,7 @@ private struct ColumnRow: View {
             Spacer(minLength: 4)
             if let gitState { GitBadge(state: gitState, isFolder: item.isNavigable) }
             if item.isNavigable {
-                Image(systemName: "chevron.right").font(.system(size: 9, weight: .regular))
+                Image(systemName: "chevron.right").font(.system(size: 9, weight: .medium))
                     .foregroundStyle(isSelected && isActive ? Color.white.opacity(0.85) : Color.secondary.opacity(0.6))
             }
         }

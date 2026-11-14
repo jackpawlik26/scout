@@ -113,7 +113,7 @@ struct CleanupView: View {
                     .labelsHidden()
                     .disabled(items.isEmpty)
                 Image(systemName: kind.symbol)
-                    .font(.system(size: 15, weight: .light))
+                    .font(.system(size: 15, weight: .regular))
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 2) {
@@ -184,7 +184,7 @@ struct CleanupView: View {
         Card(spacing: 8) {
             HStack(spacing: 10) {
                 Image(systemName: "trash")
-                    .font(.system(size: 15, weight: .light))
+                    .font(.system(size: 15, weight: .regular))
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 22)
                     .padding(.leading, 26)

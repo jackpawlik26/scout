@@ -184,7 +184,7 @@ struct IconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 13, weight: .light))
+                .font(.system(size: 13, weight: .regular))
                 .frame(width: 28, height: 28)
                 .foregroundStyle(isOn ? Color.textStrong : Color.textSubtle)
                 .background(

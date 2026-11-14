@@ -95,7 +95,7 @@ private struct TransferCard: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "doc.on.doc").font(.system(size: 16, weight: .light)).foregroundStyle(Color.accentColor)
+            Image(systemName: "doc.on.doc").font(.system(size: 16, weight: .regular)).foregroundStyle(Color.accentColor)
             VStack(alignment: .leading, spacing: 5) {
                 Text(transfer.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
                 if let fraction = transfer.fraction {

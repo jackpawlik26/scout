@@ -200,7 +200,7 @@ struct BatchRenameView: View {
                             Text(item.name).lineLimit(1).truncationMode(.middle)
                                 .foregroundStyle(Color.textSubtle)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            Image(systemName: "arrow.right").font(.system(size: 11, weight: .light))
+                            Image(systemName: "arrow.right").font(.system(size: 11, weight: .regular))
                                 .foregroundStyle(Color.textSubtle)
                             Group {
                                 if let problem = problems[index] {
@@ -296,7 +296,7 @@ private struct StepRow: View {
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            Button { remove?() } label: { Image(systemName: "trash").font(.system(size: 12, weight: .light)) }
+            Button { remove?() } label: { Image(systemName: "trash").font(.system(size: 12, weight: .regular)) }
                 .buttonStyle(.borderless)
                 .disabled(remove == nil)
                 .help("Remove this step")
@@ -312,7 +312,7 @@ private struct StepRow: View {
         case .replace:
             HStack(spacing: 8) {
                 TextField(step.regex ? "Pattern, e.g. IMG_(\\d+)" : "Find", text: $step.text)
-                Image(systemName: "arrow.right").font(.system(size: 11, weight: .light)).foregroundStyle(Color.textSubtle)
+                Image(systemName: "arrow.right").font(.system(size: 11, weight: .regular)).foregroundStyle(Color.textSubtle)
                 VariableField(placeholder: step.regex ? "Replace, e.g. Photo $1" : "Replace with (empty removes it)",
                               text: $step.replacement)
                 Toggle("Regex", isOn: $step.regex).toggleStyle(.checkbox).fixedSize()

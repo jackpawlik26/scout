@@ -65,7 +65,7 @@ struct FileTableView: View {
                     } else {
                         Text(browser.services.displayName(item)).lineLimit(1).truncationMode(.middle)
                         if browser.isFolder, browser.services.customizations.isPinned(item.path) {
-                            Image(systemName: "pin.fill").font(.system(size: 9, weight: .regular)).foregroundStyle(.secondary)
+                            Image(systemName: "pin.fill").font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary)
                                 .help("Pinned to the top")
                         }
                     }
@@ -423,10 +423,10 @@ struct CloudBadge: View {
     var body: some View {
         switch state {
         case .online:
-            Image(systemName: "icloud.and.arrow.down").font(.system(size: 10, weight: .regular)).foregroundStyle(.secondary)
+            Image(systemName: "icloud.and.arrow.down").font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
                 .help("In the cloud only. Opens after downloading.")
         case .downloading:
-            Image(systemName: "arrow.down.circle.dotted").font(.system(size: 10, weight: .regular)).foregroundStyle(Color.accentColor)
+            Image(systemName: "arrow.down.circle.dotted").font(.system(size: 10, weight: .medium)).foregroundStyle(Color.accentColor)
                 .help("Downloading")
         default:
             EmptyView()
@@ -447,7 +447,7 @@ private struct DisclosureButton: View {
                 }
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 9, weight: .regular))
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(browser.expanded.contains(item.id) ? 90 : 0))
                     .frame(width: 12, height: 16)
