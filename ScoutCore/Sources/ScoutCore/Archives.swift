@@ -25,6 +25,10 @@ public enum Archiver {
     public static func compress(_ urls: [URL]) throws -> URL {
         guard let first = urls.first else { throw Failure.failed("Nothing to compress.") }
         let folder = first.deletingLastPathComponent()
+        // zip works by name inside one folder; items from several folders (search results) can't mix.
+        guard urls.allSatisfy({ $0.deletingLastPathComponent().filePath == folder.filePath }) else {
+            throw Failure.failed("Compress items from one folder at a time.")
+        }
         let name = urls.count == 1 ? first.lastPathComponent + ".zip" : "Archive.zip"
         let destination = LocalFileSource.availableURL(in: folder, preferredName: name, isDirectory: false, style: .numbered)
         let ok: Bool

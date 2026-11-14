@@ -27,6 +27,36 @@ import Testing
         #expect(reported.withLock { $0 } <= 500_000)
     }
 
+    /// copyfile skips files it can't read and still returns success; Scout must not.
+    @Test func failsAndCleansUpWhenAFileCantBeRead() throws {
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dir.appending(path: "src/locked.bin").filePath)
+            try? FileManager.default.removeItem(at: dir)
+        }
+        try write("src/ok.bin", bytes: 1000)
+        try write("src/locked.bin", bytes: 1000)
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: dir.appending(path: "src/locked.bin").filePath)
+        #expect(throws: FileCopier.Failure.self) {
+            try FileCopier.copy(dir.appending(path: "src"), to: dir.appending(path: "dst"))
+        }
+        #expect(!FileManager.default.fileExists(atPath: dir.appending(path: "dst").filePath))
+        // A move that can't copy everything keeps the original.
+        #expect(throws: FileCopier.Failure.self) {
+            try FileCopier.copy(dir.appending(path: "src"), to: dir.appending(path: "dst2"))
+        }
+        #expect(FileManager.default.fileExists(atPath: dir.appending(path: "src/ok.bin").filePath))
+    }
+
+    @Test func neverWritesOverAnExistingItem() throws {
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try write("a.txt", bytes: 10)
+        try write("b.txt", bytes: 20)
+        #expect(throws: FileCopier.Failure.self) {
+            try FileCopier.copy(dir.appending(path: "a.txt"), to: dir.appending(path: "b.txt"))
+        }
+        #expect(FileCopier.totalBytes(dir.appending(path: "b.txt")) == 20)
+    }
+
     @Test func cancelsCleanly() throws {
         defer { try? FileManager.default.removeItem(at: dir) }
         try write("big/a.bin", bytes: 4_000_000)

@@ -116,3 +116,17 @@ import Testing
         #expect(items.first?.detail?.hasPrefix("Cache") == true)
     }
 }
+
+@Suite struct CleanupSafetyTests {
+    @Test func neverTrashesEveryCopyOfADuplicate() {
+        let original = CleanupItem(path: "/h/Downloads/movie.mov", name: "movie.mov", bytes: 9)
+        let copy = CleanupItem(path: "/h/Desktop/movie.mov", name: "movie.mov", bytes: 9, original: original.path)
+        let other = CleanupItem(path: "/h/Desktop/b.zip", name: "b.zip", bytes: 1, original: "/h/x/b.zip")
+        // Original picked under Large files too: the duplicate stays.
+        #expect(CleanupItem.safeToTrash([original, copy, other]).map(\.path) == [original.path, other.path])
+        // Original inside a picked folder (old downloads): same.
+        let folder = CleanupItem(path: "/h/Downloads", name: "Downloads", bytes: 9)
+        #expect(!CleanupItem.safeToTrash([folder, copy]).contains(copy))
+        #expect(CleanupItem.safeToTrash([copy]) == [copy])
+    }
+}

@@ -71,12 +71,12 @@ struct CleanupView: View {
         return Card(spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
                 Text(capacity.map { "\(Format.bytes($0.free)) free" } ?? "Your Mac")
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
-                if let capacity { Text("of \(Format.bytes(capacity.total))").foregroundStyle(.secondary) }
+                    .font(.system(size: 24, weight: .medium))
+                if let capacity { Text("of \(Format.bytes(capacity.total))").foregroundStyle(Color.textSubtle) }
                 Spacer()
                 if !scanning.isEmpty {
                     ProgressView().controlSize(.small)
-                    Text("Looking…").foregroundStyle(.secondary)
+                    Text("Looking…").foregroundStyle(Color.textSubtle)
                 }
             }
             if let capacity, capacity.total > 0 {
@@ -84,7 +84,7 @@ struct CleanupView: View {
                     let used = CGFloat(capacity.total - capacity.free) / CGFloat(capacity.total)
                     let reclaim = min(CGFloat(found) / CGFloat(capacity.total), used)
                     ZStack(alignment: .leading) {
-                        Capsule().fill(Color.primary.opacity(0.08))
+                        Capsule().fill(Color.bgSelected)
                         Capsule().fill(Color.accentColor).frame(width: geo.size.width * used)
                         Capsule().fill(Color.green.opacity(0.85))
                             .frame(width: geo.size.width * reclaim)
@@ -96,8 +96,8 @@ struct CleanupView: View {
             Text(found > 0
                  ? "Scout found about \(Format.bytes(found)) you could free up. Nothing is removed until you choose."
                  : "Nothing is removed until you choose.")
-                .font(.system(size: 12.5))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 13))
+                .foregroundStyle(Color.textSubtle)
         }
     }
 
@@ -113,29 +113,29 @@ struct CleanupView: View {
                     .labelsHidden()
                     .disabled(items.isEmpty)
                 Image(systemName: kind.symbol)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 15, weight: .light))
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text(kind.title).font(.system(size: 13.5, weight: .semibold))
+                        Text(kind.title).font(.system(size: 13, weight: .medium))
                         if !kind.selectedByDefault {
                             Text("YOUR CALL")
-                                .font(.system(size: 9, weight: .bold))
+                                .font(.system(size: 12, weight: .medium))
                                 .tracking(0.5)
                                 .padding(.horizontal, 5).padding(.vertical, 1.5)
                                 .background(Capsule().fill(Color.orange.opacity(0.18)))
                                 .foregroundStyle(.orange)
                         }
                     }
-                    Text(kind.explanation).font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text(kind.explanation).font(.system(size: 12)).foregroundStyle(Color.textSubtle)
                 }
                 Spacer(minLength: 8)
                 if isScanning {
                     ProgressView().controlSize(.small)
                 } else {
                     Text(items.isEmpty ? "Nothing found" : Format.bytes(total))
-                        .font(.system(size: 13, weight: items.isEmpty ? .regular : .semibold))
+                        .font(.system(size: 13, weight: items.isEmpty ? .regular : .medium))
                         .foregroundStyle(items.isEmpty ? .tertiary : .primary)
                         .monospacedDigit()
                 }
@@ -166,13 +166,13 @@ struct CleanupView: View {
             .labelsHidden()
             Image(nsImage: IconCache.icon(forPath: item.path)).resizable().frame(width: 20, height: 20)
             VStack(alignment: .leading, spacing: 1) {
-                Text(item.name).font(.system(size: 12.5)).lineLimit(1).truncationMode(.middle)
+                Text(item.name).font(.system(size: 13)).lineLimit(1).truncationMode(.middle)
                 if let detail = item.detail {
-                    Text(detail).font(.system(size: 11)).foregroundStyle(.tertiary).lineLimit(1).truncationMode(.head)
+                    Text(detail).font(.system(size: 12)).foregroundStyle(Color.textSubtle).lineLimit(1).truncationMode(.head)
                 }
             }
             Spacer(minLength: 8)
-            Text(Format.bytes(item.bytes)).font(.system(size: 12)).foregroundStyle(.secondary).monospacedDigit()
+            Text(Format.bytes(item.bytes)).font(.system(size: 12)).foregroundStyle(Color.textSubtle).monospacedDigit()
             IconButton(symbol: "arrow.forward.circle", help: "Show in Scout") {
                 browser.reveal(URL(filePath: item.path))
             }
@@ -184,17 +184,17 @@ struct CleanupView: View {
         Card(spacing: 8) {
             HStack(spacing: 10) {
                 Image(systemName: "trash")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 15, weight: .light))
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 22)
                     .padding(.leading, 26)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Trash").font(.system(size: 13.5, weight: .semibold))
-                    Text(trashMessage).font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text("Trash").font(.system(size: 13, weight: .medium))
+                    Text(trashMessage).font(.system(size: 12)).foregroundStyle(Color.textSubtle)
                 }
                 Spacer()
                 if let trash, trash.isReadable {
-                    Text(Format.bytes(trash.bytes)).font(.system(size: 13, weight: .semibold)).monospacedDigit()
+                    Text(Format.bytes(trash.bytes)).font(.system(size: 13, weight: .medium)).monospacedDigit()
                     Button("Empty Trash…", role: .destructive) { isConfirmingEmptyTrash = true }
                         .disabled(trash.items == 0)
                 } else if trash != nil {
@@ -218,8 +218,8 @@ struct CleanupView: View {
             Text(selectedItems.isEmpty
                  ? "Tick items to move them to the Trash"
                  : "\(selectedItems.count) selected · \(Format.bytes(selectedBytes))")
-                .font(.system(size: 12.5))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 13))
+                .foregroundStyle(Color.textSubtle)
                 .monospacedDigit()
             Spacer()
             Button("Look Again") { scanID += 1 }
@@ -248,8 +248,8 @@ struct CleanupView: View {
     // MARK: - Actions
 
     private func moveSelectedToTrash() {
-        let items = selectedItems
-        let bytes = selectedBytes
+        let items = CleanupItem.safeToTrash(selectedItems)
+        let bytes = items.reduce(0) { $0 + $1.bytes }
         let moved = browser.trash(items.map { URL(filePath: $0.path) }, actionName: "Clean Up")
         lastResult = moved > 0
             ? "Moved \(moved) item\(moved == 1 ? "" : "s") (\(Format.bytes(bytes))) to the Trash. ⌘Z puts \(moved == 1 ? "it" : "them") back."

@@ -32,22 +32,28 @@ public enum FileCopier {
 
     /// Copies `source` (file or folder) to `destination`, which must not exist yet.
     public static func copy(_ source: URL, to destination: URL, progress: Progress? = nil) throws {
+        // Never write over (or clean up) something that was already there.
+        var exists = stat()
+        if lstat(destination.filePath, &exists) == 0 { throw Failure.failed(source.lastPathComponent, EEXIST) }
         let box = ProgressBox(progress: progress)
         let state = copyfile_state_alloc()
         defer { copyfile_state_free(state) }
         let context = Unmanaged.passUnretained(box).toOpaque()
         copyfile_state_set(state, UInt32(COPYFILE_STATE_STATUS_CB), unsafeBitCast(copyCallback, to: UnsafeRawPointer.self))
         copyfile_state_set(state, UInt32(COPYFILE_STATE_STATUS_CTX), context)
-        let flags = copyfile_flags_t(COPYFILE_ALL | COPYFILE_RECURSIVE | COPYFILE_CLONE | COPYFILE_NOFOLLOW_SRC)
+        // EXCL: never write over something already there (Replace trashes it first).
+        let flags = copyfile_flags_t(COPYFILE_ALL | COPYFILE_RECURSIVE | COPYFILE_CLONE | COPYFILE_NOFOLLOW_SRC | COPYFILE_EXCL)
         let result = copyfile(source.filePath, destination.filePath, state, flags)
+        let code = errno
         if box.cancelled {
             try? FileManager.default.removeItem(at: destination)
             throw Failure.cancelled
         }
-        if result != 0 {
-            let code = errno
-            try? FileManager.default.removeItem(at: destination)
-            throw Failure.failed(source.lastPathComponent, code)
+        // copyfile can return 0 after skipping files it couldn't copy, so errors reported
+        // to the callback count too. A partial copy is removed, never kept.
+        if result != 0 || box.errorCode != 0 {
+            try? FileManager.default.removeItem(at: destination) // ours: it didn't exist before
+            throw Failure.failed(box.failedName ?? source.lastPathComponent, box.errorCode != 0 ? box.errorCode : code)
         }
     }
 
@@ -58,6 +64,11 @@ public enum FileCopier {
             return
         }
         try copy(source, to: destination, progress: progress)
+        // Only delete the original once the copy is complete.
+        guard totalBytes(destination) == totalBytes(source) else {
+            try? FileManager.default.removeItem(at: destination)
+            throw Failure.failed(source.lastPathComponent, EIO)
+        }
         try FileManager.default.removeItem(at: source)
     }
 
@@ -104,12 +115,21 @@ private final class ProgressBox: @unchecked Sendable {
     /// Bytes of files already finished.
     var finished: Int64 = 0
     var cancelled = false
+    /// The first error copyfile reported (it would otherwise skip the file and carry on).
+    var errorCode: Int32 = 0
+    var failedName: String?
     init(progress: FileCopier.Progress?) { self.progress = progress }
 }
 
-private let copyCallback: @convention(c) (Int32, Int32, copyfile_state_t?, UnsafePointer<CChar>?, UnsafePointer<CChar>?, UnsafeMutableRawPointer?) -> Int32 = { what, stage, state, _, _, context in
-    guard let context else { return COPYFILE_CONTINUE }
+private let copyCallback: @convention(c) (Int32, Int32, copyfile_state_t?, UnsafePointer<CChar>?, UnsafePointer<CChar>?, UnsafeMutableRawPointer?) -> Int32 = { what, stage, state, src, _, context in
+    let code = errno
+    guard let context else { return stage == COPYFILE_ERR ? COPYFILE_QUIT : COPYFILE_CONTINUE }
     let box = Unmanaged<ProgressBox>.fromOpaque(context).takeUnretainedValue()
+    if stage == COPYFILE_ERR {
+        box.errorCode = code != 0 ? code : EIO
+        box.failedName = src.map { (String(cString: $0) as NSString).lastPathComponent }
+        return COPYFILE_QUIT
+    }
     var copied: off_t = 0
     if what == COPYFILE_COPY_DATA, stage == COPYFILE_PROGRESS {
         copyfile_state_get(state, UInt32(COPYFILE_STATE_COPIED), &copied)

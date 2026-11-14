@@ -63,12 +63,23 @@ public struct CleanupItem: Identifiable, Hashable, Sendable {
     public let bytes: Int64
     /// Extra context, e.g. "npm download cache" or "Added Mar 3, 2025".
     public let detail: String?
+    /// For a duplicate: the copy Scout keeps. It must never go to the Trash with this one.
+    public let original: String?
 
-    public init(path: String, name: String, bytes: Int64, detail: String? = nil) {
+    public init(path: String, name: String, bytes: Int64, detail: String? = nil, original: String? = nil) {
         self.path = path
         self.name = name
         self.bytes = bytes
         self.detail = detail
+        self.original = original
+    }
+
+    /// The items safe to trash together: drops any duplicate whose kept copy is also being
+    /// trashed (picked in another group, or inside a picked folder), so one copy always survives.
+    public static func safeToTrash(_ items: [CleanupItem]) -> [CleanupItem] {
+        let paths = items.map(\.path)
+        func trashed(_ path: String) -> Bool { paths.contains { path == $0 || path.hasPrefix($0 + "/") } }
+        return items.filter { item in item.original.map { !trashed($0) } ?? true }
     }
 }
 
@@ -147,7 +158,8 @@ public enum CleanupScanner {
         groups.flatMap { group in
             group.paths.dropFirst().map { path in
                 CleanupItem(path: path, name: (path as NSString).lastPathComponent, bytes: group.size,
-                            detail: "Same as " + PathDisplay.display(group.paths[0], home: home))
+                            detail: "Same as " + PathDisplay.display(group.paths[0], home: home),
+                            original: group.paths[0])
             }
         }
         .sorted { $0.bytes != $1.bytes ? $0.bytes > $1.bytes : $0.path < $1.path }

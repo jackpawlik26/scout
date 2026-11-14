@@ -127,6 +127,8 @@ private struct TextFileEditor: View {
     @State private var original = ""
     @State private var loadedDate: Date?
     @State private var problem: String?
+    /// Only a file read cleanly as UTF-8 text can be saved (anything else would be corrupted).
+    @State private var loaded = false
     @State private var confirmOverwrite = false
 
     private var isChanged: Bool { text != original }
@@ -134,20 +136,21 @@ private struct TextFileEditor: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(item.name).font(.headline)
-                if isChanged { Text("Edited").font(.caption).foregroundStyle(.secondary) }
+                Text(item.name).font(.ui(13, .medium))
+                if isChanged { Text("Edited").font(.ui(12)).foregroundStyle(Color.textSubtle) }
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Button("Save") { save(force: false) }
                     .keyboardShortcut("s")
-                    .disabled(!isChanged)
+                    .disabled(!isChanged || !loaded)
             }
             .padding(12)
             Divider()
             HStack(spacing: 0) {
                 TextEditor(text: $text)
-                    .font(.system(size: 12.5, design: .monospaced))
+                    .disabled(!loaded)
+                    .font(.system(size: 13, design: .monospaced))
                     .scrollContentBackground(.hidden)
                     .padding(8)
                 if isMarkdown {
@@ -161,7 +164,7 @@ private struct TextFileEditor: View {
                 }
             }
             if let problem {
-                Text(problem).font(.callout).foregroundStyle(.red).padding(8)
+                Text(problem).font(.ui(13)).foregroundStyle(.red).padding(8)
             }
         }
         .frame(width: isMarkdown ? 860 : 620, height: 560)
@@ -174,8 +177,13 @@ private struct TextFileEditor: View {
                 problem = "Couldn’t read this file."
                 return
             }
-            text = String(decoding: data, as: UTF8.self)
+            guard let decoded = String(data: data, encoding: .utf8) else {
+                problem = "This file isn’t UTF-8 text, so Scout won’t edit it (saving could damage it)."
+                return
+            }
+            text = decoded
             original = text
+            loaded = true
             loadedDate = Self.modified(item.url)
         }
         .alert("“\(item.name)” changed somewhere else", isPresented: $confirmOverwrite) {
@@ -195,6 +203,7 @@ private struct TextFileEditor: View {
             confirmOverwrite = true
             return
         }
+        guard loaded else { return }
         do {
             try Data(text.utf8).write(to: item.url, options: .atomic)
             original = text
@@ -217,6 +226,10 @@ private struct MarkdownLines: View {
         }
         .frame(maxWidth: width, alignment: .leading)
         .textSelection(.enabled)
+        // Links in a document only open web pages, never local files, apps or scout:// links.
+        .environment(\.openURL, OpenURLAction { url in
+            ["http", "https"].contains(url.scheme?.lowercased() ?? "") ? .systemAction : .discarded
+        })
     }
 
     private var blocks: [AnyView] {
@@ -227,10 +240,10 @@ private struct MarkdownLines: View {
                 if let block = code {
                     views.append(AnyView(
                         Text(block.joined(separator: "\n"))
-                            .font(.system(size: 10.5, design: .monospaced))
+                            .font(.system(size: 12, design: .monospaced))
                             .padding(8)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(0.06)))))
+                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.bgSelected))))
                     code = nil
                 } else {
                     code = []
@@ -243,7 +256,7 @@ private struct MarkdownLines: View {
             }
             views.append(AnyView(render(line)))
         }
-        if let block = code { views.append(AnyView(Text(block.joined(separator: "\n")).font(.system(size: 10.5, design: .monospaced)))) }
+        if let block = code { views.append(AnyView(Text(block.joined(separator: "\n")).font(.system(size: 12, design: .monospaced)))) }
         return views
     }
 
@@ -253,18 +266,18 @@ private struct MarkdownLines: View {
             Spacer().frame(height: 2)
         } else if let level = headingLevel(trimmed) {
             inline(String(trimmed.drop(while: { $0 == "#" }).dropFirst()))
-                .font(.system(size: [17, 15, 13.5, 12.5][min(level, 4) - 1], weight: .semibold))
+                .font(.system(size: [18, 16, 14, 13][min(level, 4) - 1], weight: .medium))
                 .padding(.top, 4)
         } else if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") || trimmed.hasPrefix("+ ") {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("•").foregroundStyle(.secondary)
+                Text("•").foregroundStyle(Color.textSubtle)
                 inline(String(trimmed.dropFirst(2)))
             }
             .padding(.leading, CGFloat(line.prefix(while: { $0 == " " }).count) * 4)
             .font(.system(size: 12))
         } else if trimmed.hasPrefix(">") {
             inline(String(trimmed.dropFirst().drop(while: { $0 == " " })))
-                .font(.system(size: 12)).foregroundStyle(.secondary)
+                .font(.system(size: 12)).foregroundStyle(Color.textSubtle)
                 .padding(.leading, 8)
                 .overlay(alignment: .leading) { Rectangle().fill(Color.accentColor.opacity(0.5)).frame(width: 2) }
         } else if trimmed == "---" || trimmed == "***" {
@@ -298,13 +311,13 @@ private struct CodeLines: View {
             ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(String(index + 1).leftPad(width))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(Color.textSubtle)
                     Text(CodeHighlighter.highlight(line, language: language))
                         .fixedSize()
                 }
             }
         }
-        .font(.system(size: 10.5, design: .monospaced))
+        .font(.system(size: 12, design: .monospaced))
         .textSelection(.enabled)
     }
 }

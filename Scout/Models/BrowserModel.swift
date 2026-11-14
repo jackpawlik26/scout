@@ -103,8 +103,8 @@ final class BrowserModel: Identifiable {
     var selection = Set<URL>() {
         didSet {
             if previewURL != nil { previewURL = selectedItems.first?.url }
-            // Selecting something in a pane makes it the active pane.
-            if !selection.isEmpty, let pane { pane.window?.focus(pane) }
+            // Selecting something in a pane makes it the active pane (not when a reload trims it).
+            if !selection.isEmpty, !trimmingSelection, let pane { pane.window?.focus(pane) }
         }
     }
     /// The file shown in Quick Look, if it's open.
@@ -185,6 +185,8 @@ final class BrowserModel: Identifiable {
     /// The folder sort order, kept while a search is showing.
     @ObservationIgnored private var folderSortOrder = defaultSortOrder
     @ObservationIgnored private var gitTask: Task<Void, Never>?
+    /// True while a reload drops vanished items from the selection.
+    @ObservationIgnored private var trimmingSelection = false
 
     init(location: URL, services: AppServices) {
         self.location = .folder(location.filePath)
@@ -521,7 +523,11 @@ final class BrowserModel: Identifiable {
             refreshExpanded()
             // Drop selections that no longer exist.
             let present = Set(result.map(\.id))
-            if !selection.isSubset(of: present) { selection = selection.intersection(present) }
+            if !selection.isSubset(of: present) {
+                trimmingSelection = true
+                selection = selection.intersection(present)
+                trimmingSelection = false
+            }
             if let pending = pendingSelection {
                 pendingSelection = nil
                 selectPath(pending)
@@ -949,7 +955,10 @@ final class BrowserModel: Identifiable {
     func duplicateSelection() {
         let urls = selectedItems.map(\.url)
         guard !urls.isEmpty else { return }
-        transfer(urls, into: urls[0].deletingLastPathComponent(), move: false)
+        // Each copy goes next to its original (search and workspace views mix folders).
+        for (folder, group) in Dictionary(grouping: urls, by: { $0.deletingLastPathComponent() }) {
+            transfer(group, into: folder, move: false)
+        }
     }
 
     /// Finder aliases ("report alias") next to each selected item.
@@ -1252,8 +1261,8 @@ final class BrowserModel: Identifiable {
     func receiveDrop(_ urls: [URL], into folder: URL? = nil) -> Bool {
         let target = folder ?? location
         guard folder != nil || isFolder else { return false }
-        // Not into itself or something inside itself.
-        let urls = urls.filter { $0.filePath != target.filePath && !target.filePath.hasPrefix($0.filePath + "/") }
+        // Files only (a web link dropped from a browser isn't one), and not into itself.
+        let urls = urls.filter { $0.isFileURL && $0.filePath != target.filePath && !target.filePath.hasPrefix($0.filePath + "/") }
         guard !urls.isEmpty else { return false }
         let forceCopy = NSEvent.modifierFlags.contains(.option)
         let destinationVolume = try? target.resourceValues(forKeys: [.volumeIdentifierKey]).volumeIdentifier as? NSObject
@@ -1271,6 +1280,29 @@ final class BrowserModel: Identifiable {
     /// Copies or moves items into a folder (paste, drops, F5/F6 between panes).
     /// Asks Replace / Keep Both / Skip when a name is taken, shows progress for slow ones,
     /// and ⌘Z undoes it.
+    /// Two URLs for the same file on disk.
+    nonisolated static func sameFile(_ a: URL, _ b: URL) -> Bool {
+        let key = URLResourceKey.fileResourceIdentifierKey
+        guard let ia = try? a.resourceValues(forKeys: [key]).fileResourceIdentifier as? NSObject,
+              let ib = try? b.resourceValues(forKeys: [key]).fileResourceIdentifier as? NSObject else { return false }
+        return ia.isEqual(ib)
+    }
+
+    /// "name 2", "name 3"… next to `url`, free on disk and not already planned.
+    nonisolated static func unreserved(_ url: URL, avoiding reserved: Set<String>) -> URL {
+        let folder = url.deletingLastPathComponent()
+        let ext = url.pathExtension
+        let stem = ext.isEmpty ? url.lastPathComponent : url.deletingPathExtension().lastPathComponent
+        var n = 2
+        while true {
+            let candidate = folder.appending(path: ext.isEmpty ? "\(stem) \(n)" : "\(stem) \(n).\(ext)")
+            if !reserved.contains(candidate.filePath), !FileManager.default.fileExists(atPath: candidate.filePath) {
+                return candidate
+            }
+            n += 1
+        }
+    }
+
     func transfer(_ urls: [URL], into destination: URL, move: Bool) {
         // Never copy or move a folder into itself (copying would nest it until the path is too long).
         let urls = urls.filter { $0.filePath != destination.filePath && !destination.filePath.hasPrefix($0.filePath + "/") }
@@ -1288,6 +1320,9 @@ final class BrowserModel: Identifiable {
                     && fm.fileExists(atPath: destination.appending(path: url.lastPathComponent).filePath)
             }
             var remaining = clashing.count
+            // Names this transfer will create: two "IMG_0001.JPG"s from different folders
+            // (Recents, search, the Shelf) must not land on the same name.
+            var reserved = Set<String>()
             for url in urls {
                 let sameFolder = url.deletingLastPathComponent().filePath == destination.filePath
                 if move && sameFolder { continue }
@@ -1305,13 +1340,21 @@ final class BrowserModel: Identifiable {
                     }
                     if !sameFolder { remaining -= 1 }
                 }
-                guard let target = FileCopier.destination(for: url, in: destination, choice: choice, isCopy: !move) else { continue }
-                // Replacing a folder that contains the item would trash the item itself.
-                if choice == .replace, url.filePath.hasPrefix(target.filePath + "/") {
-                    alertMessage = "Can’t replace “\(target.lastPathComponent)”: it contains “\(url.lastPathComponent)”."
+                guard var target = FileCopier.destination(for: url, in: destination, choice: choice, isCopy: !move) else { continue }
+                // Replacing a folder that contains the item, or the item itself reached by
+                // another path (a symlink, different capitals), would trash the item.
+                if choice == .replace,
+                   url.filePath.hasPrefix(target.filePath + "/") || Self.sameFile(url, target) {
+                    alertMessage = "Can’t replace “\(target.lastPathComponent)” with itself."
                     continue
                 }
-                plan.append((url, target, choice == .replace))
+                var replace = choice == .replace
+                if reserved.contains(target.filePath) {
+                    target = Self.unreserved(target, avoiding: reserved)
+                    replace = false
+                }
+                reserved.insert(target.filePath)
+                plan.append((url, target, replace))
             }
             guard !plan.isEmpty else { return }
 
@@ -1352,6 +1395,8 @@ final class BrowserModel: Identifiable {
               let existing = LocalFileSource.item(for: folder.appending(path: url.lastPathComponent)) else {
             return ConflictAnswer(choice: .keepBoth, applyToAll: false)
         }
+        // One question at a time: another transfer in this tab may be waiting for an answer.
+        while conflict != nil { try? await Task.sleep(for: .milliseconds(200)) }
         return await withCheckedContinuation { continuation in
             conflict = ConflictPrompt(incoming: incoming, existing: existing, folderName: folder.lastPathComponent,
                                       isMove: move, remaining: remaining) { [weak self] answer in
@@ -1405,15 +1450,31 @@ final class BrowserModel: Identifiable {
         guard let undoManager, !moves.isEmpty else { return }
         undoManager.registerUndo(withTarget: self) { model in
             MainActor.assumeIsolated {
-                var reversed: [(URL, URL)] = []
+                // Two steps through temporary names, so renames that swapped or shifted
+                // names (a↔b) can be undone. moveItem never overwrites anything.
+                let fm = FileManager.default
+                var staged: [(from: URL, temp: URL, to: URL)] = []
+                var errors: [String] = []
                 for (from, to) in moves {
+                    let temp = to.deletingLastPathComponent().appending(path: ".scout-undo-\(UUID().uuidString)")
                     do {
-                        try FileManager.default.moveItem(at: to, to: from)
-                        reversed.append((to, from))
+                        try fm.moveItem(at: to, to: temp)
+                        staged.append((from, temp, to))
                     } catch {
-                        model.alertMessage = error.localizedDescription
+                        errors.append(error.localizedDescription)
                     }
                 }
+                var reversed: [(URL, URL)] = []
+                for entry in staged {
+                    do {
+                        try fm.moveItem(at: entry.temp, to: entry.from)
+                        reversed.append((entry.to, entry.from))
+                    } catch {
+                        try? fm.moveItem(at: entry.temp, to: entry.to) // put it back
+                        errors.append(error.localizedDescription)
+                    }
+                }
+                if !errors.isEmpty { model.alertMessage = errors.joined(separator: "\n") }
                 model.registerUndoMoves(reversed, name: name)
                 Task { await model.reload() }
             }

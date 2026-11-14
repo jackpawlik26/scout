@@ -134,9 +134,8 @@ struct ColumnBrowserView: View {
         .contentShape(Rectangle())
         .contextMenu { if isCurrent { FileContextMenu(window: window, browser: browser, urls: []) } }
         .dropDestination(for: URL.self) { urls, _ in
-            if isCurrent { return browser.receiveDrop(urls) }
-            browser.transfer(urls, into: folder, move: true)
-            return true
+            // Same rules as any drop: ⌥ copies, other disks copy, never into itself.
+            return isCurrent ? browser.receiveDrop(urls) : browser.receiveDrop(urls, into: folder)
         }
     }
 
@@ -198,11 +197,11 @@ private struct ColumnRow: View {
     var body: some View {
         HStack(spacing: 7) {
             FileIconView(item: item, size: 16)
-            Text(services?.displayName(item) ?? item.name).font(.system(size: 12.5)).lineLimit(1).truncationMode(.middle)
+            Text(services?.displayName(item) ?? item.name).font(.system(size: 13)).lineLimit(1).truncationMode(.middle)
             Spacer(minLength: 4)
             if let gitState { GitBadge(state: gitState, isFolder: item.isNavigable) }
             if item.isNavigable {
-                Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+                Image(systemName: "chevron.right").font(.system(size: 9, weight: .regular))
                     .foregroundStyle(isSelected && isActive ? Color.white.opacity(0.85) : Color.secondary.opacity(0.6))
             }
         }
@@ -226,13 +225,13 @@ private struct ColumnPreview: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 PreviewPane(item: item)
-                Text(item.name).font(.headline).textSelection(.enabled)
+                Text(item.name).font(.ui(13, .medium)).textSelection(.enabled)
                 Text(item.kind).foregroundStyle(.secondary)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Format.size(item))
                     Text("Modified \(Format.date(item.dateModified))")
                 }
-                .font(.callout).foregroundStyle(.secondary)
+                .font(.ui(13)).foregroundStyle(.secondary)
                 Button("Open") { browser.open([item.id]) }
             }
             .padding(14)
