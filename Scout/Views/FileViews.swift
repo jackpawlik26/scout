@@ -72,6 +72,10 @@ struct FileTableView: View {
                     TagDots(tags: item.tags)
                     CloudBadge(state: item.cloud)
                     if browser.isNew(item) { NewDot() }
+                    if let note = browser.services.note(item.path) {
+                        Image(systemName: "note.text").font(.system(size: 10)).foregroundStyle(.secondary)
+                            .help(note)
+                    }
                     if let state = browser.gitState(item) {
                         Spacer(minLength: 4)
                         GitBadge(state: state, isFolder: item.isNavigable)
@@ -106,6 +110,13 @@ struct FileTableView: View {
             }
             .width(min: 50, ideal: 90)
             .customizationID("tags")
+            .defaultVisibility(.hidden)
+
+            TableColumn("Note") { item in
+                Text(browser.services.note(item.path) ?? "").foregroundStyle(.secondary).lineLimit(1)
+            }
+            .width(min: 60, ideal: 140)
+            .customizationID("note")
             .defaultVisibility(.hidden)
 
             TableColumn("Source", value: \.sourceSortKey, comparator: .localizedStandard) { item in

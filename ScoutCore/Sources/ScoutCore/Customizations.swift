@@ -8,14 +8,19 @@ public struct ItemStyle: Codable, Equatable, Sendable {
     public var symbol: String?
     /// Shown instead of the real name in Scout; the name on disk is unchanged.
     public var nickname: String?
+    /// Your note ("final version sent to client"), shown in the info panel and searchable in ⌘K.
+    public var note: String?
 
-    public init(color: String? = nil, symbol: String? = nil, nickname: String? = nil) {
+    public init(color: String? = nil, symbol: String? = nil, nickname: String? = nil, note: String? = nil) {
         self.color = color
         self.symbol = symbol
         self.nickname = nickname
+        self.note = note
     }
 
-    public var isEmpty: Bool { color == nil && symbol == nil && (nickname ?? "").isEmpty }
+    public var isEmpty: Bool {
+        color == nil && symbol == nil && (nickname ?? "").isEmpty && (note ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     public static let colors = ["red", "orange", "yellow", "green", "mint", "teal", "blue", "indigo", "purple", "pink", "gray"]
     public static let symbols = [
@@ -39,6 +44,46 @@ public struct Customizations: Codable, Equatable, Sendable {
         var style = styles[path] ?? ItemStyle()
         change(&style)
         styles[path] = style.isEmpty ? nil : style
+    }
+
+    /// Something moved or was renamed: its style and pin (and those of anything inside it,
+    /// for a folder) follow it.
+    public mutating func moved(from old: String, to new: String) {
+        guard old != new else { return }
+        func rekey(_ path: String) -> String? {
+            if path == old { return new }
+            if path.hasPrefix(old + "/") { return new + path.dropFirst(old.count) }
+            return nil
+        }
+        for (path, style) in styles {
+            guard let moved = rekey(path) else { continue }
+            styles[path] = nil
+            styles[moved] = style
+        }
+        var newPins: [String: [String]] = [:]
+        for (folder, list) in pinned {
+            let folderNow = rekey(folder) ?? folder
+            var kept: [String] = []
+            for path in list {
+                let now = rekey(path) ?? path
+                // A pin only makes sense inside its folder.
+                if (now as NSString).deletingLastPathComponent == folderNow { kept.append(now) }
+            }
+            if !kept.isEmpty { newPins[folderNow, default: []] += kept }
+        }
+        pinned = newPins
+    }
+
+    /// Paths whose note contains every word of `query`.
+    public func notesMatching(_ query: String) -> [String] {
+        let words = query.split(whereSeparator: \.isWhitespace).map(String.init).filter { $0.count >= 2 }
+        guard !words.isEmpty else { return [] }
+        return styles.compactMap { path, style in
+            guard let note = style.note, words.allSatisfy({ note.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil })
+            else { return nil }
+            return path
+        }
+        .sorted()
     }
 
     public func isPinned(_ path: String) -> Bool {

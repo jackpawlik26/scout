@@ -123,6 +123,6 @@ Stop it with Ctrl-C; it stays installed in Raycast.
 - `triage-rules.json`: Triage's "Always do this" rules (new downloads that match are filed on their own while Scout is open)
 - `file-history.jsonl`: what Scout moved, copied, renamed and trashed (the History page), one JSON entry per line, kept for a year
 - `favorites.json`, `workspaces.json`, `saved-searches.json`: what their names say
-- `customizations.json`: folder colors, symbols, nicknames and pins
+- `customizations.json`: folder colors, symbols, nicknames, pins and notes (they follow files when Scout moves or renames them)
 
 Scout has no accounts, analytics or tracking. The only page that goes online is Packages, which asks Homebrew and npm whether updates exist.

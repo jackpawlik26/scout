@@ -92,6 +92,17 @@ final class AppServices {
         try? ScoutStore.saveCustomizations(customizations)
     }
 
+    /// Your note on a file or folder, if any.
+    func note(_ path: String) -> String? {
+        customizations.style(for: path)?.note.flatMap { $0.isEmpty ? nil : $0 }
+    }
+
+    func setNote(_ path: String, _ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard note(path) ?? "" != trimmed else { return }
+        customize(path) { $0.note = trimmed.isEmpty ? nil : trimmed }
+    }
+
     /// The nickname if you gave one, else the real name.
     func displayName(_ item: FileItem) -> String {
         customizations.style(for: item.path)?.nickname.flatMap { $0.isEmpty ? nil : $0 } ?? item.name
@@ -685,6 +696,12 @@ final class AppServices {
         }
         let entry = FileHistoryEntry(action: action, changes: changes, undoes: undoes, note: note)
         fileHistory.append(entry)
+        // Notes, nicknames, colors and pins follow what moved (a copy leaves the original's in place).
+        if action != .copy {
+            let before = customizations
+            for change in changes { customizations.moved(from: change.from, to: change.to) }
+            if customizations != before { try? ScoutStore.saveCustomizations(customizations) }
+        }
         fileHistoryQueue.async { try? FileHistoryStore.append(entry) }
         return entry.id
     }

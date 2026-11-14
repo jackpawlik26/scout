@@ -110,6 +110,9 @@ private struct ItemInspector: View {
                 }
             }
 
+            NoteField(browser: browser, path: item.path)
+                .id(item.id)
+
             if let source = item.source {
                 SourceCard(browser: browser, source: source)
             }
@@ -147,6 +150,47 @@ private struct ItemInspector: View {
         if let size = item.size { return Format.bytes(size) }
         guard let folderSize else { return "Calculating…" }
         return (folderSize.isPartial ? "≥ " : "") + Format.bytes(folderSize.bytes)
+    }
+}
+
+// MARK: - Note
+
+/// Your note on the selection, saved as you type (it follows the file when Scout moves it).
+private struct NoteField: View {
+    let browser: BrowserModel
+    let path: String
+    @State private var text = ""
+    @State private var save: Task<Void, Never>?
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "note.text").foregroundStyle(Color.textSubtle).padding(.top, 2)
+            TextField("Add a note…", text: $text, axis: .vertical)
+                .textFieldStyle(.plain)
+                .lineLimit(1...6)
+                .focused($isFocused)
+                .onSubmit { commit() }
+        }
+        .font(.ui(13))
+        .padding(10)
+        .background(RaisedFill(shape: RoundedRectangle(cornerRadius: 10)))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(isFocused ? Color.accentColor.opacity(0.5) : Color.hairline))
+        .onAppear { text = browser.services.note(path) ?? "" }
+        .onChange(of: text) {
+            save?.cancel()
+            save = Task {
+                try? await Task.sleep(for: .milliseconds(600))
+                guard !Task.isCancelled else { return }
+                commit()
+            }
+        }
+        .onDisappear { commit() }
+    }
+
+    private func commit() {
+        save?.cancel()
+        browser.services.setNote(path, text)
     }
 }
 

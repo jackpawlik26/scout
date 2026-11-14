@@ -385,11 +385,23 @@ struct CommandPalette: View {
                     spec.withinPath.map { hit.path.hasPrefix($0 + "/") } ?? true
                 } : [])
             : []
+        // Files and folders whose note matches.
+        let noteHits = spec.hasFileFilters ? [] : services.customizations.notesMatching(spec.nameQuery)
+            .filter { path in
+                FileManager.default.fileExists(atPath: path) && (spec.withinPath.map { path.hasPrefix($0 + "/") } ?? true)
+            }
+            .map { path -> FileHit in
+                var isDir: ObjCBool = false
+                FileManager.default.fileExists(atPath: path, isDirectory: &isDir)
+                return FileHit(path: path, name: (path as NSString).lastPathComponent, isFolder: isDir.boolValue)
+            }
         spotlight = SpotlightSearch(spec: spec, home: home, live: false) { hits in
             // Ranked in the background. In "All", folders come from Scout's index instead.
             var fileHits = spec.scope == .all ? hits.filter { !$0.isFolder } : hits
-            let found = Set(fileHits.map(\.path))
+            var found = Set(fileHits.map(\.path))
             fileHits += imageHits.filter { !found.contains($0.path) }
+            found.formUnion(imageHits.map(\.path))
+            fileHits += noteHits.filter { !found.contains($0.path) && (spec.scope != .files || !$0.isFolder) }
             return FileHitRanker.rank(fileHits, query: spec.nameQuery, home: home, limit: 40)
         } onResults: { ranked, finished in
             files = ranked
