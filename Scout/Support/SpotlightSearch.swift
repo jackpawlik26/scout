@@ -92,13 +92,14 @@ nonisolated final class SpotlightSearch: @unchecked Sendable {
                 self?.deliver(finished: note.name != .NSMetadataQueryGatheringProgress)
             })
         }
-        let query = query
+        // The query is only used on `queue` from here on.
+        nonisolated(unsafe) let query = query
         queue.addOperation { query.start() }
     }
 
     deinit {
         for observer in observers { NotificationCenter.default.removeObserver(observer) }
-        let query = query
+        nonisolated(unsafe) let query = query
         queue.addOperation { query.stop() }
     }
 
