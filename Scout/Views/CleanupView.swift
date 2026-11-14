@@ -258,14 +258,12 @@ struct CleanupView: View {
     }
 
     private func emptyTrash() {
-        let trashURL = URL.folder(browser.services.homePath + "/.Trash")
-        let items = (try? FileManager.default.contentsOfDirectory(at: trashURL, includingPropertiesForKeys: nil)) ?? []
-        var failed = 0
-        for item in items {
-            do { try FileManager.default.removeItem(at: item) } catch { failed += 1 }
+        lastResult = "Emptying the Trash…"
+        Task {
+            let failed = await browser.services.emptyTrash()
+            lastResult = failed == 0 ? "Emptied the Trash." : "Emptied the Trash, but \(failed) item\(failed == 1 ? "" : "s") couldn’t be removed."
+            scanID += 1
         }
-        lastResult = failed == 0 ? "Emptied the Trash." : "Emptied the Trash, but \(failed) item\(failed == 1 ? "" : "s") couldn’t be removed."
-        scanID += 1
     }
 
     // MARK: - Scanning

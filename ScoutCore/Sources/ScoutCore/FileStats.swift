@@ -69,6 +69,15 @@ public enum FolderStats {
         var files = 0
         var byCategory: [FileCategory: Int64] = [:]
         var package: (prefix: String, category: FileCategory)?
+        // Which kind a file type is, worked out once per type (it's slow per file).
+        var categories: [String: FileCategory] = [:]
+        func category(_ type: UTType?) -> FileCategory {
+            guard let id = type?.identifier else { return FileCategory.of(type: type) }
+            if let known = categories[id] { return known }
+            let found = FileCategory.of(type: type)
+            categories[id] = found
+            return found
+        }
 
         while let url = walker.nextObject() as? URL {
             if Task.isCancelled || files >= fileLimit {
@@ -78,14 +87,14 @@ public enum FolderStats {
             let path = url.filePath
             if let current = package, !path.hasPrefix(current.prefix) { package = nil }
             if package == nil, v.isPackage == true {
-                package = (path + "/", FileCategory.of(type: v.contentType))
+                package = (path + "/", category(v.contentType))
                 continue
             }
             guard v.isRegularFile == true else { continue }
             let size = Int64(v.totalFileAllocatedSize ?? v.fileAllocatedSize ?? 0)
             bytes += size
             files += 1
-            byCategory[package?.category ?? FileCategory.of(type: v.contentType), default: 0] += size
+            byCategory[package?.category ?? category(v.contentType), default: 0] += size
         }
         return Size(bytes: bytes, files: files, isPartial: false, byCategory: byCategory)
     }

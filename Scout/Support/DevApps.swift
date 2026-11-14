@@ -46,10 +46,18 @@ struct DevApp: Identifiable, Hashable {
         UserDefaults.standard.set(app.id, forKey: app.kind == .terminal ? "terminalApp" : "editorApp")
     }
 
+    /// Remembered for a few seconds: menus ask on every redraw, and each check asks
+    /// Launch Services about ~10 apps.
+    nonisolated(unsafe) private static var cache: [String: (app: DevApp?, at: Date)] = [:]
+
     private static func preferred(_ kind: Kind, key: String) -> DevApp? {
-        let apps = installed(kind)
         let chosen = UserDefaults.standard.string(forKey: key)
-        return apps.first { $0.id == chosen } ?? apps.first
+        let cacheKey = key + ":" + (chosen ?? "")
+        if let hit = cache[cacheKey], Date().timeIntervalSince(hit.at) < 10 { return hit.app }
+        let apps = installed(kind)
+        let app = apps.first { $0.id == chosen } ?? apps.first
+        cache[cacheKey] = (app, .now)
+        return app
     }
 
     /// Opens a folder (or file) in this app.

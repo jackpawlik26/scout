@@ -19,6 +19,11 @@ struct BrowserPane: View {
     @State private var newTagName = ""
     @State private var nickname = ""
 
+    /// Only built while Quick Look is open (it's every item in the folder).
+    private var quickLookItems: [URL] {
+        browser.previewURL == nil ? [] : browser.displayedItems.map(\.url)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -43,7 +48,7 @@ struct BrowserPane: View {
             if !browser.isToolPage { footer }
         }
         .navigationTitle(browser.title)
-        .quickLookPreview($browser.previewURL, in: browser.displayedItems.map(\.url))
+        .quickLookPreview($browser.previewURL, in: quickLookItems)
         .onAppear { browser.undoManager = undoManager }
         .onChange(of: undoManager) { _, manager in browser.undoManager = manager }
         .onChange(of: window.filterFocusRequest) { showFilter() }
@@ -221,8 +226,8 @@ struct BrowserPane: View {
                 ))
             } label: {
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 13, weight: .light))
+                    .foregroundStyle(Color.textSubtle)
                     .frame(width: 28, height: 28)
                     .contentShape(Rectangle())
             }
@@ -253,21 +258,21 @@ struct BrowserPane: View {
                 case .folder:
                     ForEach(Array(parentCrumbs.enumerated()), id: \.offset) { index, url in
                         if index > 0 {
-                            Image(systemName: "chevron.compact.right").font(.system(size: 9))
+                            Image(systemName: "chevron.compact.right").font(.system(size: 9, weight: .regular))
                         }
                         CrumbButton(title: Self.displayName(url)) { browser.go(to: url) }
                     }
                 }
             }
-            .font(.system(size: 11))
-            .foregroundStyle(.tertiary)
+            .font(.system(size: 12))
+            .foregroundStyle(Color.textSubtle)
             .lineLimit(1)
             .frame(height: 14)
 
             HStack(spacing: 7) {
                 if let symbol = modeSymbol {
                     Image(systemName: symbol)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .light))
                         .foregroundStyle(Color.accentColor)
                         .frame(width: 20)
                 } else {
@@ -275,7 +280,7 @@ struct BrowserPane: View {
                         .resizable().frame(width: 20, height: 20)
                 }
                 Text(browser.title)
-                    .font(.system(size: 19, weight: .semibold, design: .rounded))
+                    .font(.system(size: 18, weight: .medium))
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
@@ -327,11 +332,11 @@ struct BrowserPane: View {
                 .onKeyPress(.downArrow) { isFilterFocused = false; return .handled }
             if !browser.filterText.isEmpty {
                 Text("\(browser.displayedItems.count) of \(browser.items.count)")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.textSubtle)
                     .monospacedDigit()
             }
             Button(action: hideFilter) {
-                Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
+                Image(systemName: "xmark.circle.fill").foregroundStyle(Color.textSubtle)
             }
             .buttonStyle(.plain)
             .help("Close Filter (Esc)")
@@ -363,11 +368,11 @@ struct BrowserPane: View {
                 ProgressView().controlSize(.small)
             } else {
                 Text("\(browser.displayedItems.count) result\(browser.displayedItems.count == 1 ? "" : "s")")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.textSubtle)
             }
             Spacer()
             if services.isSaved(search) {
-                Label("Saved", systemImage: "checkmark").foregroundStyle(.secondary)
+                Label("Saved", systemImage: "checkmark").foregroundStyle(Color.textSubtle)
             } else {
                 Button("Save Search…") {
                     searchName = search.name
@@ -396,7 +401,7 @@ struct BrowserPane: View {
                      : "\(status.changeCount) change\(status.changeCount == 1 ? "" : "s") on \(status.headName)")
                     .fontWeight(.medium)
                 if deleted > 0 {
-                    Text("· \(deleted) deleted (not shown)").foregroundStyle(.secondary)
+                    Text("· \(deleted) deleted (not shown)").foregroundStyle(Color.textSubtle)
                 }
             } else {
                 ProgressView().controlSize(.small)
@@ -418,7 +423,7 @@ struct BrowserPane: View {
     private func workspaceHeader(_ workspace: Workspace) -> some View {
         HStack(spacing: 8) {
             Text("\(workspace.paths.count) item\(workspace.paths.count == 1 ? "" : "s") from anywhere")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.textSubtle)
             Spacer()
             Button("Open All in Tabs") {
                 for item in browser.items where item.isNavigable { pane.newTab(at: item.url) }
@@ -541,8 +546,8 @@ struct BrowserPane: View {
                 Text("\(Format.bytes(free)) free")
             }
         }
-        .font(.system(size: 11))
-        .foregroundStyle(.tertiary)
+        .font(.system(size: 12))
+        .foregroundStyle(Color.textSubtle)
         .monospacedDigit()
         .padding(.horizontal, 14)
         .frame(height: 26)
@@ -610,9 +615,9 @@ private struct IconSizeSlider: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            Image(systemName: "square.grid.3x3").font(.system(size: 9))
+            Image(systemName: "square.grid.3x3").font(.system(size: 9, weight: .regular))
             Slider(value: $iconSize, in: 32...160, step: 8).frame(width: 90).controlSize(.mini)
-            Image(systemName: "square.grid.2x2").font(.system(size: 11))
+            Image(systemName: "square.grid.2x2").font(.system(size: 11, weight: .light))
         }
         .padding(.trailing, 8)
         .help("Icon size (⌘+ / ⌘−)")
@@ -627,7 +632,7 @@ private struct SortMenu: View {
             SortMenuItems(browser: browser)
         } label: {
             Image(systemName: browser.groupBy == .none ? "arrow.up.arrow.down" : "square.split.1x2")
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 13, weight: .light))
                 .foregroundStyle(browser.groupBy == .none ? Color.secondary : Color.accentColor)
                 .frame(width: 28, height: 28)
                 .contentShape(Rectangle())

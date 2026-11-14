@@ -80,6 +80,7 @@ final class AppServices {
 
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private var sizeCache: [String: (size: FolderStats.Size, at: Date)] = [:]
+    @ObservationIgnored private var sizeWalks: [String: Task<FolderStats.Size, Never>] = [:]
     @ObservationIgnored private var mountObservers: [NSObjectProtocol] = []
     @ObservationIgnored private var windowModels: [WeakWindow] = []
     /// The palette was opened by the global shortcut from another app (so Esc goes back there).
@@ -103,8 +104,14 @@ final class AppServices {
         }
         refreshLatestDownloads()
         Task {
+            // A recent index (or a quick relaunch) doesn't need a fresh scan of the whole home folder.
+            if let built = ScoutStore.indexDate(), !folders.isEmpty {
+                let age = Date().timeIntervalSince(built)
+                if age < 30 * 60 { try? await Task.sleep(for: .seconds(30 * 60 - age)) }
+            }
             while !Task.isCancelled {
-                await rebuildIndex()
+                // Only while you're using Scout, and not on Low Power Mode.
+                if NSApp.isActive || !ProcessInfo.processInfo.isLowPowerModeEnabled { await rebuildIndex() }
                 try? await Task.sleep(for: .seconds(30 * 60))
             }
         }
@@ -299,8 +306,18 @@ final class AppServices {
 
     /// Permanently deletes what's in the Trash. Returns how many items couldn't be removed.
     @discardableResult
-    func emptyTrash() -> Int {
-        let trash = home.appending(path: ".Trash")
+    /// Deletes everything in the Trash, off the main thread (it can hold huge folders).
+    /// Returns how many items couldn't be removed.
+    func emptyTrash() async -> Int {
+        isEmptyingTrash = true
+        defer { isEmptyingTrash = false }
+        return await Self.removeTrashContents(home.appending(path: ".Trash"))
+    }
+
+    /// Shown while the Trash empties.
+    private(set) var isEmptyingTrash = false
+
+    @concurrent nonisolated private static func removeTrashContents(_ trash: URL) async -> Int {
         let items = (try? FileManager.default.contentsOfDirectory(at: trash, includingPropertiesForKeys: nil)) ?? []
         var failed = 0
         for item in items {
@@ -359,8 +376,14 @@ final class AppServices {
     func folderSize(_ url: URL) async -> FolderStats.Size {
         let key = url.filePath
         if let cached = sizeCache[key], Date().timeIntervalSince(cached.at) < 600 { return cached.size }
-        let size = await Self.measure(url)
-        if !Task.isCancelled { sizeCache[key] = (size, .now) }
+        // The list and the info panel often ask for the same folder at once: walk it once.
+        if let running = sizeWalks[key] { return await running.value }
+        let walk = Task { await Self.measure(url) }
+        sizeWalks[key] = walk
+        let size = await walk.value
+        sizeWalks[key] = nil
+        if sizeCache.count > 5_000 { sizeCache = sizeCache.filter { Date().timeIntervalSince($0.value.at) < 600 } }
+        sizeCache[key] = (size, .now)
         return size
     }
 

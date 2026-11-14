@@ -73,16 +73,18 @@ final class BrowserModel: Identifiable {
     /// Empty = keep the incoming order (search results arrive best-first).
     var sortOrder = defaultSortOrder {
         didSet {
+            guard sortOrder != oldValue else { return }
             refreshDisplayed()
             rememberFolderView() // header clicks too
         }
     }
-    var filterText = "" { didSet { refreshDisplayed() } }
+    var filterText = "" { didSet { if filterText != oldValue { refreshDisplayed() } } }
     /// New tabs start from Settings' choices; the View menu changes one tab.
     var foldersFirst = UserDefaults.standard.object(forKey: "foldersFirst") as? Bool ?? true { didSet { refreshDisplayed() } }
     /// Finder-style groups (Kind, Date Added…). Remembered per folder, like the sort.
     var groupBy: GroupBy = .none {
         didSet {
+            guard groupBy != oldValue else { return }
             refreshDisplayed()
             rememberFolderView()
         }
@@ -185,6 +187,9 @@ final class BrowserModel: Identifiable {
     /// The folder sort order, kept while a search is showing.
     @ObservationIgnored private var folderSortOrder = defaultSortOrder
     @ObservationIgnored private var gitTask: Task<Void, Never>?
+    /// Measuring this folder's subfolders; cancelled when you leave or the tab closes.
+    @ObservationIgnored private var sizeTask: Task<Void, Never>?
+    @ObservationIgnored private var recentsTask: Task<Void, Never>?
     /// True while a reload drops vanished items from the selection.
     @ObservationIgnored private var trimmingSelection = false
 
@@ -213,7 +218,13 @@ final class BrowserModel: Identifiable {
 
     private var here: HistoryEntry { HistoryEntry(location: location, mode: mode) }
 
-    var selectedItems: [FileItem] { displayedItems.filter { selection.contains($0.id) } }
+    /// The selected items in display order. Looked up through `displayedIndex`, so it costs
+    /// as much as the selection, not the whole folder (menus read it on every click).
+    var selectedItems: [FileItem] {
+        selection.compactMap { displayedIndex[$0] }.sorted().map { displayedItems[$0] }
+    }
+    /// Where each displayed item sits in `displayedItems`.
+    @ObservationIgnored private var displayedIndex: [URL: Int] = [:]
 
     // MARK: - Sorting
 
@@ -439,8 +450,9 @@ final class BrowserModel: Identifiable {
                 sortOrder = folderSortOrder.isEmpty ? defaultSortOrder : folderSortOrder
             }
         }
+        sizeTask?.cancel()
         selection = []
-        filterText = ""
+        if !filterText.isEmpty { filterText = "" }
         previewURL = nil
         expanded = []
         childItems = [:]
@@ -552,21 +564,24 @@ final class BrowserModel: Identifiable {
         guard UserDefaults.standard.object(forKey: "folderSizes") as? Bool ?? true else { return }
         let folders = items.filter { $0.isNavigable && !$0.isSymlink && $0.folderBytes == nil }.map(\.url)
         guard !folders.isEmpty else { return }
-        Task {
+        sizeTask?.cancel()
+        let services = services
+        sizeTask = Task { [weak self] in
             // Apply sizes in batches: each change to `items` re-sorts the whole list, which
-            // adds up in folders with thousands of subfolders.
+            // adds up in folders with thousands of subfolders. Holds the tab weakly, so a
+            // closed tab stops measuring.
             var measured: [URL: Int64] = [:]
             var lastFlush = ContinuousClock.now
             for url in folders {
-                guard generation == loadGeneration else { return }
+                guard !Task.isCancelled, self?.loadGeneration == generation else { return }
                 measured[url] = await services.folderSize(url).bytes
                 if ContinuousClock.now - lastFlush > .milliseconds(folders.count > 200 ? 600 : 150) {
-                    applyFolderSizes(measured, generation: generation)
+                    self?.applyFolderSizes(measured, generation: generation)
                     measured.removeAll()
                     lastFlush = .now
                 }
             }
-            applyFolderSizes(measured, generation: generation)
+            self?.applyFolderSizes(measured, generation: generation)
         }
     }
 
@@ -592,6 +607,31 @@ final class BrowserModel: Identifiable {
 
     /// Recents: opened in the last 30 days anywhere in your home, plus new arrivals in
     /// Downloads, Desktop and Documents. Newest first, grouped by day.
+    /// Recents from Spotlight's hits: opened in the last 30 days, plus new arrivals in
+    /// Downloads, Desktop and Documents, newest first, at most 400.
+    @concurrent nonisolated private static func buildRecents(opened: [FileHit], added: [FileHit], home: String) async -> [FileItem] {
+        var lastUsed: [String: Date] = [:]
+        for hit in opened where !FileHitRanker.isNoise(hit.path, home: home) {
+            if let used = hit.lastUsed { lastUsed[hit.path] = used }
+        }
+        // Only the 400 most recently opened can make the list.
+        let openedPaths = lastUsed.sorted { $0.value > $1.value }.prefix(400).map(\.key)
+        let addedPaths = added.map(\.path).filter { lastUsed[$0] == nil && !FileHitRanker.isNoise($0, home: home) }
+        guard !Task.isCancelled else { return [] }
+        var items: [FileItem] = []
+        for var item in LocalFileSource.items(at: (openedPaths + addedPaths).map { URL(filePath: $0) }) {
+            if let used = lastUsed[item.path] {
+                item.lastOpened = max(used, item.dateAdded ?? .distantPast)
+            } else if let addedDate = item.dateAdded {
+                item.lastOpened = addedDate
+            } else {
+                continue
+            }
+            items.append(item)
+        }
+        return Array(items.sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }.prefix(400))
+    }
+
     private func startRecents(generation: Int) {
         watcher = nil
         loadError = nil
@@ -602,29 +642,18 @@ final class BrowserModel: Identifiable {
         var added: [FileHit] = []
         var openedDone = false
         var addedDone = false
+        // Spotlight calls back on every change (opening any file updates the list), so the
+        // files are read in the background, and only the newest are read at all.
         let update: () -> Void = { [weak self] in
             guard let self, generation == self.loadGeneration else { return }
-            var latest: [String: (FileHit, Date)] = [:]
-            for hit in opened where !FileHitRanker.isNoise(hit.path, home: home) {
-                if let used = hit.lastUsed { latest[hit.path] = (hit, used) }
+            let openedNow = opened, addedNow = added, finished = openedDone && addedDone
+            recentsTask?.cancel()
+            recentsTask = Task { [weak self] in
+                let built = await Self.buildRecents(opened: openedNow, added: addedNow, home: home)
+                guard !Task.isCancelled, let self, generation == self.loadGeneration else { return }
+                self.items = built
+                if finished { self.isSearching = false }
             }
-            var items: [FileItem] = []
-            var seen = Set<String>()
-            for hit in added where !FileHitRanker.isNoise(hit.path, home: home) {
-                guard latest[hit.path] == nil, let item = LocalFileSource.item(for: URL(filePath: hit.path)),
-                      let date = item.dateAdded else { continue }
-                var dated = item
-                dated.lastOpened = date
-                items.append(dated)
-                seen.insert(hit.path)
-            }
-            for (path, entry) in latest where !seen.contains(path) {
-                guard var item = LocalFileSource.item(for: URL(filePath: path)) else { continue }
-                item.lastOpened = max(entry.1, item.dateAdded ?? .distantPast)
-                items.append(item)
-            }
-            self.items = Array(items.sorted { ($0.lastOpened ?? .distantPast) > ($1.lastOpened ?? .distantPast) }.prefix(400))
-            if openedDone && addedDone { self.isSearching = false }
         }
         let notFolders = "kMDItemContentType != \"public.folder\""
         spotlight = SpotlightSearch(queryString: "kMDItemLastUsedDate >= $time.today(-30) && \(notFolders)",
@@ -770,6 +799,7 @@ final class BrowserModel: Identifiable {
                 ItemGroup(title: $0.title, items: withChildren($0.items, depth: 0, into: &depths))
             }
             displayedItems = displayedGroups.flatMap(\.items)
+            displayedIndex = Dictionary(displayedItems.indices.map { (displayedItems[$0].id, $0) }, uniquingKeysWith: { a, _ in a })
             depth = depths
             return
         }
@@ -777,6 +807,7 @@ final class BrowserModel: Identifiable {
         if isFolder { list = services.customizations.pinnedFirst(list, in: location.filePath) }
         list = withChildren(list, depth: 0, into: &depths)
         displayedItems = list
+        displayedIndex = Dictionary(displayedItems.indices.map { (displayedItems[$0].id, $0) }, uniquingKeysWith: { a, _ in a })
         displayedGroups = [ItemGroup(title: "", items: list)]
         depth = depths
     }

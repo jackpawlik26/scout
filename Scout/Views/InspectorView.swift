@@ -155,9 +155,11 @@ private struct FolderSummary: View {
 
     private var folders: [FileItem] { items.filter(\.isNavigable) }
     private var breakdown: [(FileCategory, Int64)] { FolderStats.breakdown(items, folderBreakdowns: folderBreakdowns) }
-    private var total: Int64 { breakdown.reduce(0) { $0 + $1.1 } }
 
     var body: some View {
+        // Worked out once per redraw (it walks every item).
+        let parts = breakdown
+        let sum = parts.reduce(0) { $0 + $1.1 }
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
                 if let icon {
@@ -171,7 +173,7 @@ private struct FolderSummary: View {
 
             Card {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(Format.bytes(total)).font(.ui(18, .medium).weight(.medium)).monospacedDigit()
+                    Text(Format.bytes(sum)).font(.ui(18, .medium)).monospacedDigit()
                     Text("in all").foregroundStyle(Color.textSubtle)
                     Spacer()
                     if isMeasuring {
@@ -179,14 +181,14 @@ private struct FolderSummary: View {
                             .help("Measuring folders: \(measured) of \(folders.count)")
                     }
                 }
-                StackedBar(parts: breakdown, total: total)
+                StackedBar(parts: parts, total: sum)
                     .padding(.vertical, 2)
 
                 Text("What takes the space")
                     .font(.ui(12).weight(.medium))
                     .foregroundStyle(Color.textSubtle)
                     .padding(.top, 4)
-                ForEach(breakdown, id: \.0) { category, bytes in
+                ForEach(parts, id: \.0) { category, bytes in
                     HStack(spacing: 8) {
                         Circle().fill(category.color).frame(width: 8, height: 8)
                         Text(category.title)
@@ -195,7 +197,7 @@ private struct FolderSummary: View {
                     }
                     .font(.ui(13))
                 }
-                if breakdown.isEmpty, !isMeasuring {
+                if parts.isEmpty, !isMeasuring {
                     Text("Nothing here takes up space.").font(.ui(13)).foregroundStyle(Color.textSubtle)
                 }
             }
@@ -224,7 +226,8 @@ private struct FolderSummary: View {
                 }
             }
         }
-        .task(id: items.map(\.id)) { await measureFolders() }
+        // Keyed cheaply: building and comparing every item's id on each redraw adds up in big folders.
+        .task(id: ItemsKey(items)) { await measureFolders() }
     }
 
     private var countText: String {
@@ -316,5 +319,17 @@ private struct InfoRow: View {
                 .textSelection(.enabled)
         }
         .font(.ui(13))
+    }
+}
+
+/// A cheap stand-in for "the same list of items": count plus the first and last.
+private struct ItemsKey: Equatable {
+    let count: Int
+    let first: URL?
+    let last: URL?
+    init(_ items: [FileItem]) {
+        count = items.count
+        first = items.first?.id
+        last = items.last?.id
     }
 }

@@ -45,22 +45,22 @@ struct ScoutCommands: Commands {
                 .customizableShortcut(.getInfo)
             Button("Move To…") { window?.beginMoveTo(copy: false) }
                 .customizableShortcut(.moveTo)
-                .disabled(browser?.selectedItems.isEmpty ?? true)
+                .disabled(browser?.selection.isEmpty ?? true)
             Button("Copy To…") { window?.beginMoveTo(copy: true) }
                 .customizableShortcut(.copyTo)
-                .disabled(browser?.selectedItems.isEmpty ?? true)
+                .disabled(browser?.selection.isEmpty ?? true)
             Button("Duplicate") { browser?.duplicateSelection() }
-                .disabled(browser?.selectedItems.isEmpty ?? true)
+                .disabled(browser?.selection.isEmpty ?? true)
             Button("Make Alias") { browser?.makeAliases() }
                 .customizableShortcut(.makeAlias)
-                .disabled(browser?.selectedItems.isEmpty ?? true)
+                .disabled(browser?.selection.isEmpty ?? true)
             Button("AirDrop…") { browser?.airDropSelection() }
                 .customizableShortcut(.airDrop)
-                .disabled(browser?.selectedItems.isEmpty ?? true)
+                .disabled(browser?.selection.isEmpty ?? true)
             Divider()
             Button("Rename…") { _ = browser?.beginRename() }
             Button("Compress") { browser?.compressSelection() }
-                .disabled(browser?.selectedItems.isEmpty ?? true)
+                .disabled(browser?.selection.isEmpty ?? true)
             Button("Extract Here") { browser?.extractSelection() }
                 .disabled(!(browser?.canExtractSelection ?? false))
             Button("Open in \(DevApp.preferredTerminal?.name ?? "Terminal")") { browser?.openInTerminal() }

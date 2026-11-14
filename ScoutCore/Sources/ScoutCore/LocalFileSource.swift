@@ -46,6 +46,18 @@ public struct LocalFileSource: FileSource {
         return results.joined
     }
 
+    /// `FileItem`s for files from anywhere (search results, Recents), read in parallel.
+    /// Cloud status is only read for paths in iCloud or cloud-storage folders.
+    public static func items(at urls: [URL]) -> [FileItem] {
+        let syncing = urls.filter { maySyncPath($0.filePath) }
+        let local = urls.filter { !maySyncPath($0.filePath) }
+        return items(for: local, cloud: false) + items(for: syncing, cloud: true)
+    }
+
+    static func maySyncPath(_ path: String) -> Bool {
+        path.contains("/Library/Mobile Documents/") || path.contains("/Library/CloudStorage/")
+    }
+
     /// Whether files in this folder can be iCloud or cloud-storage (OneDrive, Dropbox…) files.
     static func maySync(_ folder: URL) -> Bool {
         let path = folder.filePath

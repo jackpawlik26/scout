@@ -12,10 +12,10 @@ struct ConflictView: View {
                 FileIconView(item: prompt.incoming, size: 44)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("“\(prompt.incoming.name)” already exists in “\(prompt.folderName)”.")
-                        .font(.headline)
+                        .font(.ui(13, .medium))
                         .fixedSize(horizontal: false, vertical: true)
                     Text("Replace it with the one you’re \(prompt.isMove ? "moving" : "copying"), keep both, or skip it? A replaced item goes to the Trash.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.textSubtle)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -24,7 +24,7 @@ struct ConflictView: View {
                 compareRow(prompt.isMove ? "Moving" : "Copying", prompt.incoming, newer: isNewer(prompt.incoming, than: prompt.existing))
             }
             .padding(10)
-            .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.04)))
+            .background(RoundedRectangle(cornerRadius: 8).fill(Color.bgSelected))
             if prompt.remaining > 1 {
                 Toggle("Do this for all \(prompt.remaining) clashes", isOn: $applyToAll).toggleStyle(.checkbox)
             }
@@ -53,12 +53,12 @@ struct ConflictView: View {
 
     private func compareRow(_ label: String, _ item: FileItem, newer: Bool) -> some View {
         HStack(spacing: 8) {
-            Text(label).foregroundStyle(.secondary).frame(width: 92, alignment: .leading)
+            Text(label).foregroundStyle(Color.textSubtle).frame(width: 92, alignment: .leading)
             Text(item.isNavigable ? "Folder" : Format.size(item)).monospacedDigit()
-            Text("·").foregroundStyle(.tertiary)
+            Text("·").foregroundStyle(Color.textSubtle)
             Text(Format.date(item.dateModified))
             if newer {
-                Text("NEWER").font(.system(size: 9, weight: .bold)).tracking(0.5)
+                Text("NEWER").font(.system(size: 12, weight: .medium)).tracking(0.5)
                     .padding(.horizontal, 5).padding(.vertical, 1.5)
                     .background(Capsule().fill(Color.accentColor.opacity(0.18)))
                     .foregroundStyle(Color.accentColor)
@@ -74,10 +74,15 @@ struct TransferOverlay: View {
     @Environment(AppServices.self) private var services
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 0.25)) { context in
-            let slow = services.transfers.filter { context.date.timeIntervalSince($0.started) > 0.4 }
-            VStack(spacing: 8) {
-                ForEach(slow) { TransferCard(transfer: $0) }
+        // The 4-a-second clock only runs while something is being copied (it costs energy).
+        Group {
+            if !services.transfers.isEmpty {
+            TimelineView(.periodic(from: .now, by: 0.25)) { context in
+                let slow = services.transfers.filter { context.date.timeIntervalSince($0.started) > 0.4 }
+                VStack(spacing: 8) {
+                    ForEach(slow) { TransferCard(transfer: $0) }
+                }
+            }
             }
         }
         .padding(.bottom, 40)
@@ -90,15 +95,15 @@ private struct TransferCard: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "doc.on.doc").font(.system(size: 16)).foregroundStyle(Color.accentColor)
+            Image(systemName: "doc.on.doc").font(.system(size: 16, weight: .light)).foregroundStyle(Color.accentColor)
             VStack(alignment: .leading, spacing: 5) {
-                Text(transfer.title).font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
+                Text(transfer.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
                 if let fraction = transfer.fraction {
                     ProgressView(value: fraction).progressViewStyle(.linear)
                 } else {
                     ProgressView().progressViewStyle(.linear)
                 }
-                Text(detail).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                Text(detail).font(.system(size: 12)).foregroundStyle(Color.textSubtle).lineLimit(1).truncationMode(.middle)
                     .monospacedDigit()
             }
             IconButton(symbol: "xmark", help: "Cancel") { transfer.cancel() }

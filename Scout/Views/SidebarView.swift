@@ -14,9 +14,11 @@ struct SidebarView: View {
         sidebar
             .alert("Empty the Trash?", isPresented: $isConfirmingEmptyTrash) {
                 Button("Empty Trash", role: .destructive) {
-                    let failed = services.emptyTrash()
-                    if failed > 0 { sidebarMessage = "\(failed) item\(failed == 1 ? "" : "s") couldn’t be removed." }
-                    Task { await browser.reload() }
+                    Task {
+                        let failed = await services.emptyTrash()
+                        if failed > 0 { sidebarMessage = "\(failed) item\(failed == 1 ? "" : "s") couldn’t be removed." }
+                        await browser.reload()
+                    }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
@@ -43,7 +45,7 @@ struct SidebarView: View {
             HStack(spacing: 8) {
                 // The real app icon, so the sidebar always matches the Dock.
                 Image(nsImage: NSApp.applicationIconImage).resizable().interpolation(.high).frame(width: 24, height: 24)
-                Text("Scout").font(.system(size: 15, weight: .semibold, design: .rounded))
+                Text("Scout").font(.system(size: 14, weight: .medium))
                 Spacer()
                 IconButton(symbol: "gearshape", isOn: browser.mode == .settings, help: "Settings (⌘,)") {
                     browser.showSettings()
@@ -101,8 +103,8 @@ struct SidebarView: View {
                         if services.workspaces.isEmpty {
                             Button { window.newWorkspacePaths = [] } label: {
                                 Text("Gather folders from anywhere onto one page")
-                                    .font(.system(size: 11.5))
-                                    .foregroundStyle(.tertiary)
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Color.textSubtle)
                                     .multilineTextAlignment(.leading)
                                     .padding(.horizontal, 9)
                                     .padding(.vertical, 2)
@@ -159,7 +161,7 @@ struct SidebarView: View {
                             .overlay(alignment: .trailing) {
                                 if place.isEjectable {
                                     Button { eject(place) } label: {
-                                        Image(systemName: "eject.fill").font(.system(size: 10)).foregroundStyle(.secondary)
+                                        Image(systemName: "eject.fill").font(.system(size: 10, weight: .regular)).foregroundStyle(Color.textSubtle)
                                             .frame(width: 22, height: 22).contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain)
@@ -234,11 +236,11 @@ struct SidebarRow: View {
         Button(action: action) {
             HStack(spacing: 9) {
                 Image(systemName: symbol)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 13, weight: .light))
                     .frame(width: 18)
                     .foregroundStyle(isSelected ? Color.accentColor : .secondary)
                 Text(title)
-                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                    .font(.system(size: 13, weight: isSelected ? .medium : .regular))
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Spacer(minLength: 0)
@@ -248,7 +250,7 @@ struct SidebarRow: View {
             .frame(height: 28)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.accentSoft : (isHovering ? Color.primary.opacity(0.06) : .clear))
+                    .fill(isSelected ? Color.accentSoft : (isHovering ? Color.bgSelected : .clear))
             )
             .contentShape(Rectangle())
         }
@@ -268,14 +270,14 @@ private struct TagSidebarRow: View {
         Button(action: action) {
             HStack(spacing: 9) {
                 TagDots(tags: [tag], size: 10).frame(width: 18)
-                Text(tag.name).font(.system(size: 13, weight: isSelected ? .semibold : .regular)).lineLimit(1)
+                Text(tag.name).font(.system(size: 13, weight: isSelected ? .medium : .regular)).lineLimit(1)
                 Spacer(minLength: 0)
             }
             .foregroundStyle(isSelected ? Color.accentColor : .primary)
             .padding(.horizontal, 9)
             .frame(height: 28)
             .background(RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.accentSoft : (isHovering ? Color.primary.opacity(0.06) : .clear)))
+                .fill(isSelected ? Color.accentSoft : (isHovering ? Color.bgSelected : .clear)))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -300,8 +302,8 @@ private struct FavoritesList<Row: View>: View {
             }
             if favorites.isEmpty {
                 Text("Drag folders here to pin them")
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.tertiary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textSubtle)
                     .padding(.horizontal, 9)
                     .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
             }
@@ -346,16 +348,16 @@ private struct SectionHeader: View {
         Button(action: toggle) {
             HStack(spacing: 4) {
                 Text(title.uppercased())
-                    .font(.system(size: 10.5, weight: .semibold))
+                    .font(.system(size: 12, weight: .medium))
                     .tracking(0.6)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(.system(size: 8, weight: .regular))
                     .rotationEffect(.degrees(isCollapsed ? 0 : 90))
                     .opacity(isHovering || isCollapsed ? 1 : 0)
                 Spacer()
                 if let add {
                     Button(action: add) {
-                        Image(systemName: "plus").font(.system(size: 10, weight: .bold))
+                        Image(systemName: "plus").font(.system(size: 10, weight: .regular))
                             .frame(width: 18, height: 18)
                     }
                     .buttonStyle(.plain)
@@ -363,7 +365,7 @@ private struct SectionHeader: View {
                     .help(addHelp ?? "Add")
                 }
             }
-            .foregroundStyle(.tertiary)
+            .foregroundStyle(Color.textSubtle)
             .padding(.horizontal, 9)
             .padding(.top, 14)
             .padding(.bottom, 4)
@@ -382,12 +384,12 @@ private struct SidebarSearchButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 7) {
-                Image(systemName: "magnifyingglass").font(.system(size: 12, weight: .medium))
+                Image(systemName: "magnifyingglass").font(.system(size: 12, weight: .light))
                 Text("Search").font(.system(size: 13))
                 Spacer()
                 KeyCap(text: "⌘K")
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.textSubtle)
             .padding(.horizontal, 9)
             .frame(height: 30)
             .background(RoundedRectangle(cornerRadius: 8).fill(Color.canvas.opacity(isHovering ? 1 : 0.7)))
@@ -409,7 +411,7 @@ private struct StorageMeter: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image(systemName: "internaldrive").font(.system(size: 11, weight: .medium))
+                Image(systemName: "internaldrive").font(.system(size: 11, weight: .light))
                 Text(volumeName).font(.system(size: 12, weight: .medium)).lineLimit(1)
                 Spacer()
                 if isIndexing {
@@ -418,7 +420,7 @@ private struct StorageMeter: View {
             }
             if let capacity, capacity.total > 0 {
                 GeometryReader { geo in
-                    Capsule().fill(Color.primary.opacity(0.08))
+                    Capsule().fill(Color.bgSelected)
                         .overlay(alignment: .leading) {
                             Capsule().fill(Color.accentColor)
                                 .frame(width: geo.size.width * CGFloat(capacity.total - capacity.free) / CGFloat(capacity.total))
@@ -426,13 +428,13 @@ private struct StorageMeter: View {
                 }
                 .frame(height: 4)
                 Text("\(Format.bytes(capacity.free)) free of \(Format.bytes(capacity.total))")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.textSubtle)
             }
         }
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Color.textSubtle)
         .padding(10)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.04)))
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color.bgSelected))
         .task(id: browser.freeSpace) { capacity = Self.capacity(of: browser.location) }
     }
 
