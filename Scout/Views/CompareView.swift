@@ -72,7 +72,8 @@ struct CompareView: View {
     private func folderLabel(_ url: URL, side: String) -> some View {
         HStack(spacing: 6) {
             Image(nsImage: IconCache.icon(forPath: url.filePath)).resizable().frame(width: 16, height: 16)
-            Text("\(side): ").foregroundStyle(Color.textSubtle) + Text(url.lastPathComponent)
+            Text("\(side):").foregroundStyle(Color.textSubtle)
+            Text(url.lastPathComponent)
         }
         .font(.ui(13))
         .help(url.filePath)

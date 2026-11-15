@@ -602,7 +602,8 @@ final class AppServices {
     /// few minutes after launch and at low priority. Images only in iCloud or OneDrive are
     /// skipped (reading them would download them).
     private func startImageTextIndex() {
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
             imageText = await Task.detached(priority: .utility) { ImageTextIndex.load() }.value
             try? await Task.sleep(for: .seconds(120))
             let roots = ["Desktop", "Documents", "Downloads", "Pictures"].map { URL.folder(homePath + "/" + $0) }
