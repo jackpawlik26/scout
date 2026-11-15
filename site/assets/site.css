@@ -168,6 +168,7 @@ footer a:hover { color: var(--fg); }
 .release aside strong { display: block; font-size: 15px; font-weight: 600; }
 .release aside span { display: block; font-size: 13.5px; color: var(--faint); margin-top: 2px; }
 .release aside code { font: 12px var(--mono); color: var(--faint); }
+.new-pill { display: inline-block; margin-left: 8px; vertical-align: 2px; font-size: 11px; font-weight: 600; line-height: 1.4; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
 .latest-pill { display: inline-block; margin-top: 10px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
 .release h2 { font-size: 26px; line-height: 1.2; letter-spacing: -0.03em; }
 .release .summary { margin-top: 10px; color: var(--muted); font-size: 16px; max-width: 42em; }

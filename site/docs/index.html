@@ -74,6 +74,16 @@
           <a href="#cleanup">Clean Up</a>
           <a href="#more-actions">Archives and Quick Actions</a>
           <a href="#settings">Settings</a>
+          <div class="toc-group">New in 0.3</div>
+          <a href="#new">What’s coming</a>
+          <a href="#triage">Triage Downloads</a>
+          <a href="#history">History</a>
+          <a href="#ask">Ask Scout and smart names</a>
+          <a href="#commands">Commands and your scripts</a>
+          <a href="#info-panel">More in the info panel</a>
+          <a href="#compare">Compare folders</a>
+          <a href="#buckets">Cloud buckets</a>
+          <a href="#disk-map">Disk Map</a>
           <div class="toc-group">Keyboard</div>
           <a href="#shortcuts">Keyboard shortcuts</a>
           <div class="toc-group">Power users</div>
@@ -168,6 +178,8 @@
             <li><strong>Files</strong> come from Spotlight, by name or by what’s inside them.</li>
             <li>Filter with the chips: <strong>Folders</strong> or <strong>Files</strong>, <strong>Any Kind</strong>, <strong>Any Time</strong>, and <strong>In this folder</strong> to search only where you are. <kbd>⇥</kbd> cycles All, Folders and Files.</li>
             <li><kbd>↵</kbd> opens, <kbd>⌘↵</kbd> opens in a new tab or shows the file in Scout, <kbd>⇧↵</kbd> shows all results in a tab, where you can save the search to the sidebar.</li>
+            <li><code>from:</code> and part of a site or sender finds downloads by where they came from: <code>syllabus from:canvas.depaul.edu</code>.<span class="new-pill">0.3</span></li>
+            <li>Type <code>&gt;</code> to run any command, describe a file and press <kbd>⌥↵</kbd> to <a href="#ask">Ask Scout</a>, and find screenshots by the text in them.<span class="new-pill">0.3</span></li>
           </ul>
           <figure class="shot" style="max-width:560px"><img src="../assets/palette.jpg" width="680" height="512" alt="The palette searching for 'harbor' inside the Northwind Studio folder" loading="lazy"></figure>
           <h3>Other ways to get somewhere</h3>
@@ -222,7 +234,7 @@
         <section id="tidy">
           <h2>Group, tidy and Recents</h2>
           <ul>
-            <li><strong>Group By</strong> (<kbd>⌃⌘0</kbd>–<kbd>8</kbd>): split a folder into blocks by kind, name, size, date added, modified or created, or tags. Scout remembers it per folder.</li>
+            <li><strong>Group By</strong> (<kbd>⌃⌘0</kbd>–<kbd>8</kbd>): split a folder into blocks by kind, name, size, date added, modified or created, or tags. Scout remembers it per folder. To group every folder the same way, pick one in <strong>Settings ▸ Browsing ▸ Group folders by</strong>; a folder’s Sort menu can still override it, and <strong>Use Default Grouping</strong> hands it back.<span class="new-pill">0.3</span></li>
             <li><strong>Tidy Folder</strong> (<kbd>⌥⌘T</kbd>): sorts loose files into folders such as PDFs, Images and Installers. You see the plan first, and <kbd>⌘Z</kbd> undoes it.</li>
             <li><strong>Recents</strong> (<kbd>⌥⌘R</kbd>): everything you opened or downloaded in the last 30 days, grouped by day.</li>
             <li><strong>Hidden files</strong>: <kbd>⇧⌘.</kbd> shows them for one tab.</li>
@@ -251,10 +263,11 @@
             <tr><td><code>{created}</code> <code>{modified}</code> <code>{added}</code></td><td>The file’s dates</td></tr>
             <tr><td><code>{today}</code> <code>{now}</code></td><td>Today’s date, or the date and time now</td></tr>
             <tr><td><code>{width}</code> <code>{height}</code></td><td>Image size in pixels</td></tr>
+            <tr><td><code>{about}</code><span class="new-pill">0.3</span></td><td>A short name for what’s in the file, from Apple’s on-device model (needs Apple Intelligence)</td></tr>
             <tr><td><code>{uuid}</code></td><td>A unique ID</td></tr>
           </table></div>
           <h3>Presets</h3>
-          <p>Save any set of steps as a preset. Four come built in: <strong>Web-friendly names</strong>, <strong>Date + number</strong>, <strong>Remove “copy” and numbers like (1)</strong> and <strong>Lowercase extensions</strong>. Scout flags names that clash or would be hidden before you apply, and can number clashes for you.</p>
+          <p>Save any set of steps as a preset. Five come built in: <strong>Web-friendly names</strong>, <strong>Date + number</strong>, <strong>Remove “copy” and numbers like (1)</strong>, <strong>Lowercase extensions</strong> and <strong>Smart names</strong><span class="new-pill">0.3</span>. Scout flags names that clash or would be hidden before you apply, and can number clashes for you.</p>
         </section>
 
         <section id="cleanup">
@@ -285,11 +298,90 @@
           <div class="table"><table>
             <tr><th>Section</th><th>What you can change</th></tr>
             <tr><td>Appearance</td><td>Light, dark or match the system; accent color; window transparency and blur.</td></tr>
-            <tr><td>Browsing</td><td>The view for new tabs, folders on top, hidden files, folder sizes, sidebar and info panel.</td></tr>
+            <tr><td>Browsing</td><td>The view for new tabs, a grouping for every folder, folders on top, hidden files, folder sizes, sidebar and info panel.</td></tr>
             <tr><td>Keyboard &amp; System</td><td>The Jump from anywhere key, Show in Finder and Open folders in Scout, the menu bar icon, Open at login.</td></tr>
             <tr><td>Keyboard Shortcuts</td><td>Change any of 52 shortcuts. Scout sorts out clashes for you.</td></tr>
             <tr><td>Developer tools</td><td>Git, Packages, and your terminal and editor apps. <a href="#developer-tools">More below</a>.</td></tr>
           </table></div>
+        </section>
+      </div>
+
+      <!-- ============ NEW IN 0.3 ============ -->
+      <div class="part">
+        <span class="kicker">New in 0.3</span>
+
+        <section id="new">
+          <h2>What’s coming in 0.3</h2>
+          <p>Scout 0.3 is built and being tested. Everything in this part, and anything marked <span class="new-pill">0.3</span> elsewhere on this page, arrives with the next download. Until then you can <a href="#build">build Scout from source</a> to try it now. See the <a href="../changelog/">changelog</a> for the full list.</p>
+        </section>
+
+        <section id="triage">
+          <h2>Triage Downloads<span class="new-pill">0.3</span></h2>
+          <p>Press <kbd>⌥⌘J</kbd> (or <strong>Triage Downloads</strong> under Tools) to go through new downloads one at a time, with a big preview. Each file takes one key:</p>
+          <div class="table"><table>
+            <tr><th>Key</th><th>What it does</th></tr>
+            <tr><td><span class="keys-row"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>↵</kbd></span></td><td>File it in a suggested folder (<kbd>↵</kbd> is the first)</td></tr>
+            <tr><td><span class="keys-row"><kbd>O</kbd></span></td><td>Pick another folder</td></tr>
+            <tr><td><span class="keys-row"><kbd>R</kbd></span></td><td>Rename it</td></tr>
+            <tr><td><span class="keys-row"><kbd>⌫</kbd></span></td><td>Move it to the Trash</td></tr>
+            <tr><td><span class="keys-row"><kbd>→</kbd> <kbd>←</kbd></span></td><td>Skip, or go back</td></tr>
+          </table></div>
+          <p>Suggestions learn from where you put similar files before: the same site, words in common, or the same type. For example, “6 PDF files from canvas.depaul.edu went here”. Turn on <strong>Always do this</strong> (<kbd>A</kbd>) when you file something, and Scout makes a rule: new downloads like it go to that folder on their own while Scout is open. Each one shows in <a href="#history">History</a>, so you can undo it, and rules can be switched off or deleted on the Triage page.</p>
+          <p>To triage any other folder, open it and choose <strong>Go ▸ Triage This Folder</strong>.</p>
+        </section>
+
+        <section id="history">
+          <h2>History<span class="new-pill">0.3</span></h2>
+          <p>Press <kbd>⌥⌘Y</kbd> to see everything Scout moved, copied, renamed or trashed, grouped by day. Unlike <kbd>⌘Z</kbd>, it’s kept after you quit, for a year.</p>
+          <ul>
+            <li><strong>Where did that file go?</strong> Type part of its name: Scout says what happened to it and where it is now, even if its folder moved later.</li>
+            <li><strong>Show</strong> takes you to it; <strong>Undo</strong> puts things back, even from days ago. If a file has moved since, or something new took its old place, Scout tells you rather than guessing.</li>
+          </ul>
+          <p>Files that arrived since your last visit to a folder get a small dot, and the footer counts them.</p>
+        </section>
+
+        <section id="ask">
+          <h2>Ask Scout and smart names<span class="new-pill">0.3</span></h2>
+          <p>On Macs with Apple Intelligence, Scout uses Apple’s on-device model. Nothing leaves your Mac.</p>
+          <ul>
+            <li><strong>Ask Scout:</strong> describe a file in ⌘K, like “the lease I signed last spring” or “screenshots of error messages”, and press <kbd>⌥↵</kbd>. Scout turns it into a search (words, a kind and dates) and shows what it understood, with a way back to your own words.</li>
+            <li><strong>Text in images:</strong> Scout reads the text in your newest images and screenshots in the background, so ⌘K finds them by what they say. Files that are only in iCloud or OneDrive are skipped.</li>
+            <li><strong>Smart names:</strong> in Rename Items, the <code>{about}</code> variable (or the <strong>Smart names</strong> preset) names each file by what’s in it. Files it can’t read keep their names.</li>
+          </ul>
+        </section>
+
+        <section id="commands">
+          <h2>Commands and your scripts<span class="new-pill">0.3</span></h2>
+          <p>Type <code>&gt;</code> in ⌘K to search every command in Scout’s menus and run it with <kbd>↵</kbd>. Commands that don’t apply right now are dimmed.</p>
+          <p>Your own scripts go in <code>~/Library/Application Support/Scout/Actions/</code> (⌘K ▸ <strong>Open Actions Folder</strong> makes it, with an example). Each appears in ⌘K and under right-click ▸ <strong>Run Action</strong>, gets the selected files as arguments, and runs in the folder you’re looking at. Shell, Python, Ruby, JavaScript and AppleScript run with their usual interpreter. What a script prints is shown when it finishes.</p>
+          <div class="callout tip"><p>Scripts run as you, with your permissions. Only put scripts there that you trust.</p></div>
+        </section>
+
+        <section id="info-panel">
+          <h2>More in the info panel<span class="new-pill">0.3</span></h2>
+          <div class="feature-grid">
+            <div><b>Where it came from</b><span>The site or Mail message a download came from, with Open Page, Copy Link and “More from” that site. Add a Source column to the list from the column headers.</span></div>
+            <div><b>Notes</b><span>Write a note on any file or folder. Notes show by the name, are searchable in ⌘K, and follow the file when Scout moves it.</span></div>
+            <div><b>Earlier versions</b><span>Versions macOS kept of a document (Pages, TextEdit, Preview…). Save one as a copy, or Restore it; what’s there now is kept as a version.</span></div>
+            <div><b>Used around the same time</b><span>Files you opened near this one, or moved together with it, to pick a project back up.</span></div>
+          </div>
+        </section>
+
+        <section id="compare">
+          <h2>Compare folders<span class="new-pill">0.3</span></h2>
+          <p>Open two folders side by side (<kbd>⌘D</kbd>), then <strong>View ▸ Compare Folders…</strong>. Scout lists files only on one side, newer on one side, or different, including subfolders. <strong>Check contents</strong> reads files whose dates differ to see if they really changed.</p>
+          <p><strong>Copy to Right →</strong> or <strong>← Copy to Left</strong> copies new, newer and different files across after showing what it will do. Newer files on the receiving side are never overwritten, and replaced files go to the Trash. To make the two folders match exactly, also move the receiving side’s extra files to the Trash.</p>
+        </section>
+
+        <section id="buckets">
+          <h2>Cloud buckets<span class="new-pill">0.3</span></h2>
+          <p><strong>Buckets ▸ Add Bucket…</strong> in the sidebar connects Cloudflare R2, Amazon S3 or other S3-compatible storage. For R2, use the endpoint <code>https://&lt;account&gt;.r2.cloudflarestorage.com</code> and region <code>auto</code>. Scout tests the connection before saving, and keeps the secret key in your Keychain.</p>
+          <p>A bucket opens as a page: go into folders, <strong>Download</strong> (to the other pane’s folder in split view, otherwise Downloads), <strong>Upload…</strong> or drop files on it, and make or delete folders. In split view, <kbd>F5</kbd> uploads the selection into a bucket on the other side. Deleting from a bucket is permanent, so Scout asks first.</p>
+        </section>
+
+        <section id="disk-map">
+          <h2>Disk Map<span class="new-pill">0.3</span></h2>
+          <p><strong>Go ▸ Disk Map</strong>, or <strong>Disk Map</strong> next to “What takes the space” in the info panel, shows what fills a folder as blocks sized by space. Click a folder to go in, use the path bar to come back out, hover for sizes, and right-click to show, open or trash something.</p>
         </section>
       </div>
 
@@ -308,6 +400,8 @@
             <tr><td><span class="keys-row"><kbd>⌘[</kbd> <kbd>⌘]</kbd> <kbd>⌘↑</kbd></span></td><td>Back, forward, enclosing folder</td></tr>
             <tr><td><span class="keys-row"><kbd>⌘O</kbd> <kbd>⌘↓</kbd></span></td><td>Open</td></tr>
             <tr><td><span class="keys-row"><kbd>⌥⌘R</kbd></span></td><td>Recents</td></tr>
+            <tr><td><span class="keys-row"><kbd>⌥⌘Y</kbd></span></td><td>History<span class="new-pill">0.3</span></td></tr>
+            <tr><td><span class="keys-row"><kbd>⌥⌘J</kbd></span></td><td>Triage Downloads<span class="new-pill">0.3</span></td></tr>
           </table></div>
           <h3>Files</h3>
           <div class="table"><table>
@@ -359,6 +453,9 @@
             <tr><td><code>scout://jump?query=taxes</code></td><td>The palette, already filled in</td></tr>
             <tr><td><code>scout://workspace?name=Taxes</code></td><td>Open a workspace</td></tr>
             <tr><td><code>scout://recents</code></td><td>Recents</td></tr>
+            <tr><td><code>scout://history</code></td><td>History<span class="new-pill">0.3</span></td></tr>
+            <tr><td><code>scout://triage?path=~/Downloads</code></td><td>Triage a folder (no path: Downloads)<span class="new-pill">0.3</span></td></tr>
+            <tr><td><code>scout://diskmap?path=~</code></td><td>Disk Map of a folder (no path: your home folder)<span class="new-pill">0.3</span></td></tr>
             <tr><td><code>scout://tidy?path=~/Downloads</code></td><td>Tidy Folder’s plan (nothing moves until you confirm)</td></tr>
             <tr><td><code>scout://cleanup</code></td><td>Clean Up</td></tr>
             <tr><td><code>scout://packages</code></td><td>Packages (needs Developer tools)</td></tr>
@@ -438,14 +535,20 @@ cd scout
 
         <section id="privacy">
           <h2>Privacy and your data</h2>
-          <p>Scout has no accounts, analytics or tracking. The only page that goes online is Packages, which asks Homebrew and npm whether updates exist. Everything else stays in <code>~/Library/Application Support/Scout/</code>:</p>
+          <p>Scout has no accounts, analytics or tracking. Only two things go online: Packages, which asks Homebrew and npm whether updates exist, and <a href="#buckets">buckets</a> you add yourself, which talk only to the storage you connected. On-device AI runs on your Mac. Everything else stays in <code>~/Library/Application Support/Scout/</code>:</p>
           <div class="table"><table>
             <tr><th>File</th><th>What it holds</th></tr>
             <tr><td><code>folders.txt</code></td><td>The folder index behind ⌘K, one path per line</td></tr>
             <tr><td><code>history.json</code></td><td>Folder visits, for “most used” ranking</td></tr>
             <tr><td><code>favorites.json</code> <code>workspaces.json</code> <code>saved-searches.json</code></td><td>What their names say</td></tr>
-            <tr><td><code>customizations.json</code></td><td>Folder colors, symbols, nicknames and pins</td></tr>
+            <tr><td><code>customizations.json</code></td><td>Folder colors, symbols, nicknames, pins and notes</td></tr>
             <tr><td><code>rename-presets.json</code></td><td>Your saved rename presets</td></tr>
+            <tr><td><code>file-history.jsonl</code><span class="new-pill">0.3</span></td><td>What Scout moved, copied, renamed and trashed (History), kept for a year</td></tr>
+            <tr><td><code>triage-rules.json</code><span class="new-pill">0.3</span></td><td>Triage’s “Always do this” rules</td></tr>
+            <tr><td><code>image-text.json</code><span class="new-pill">0.3</span></td><td>Text read from your images and screenshots, so ⌘K can find them</td></tr>
+            <tr><td><code>opens.json</code><span class="new-pill">0.3</span></td><td>Files you opened through Scout, for “Used around the same time”</td></tr>
+            <tr><td><code>buckets.json</code><span class="new-pill">0.3</span></td><td>Buckets you added. Their secret keys are in your login Keychain, not here</td></tr>
+            <tr><td><code>Actions/</code><span class="new-pill">0.3</span></td><td>Your scripts for ⌘K and Run Action</td></tr>
           </table></div>
         </section>
 
