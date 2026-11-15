@@ -9,10 +9,24 @@ struct SidebarView: View {
     @AppStorage("collapsedSections") private var collapsedRaw = ""
     @AppStorage(DeveloperTools.key) private var developerTools = false
     @State private var isConfirmingEmptyTrash = false
+    @State private var isAddingBucket = false
+    @State private var removingBucket: BucketConfig?
     @State private var sidebarMessage: String?
 
     var body: some View {
         sidebar
+            .sheet(isPresented: $isAddingBucket) {
+                AddBucketView { id in browser.showBucket(id) }
+            }
+            .alert("Remove this bucket from Scout?", isPresented: Binding(get: { removingBucket != nil },
+                                                                     set: { if !$0 { removingBucket = nil } })) {
+                Button("Remove", role: .destructive) {
+                    if let bucket = removingBucket { services.removeBucket(bucket.id) }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Scout forgets the connection and its key. Nothing in the bucket is deleted.")
+            }
             .alert("Empty the Trash?", isPresented: $isConfirmingEmptyTrash) {
                 Button("Empty Trash", role: .destructive) {
                     Task {
@@ -173,6 +187,19 @@ struct SidebarView: View {
                                 }
                             }
                         }
+                    }
+                    section("Buckets") {
+                        ForEach(services.buckets) { bucket in
+                            SidebarRow(title: bucket.name, symbol: "cloud", isSelected: browser.bucketID == bucket.id) {
+                                browser.showBucket(bucket.id)
+                            }
+                            .contextMenu {
+                                Button("Remove “\(bucket.name)”…") { removingBucket = bucket }
+                            }
+                            .help("\(bucket.bucket) at \(bucket.endpoint)")
+                        }
+                        SidebarRow(title: "Add Bucket…", symbol: "plus", isSelected: false) { isAddingBucket = true }
+                            .help("Connect Cloudflare R2, Amazon S3 or other S3-compatible storage")
                     }
                     section("Tools") {
                         SidebarRow(title: "Clean Up", symbol: "sparkles", isSelected: browser.mode == .cleanup) {

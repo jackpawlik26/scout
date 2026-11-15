@@ -647,6 +647,70 @@ final class AppServices {
         return status == nil || status == .current || status == .downloaded
     }
 
+    // MARK: - Buckets (S3, Cloudflare R2…)
+
+    private(set) var buckets: [BucketConfig] = ScoutStore.loadBuckets()
+    /// Bumped after uploads and deletes, so bucket pages reload.
+    private(set) var bucketRevision = 0
+
+    func client(for id: UUID) -> S3Client? {
+        guard let config = buckets.first(where: { $0.id == id }), let secret = Keychain.get(id.uuidString) else { return nil }
+        return S3Client(config: config, secretKey: secret)
+    }
+
+    func saveBucket(_ config: BucketConfig, secret: String) {
+        Keychain.set(secret, for: config.id.uuidString)
+        buckets.removeAll { $0.id == config.id }
+        buckets.append(config)
+        try? ScoutStore.saveBuckets(buckets)
+    }
+
+    func removeBucket(_ id: UUID) {
+        Keychain.delete(id.uuidString)
+        buckets.removeAll { $0.id == id }
+        try? ScoutStore.saveBuckets(buckets)
+    }
+
+    func bucketChanged() { bucketRevision += 1 }
+
+    /// Uploads files (folders: everything inside, keeping their structure) under `prefix`,
+    /// with progress on the transfer card.
+    func upload(_ urls: [URL], to id: UUID, prefix: String) {
+        guard let client = client(for: id) else { return }
+        let files = urls.flatMap { url -> [(URL, String)] in
+            let base = url.deletingLastPathComponent().filePath.count + 1
+            var isDir: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: url.filePath, isDirectory: &isDir) else { return [] }
+            if !isDir.boolValue { return [(url, prefix + url.lastPathComponent)] }
+            let inside = FileManager.default.enumerator(at: url, includingPropertiesForKeys: [.isRegularFileKey],
+                                                        options: [.skipsHiddenFiles])?.compactMap { $0 as? URL } ?? []
+            return inside.filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
+                .map { ($0, prefix + String($0.filePath.dropFirst(base))) }
+        }
+        guard !files.isEmpty else { return }
+        let total = files.reduce(Int64(0)) { $0 + FileCopier.totalBytes($1.0) }
+        let transfer = Transfer(title: "Uploading \(files.count == 1 ? "“\(files[0].0.lastPathComponent)”" : "\(files.count) files") to \(client.config.name)",
+                                totalBytes: total)
+        begin(transfer)
+        Task {
+            var done: Int64 = 0
+            var errors: [String] = []
+            for (file, key) in files where !transfer.isCancelled {
+                transfer.set(current: file.lastPathComponent)
+                do {
+                    try await client.upload(file, as: key)
+                    done += FileCopier.totalBytes(file)
+                    transfer.set(done: done)
+                } catch {
+                    errors.append("\(file.lastPathComponent): \(error.localizedDescription)")
+                }
+            }
+            end(transfer)
+            bucketChanged()
+            if !errors.isEmpty { frontWindow?.current.alertMessage = errors.prefix(5).joined(separator: "\n") }
+        }
+    }
+
     // MARK: - Files opened through Scout (for "Related")
 
     @ObservationIgnored private(set) lazy var openLog = OpenLog.load()

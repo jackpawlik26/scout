@@ -209,9 +209,15 @@ final class BrowserWindowModel {
 
     /// F5 / F6: copy or move the selection into the other pane's folder.
     func transferToOtherPane(move: Bool) {
-        guard let target = otherPane?.current, target.isFolder else { return }
+        guard let target = otherPane?.current else { return }
         let urls = current.selectedItems.map(\.url)
         guard !urls.isEmpty else { return }
+        // Into a cloud bucket: upload (a "move" still keeps the originals; nothing local is removed).
+        if let bucket = target.bucketID, current.isFolder {
+            services.upload(urls, to: bucket, prefix: target.bucketPrefix)
+            return
+        }
+        guard target.isFolder else { return }
         current.transfer(urls, into: target.location, move: move)
     }
 

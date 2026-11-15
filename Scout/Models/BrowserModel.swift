@@ -55,6 +55,8 @@ enum BrowserMode: Equatable, Codable {
     case triage(String)
     /// What fills a folder, as blocks sized by space (the folder's path).
     case diskMap(String)
+    /// A cloud bucket (S3, R2…), by its id in Scout's bucket list.
+    case bucket(UUID)
 }
 
 /// A stop in a tab's Back/Forward history.
@@ -173,8 +175,15 @@ final class BrowserModel: Identifiable {
     /// Clean Up and Packages: pages with their own layout instead of a file list.
     var isToolPage: Bool {
         mode == .cleanup || mode == .packages || mode == .settings || mode == .history || triageFolder != nil
-            || diskMapFolder != nil
+            || diskMapFolder != nil || bucketID != nil
     }
+
+    /// The bucket this tab shows, and the "folder" inside it.
+    var bucketID: UUID? {
+        if case .bucket(let id) = mode { return id }
+        return nil
+    }
+    var bucketPrefix = ""
 
     /// The folder the Disk Map starts from.
     var diskMapFolder: String? {
@@ -236,6 +245,7 @@ final class BrowserModel: Identifiable {
         case .history: return "History"
         case .triage(let path): return "Triage " + FileManager.default.displayName(atPath: path)
         case .diskMap(let path): return "Disk Map: " + FileManager.default.displayName(atPath: path)
+        case .bucket(let id): return services.buckets.first { $0.id == id }?.name ?? "Bucket"
         case .tag(let name): return name
         case .changes(let root): return "Changes in " + FileManager.default.displayName(atPath: root)
         case .folder: break
@@ -403,6 +413,7 @@ final class BrowserModel: Identifiable {
         case .history: showHistory()
         case .triage(let path): if FileManager.default.fileExists(atPath: path) { showTriage(path) }
         case .diskMap(let path): if FileManager.default.fileExists(atPath: path) { showDiskMap(path) }
+        case .bucket(let id): if services.buckets.contains(where: { $0.id == id }) { showBucket(id) }
         case .tag(let name): showTag(name)
         }
     }
@@ -435,6 +446,14 @@ final class BrowserModel: Identifiable {
         guard mode != .recents else { return }
         pushHistory()
         show(HistoryEntry(location: location, mode: .recents))
+    }
+
+    /// A cloud bucket's top level.
+    func showBucket(_ id: UUID) {
+        guard bucketID != id else { return }
+        pushHistory()
+        bucketPrefix = ""
+        show(HistoryEntry(location: location, mode: .bucket(id)))
     }
 
     /// What fills a folder (default: this one, or your home folder).
@@ -563,7 +582,7 @@ final class BrowserModel: Identifiable {
         case .workspace:
             loadWorkspace()
             return
-        case .cleanup, .packages, .settings, .history, .triage, .diskMap:
+        case .cleanup, .packages, .settings, .history, .triage, .diskMap, .bucket:
             spotlight = nil
             spotlightAdded = nil
             watcher = nil

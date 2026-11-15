@@ -25,7 +25,12 @@ To search by it, type `from:` and part of a site or sender in ⌘K. It works on 
 
 Press ⇧↵ to open the results in a tab and save the search to the sidebar.
 
-## Compare and sync two folders
+## Cloud buckets (Cloudflare R2, Amazon S3…)
+
+In the sidebar, **Buckets ▸ Add Bucket…** connects any S3-compatible storage: Cloudflare R2 (region `auto`, endpoint `https://<account>.r2.cloudflarestorage.com`), Amazon S3, Backblaze B2, MinIO. Scout tests the connection before saving, and keeps the secret key in your Keychain.
+
+A bucket opens as a page: go into folders, **Download** (to the other pane's folder in split view, otherwise Downloads), **Upload…**, drop files onto it, **New Folder** and **Delete**. In split view with a bucket on one side, F5 uploads the selection from the other side. Deleting from a bucket is permanent (there's no Trash in the cloud), so Scout asks first.
+
 
 Open two folders side by side (⌘D), then **View ▸ Compare Folders…**. Scout lists every file that's only on one side, newer on one side, or different, including subfolders (it skips hidden files and folders like `node_modules` and `.git`). **Check contents** reads files whose dates differ but sizes match, to see if they really changed.
 
@@ -119,6 +124,7 @@ Stop it with Ctrl-C; it stays installed in Raycast.
 
 - `folders.txt`: the folder index behind ⌘K, one path per line
 - `history.json`: folder visits (for "Most Used" ranking), ISO 8601 dates
+- `buckets.json`: buckets you added (names, endpoints, access key IDs). Secret keys are in your login Keychain, not here
 - `opens.json`: the last 2,000 files you opened through Scout, for the info panel's "Used around the same time"
 - `image-text.json`: text Scout read from your images and screenshots (Desktop, Documents, Downloads, Pictures), so ⌘K can find them by what they say. Read on this Mac with Apple's Vision; cloud-only files are skipped
 - `triage-rules.json`: Triage's "Always do this" rules (new downloads that match are filed on their own while Scout is open)
@@ -126,4 +132,4 @@ Stop it with Ctrl-C; it stays installed in Raycast.
 - `favorites.json`, `workspaces.json`, `saved-searches.json`: what their names say
 - `customizations.json`: folder colors, symbols, nicknames, pins and notes (they follow files when Scout moves or renames them)
 
-Scout has no accounts, analytics or tracking. The only page that goes online is Packages, which asks Homebrew and npm whether updates exist.
+Scout has no accounts, analytics or tracking. Only two things go online: Packages, which asks Homebrew and npm whether updates exist, and buckets you add yourself, which talk only to the storage you connected.

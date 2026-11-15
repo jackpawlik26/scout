@@ -281,6 +281,7 @@ struct BrowserPane: View {
                 case .search: Text("Search")
                 case .workspace: Text("Workspace")
                 case .cleanup, .packages, .history, .triage, .diskMap: Text("Tools")
+                case .bucket: Text("Bucket")
                 case .settings: Text("Scout")
                 case .recents: Text("Last 30 days")
                 case .tag: Text("Tag")
@@ -331,6 +332,7 @@ struct BrowserPane: View {
         case .history: "clock.arrow.circlepath"
         case .triage: "tray.and.arrow.down"
         case .diskMap: "square.grid.3x3.square"
+        case .bucket: "cloud"
         case .tag: "tag"
         case .changes: "arrow.triangle.branch"
         }
@@ -505,6 +507,9 @@ struct BrowserPane: View {
             PackagesView(browser: browser)
         } else if browser.mode == .history {
             HistoryView(browser: browser)
+        } else if let id = browser.bucketID {
+            BucketView(window: window, browser: browser, id: id)
+                .id(id)
         } else if let folder = browser.diskMapFolder {
             DiskMapView(browser: browser, root: folder)
                 .id(folder)
