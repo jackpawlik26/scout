@@ -48,6 +48,8 @@ That builds Scout, puts it in Applications, opens it, and adds the `scout` comma
 
 ## What it does
 
+> **New in 0.3:** Triage Downloads files new downloads with one key and learns where things go. History remembers everything Scout moved, so you can find it or undo it days later. Ask Scout finds files from a description, using Apple's on-device model. Plus Compare Folders, cloud buckets (R2, S3), Disk Map, notes and more. [See what's new](https://scoutformac.com/docs/#new).
+
 **Find anything in a few keystrokes.** Press ⌥Space in any app, or ⌘K inside Scout, and type a few letters. Folders you use most come first; files are found by name or by what's inside them. Filter by kind or date, and save searches you repeat.
 
 <p align="center"><img src="site/assets/palette.jpg" alt="The Scout palette finding files inside a folder" width="560"></p>
