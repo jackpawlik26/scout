@@ -66,7 +66,7 @@ That builds Scout, puts it in Applications, opens it, and adds the `scout` comma
 
 <p align="center"><img src="site/assets/cleanup.jpg" alt="Clean Up showing reclaimable space" width="720"></p>
 
-**Made for the keyboard.** Almost everything has a shortcut, and you can change 50 of them. Press ⌘/ in Scout for the list, or see [all shortcuts](docs/SHORTCUTS.md).
+**Made for the keyboard.** Almost everything has a shortcut, and you can change 52 of them. Press ⌘/ in Scout for the list, or see [all shortcuts](docs/SHORTCUTS.md).
 
 <p align="center"><img src="site/assets/shortcuts.jpg" alt="Scout's keyboard shortcuts sheet" width="720"></p>
 
@@ -85,7 +85,7 @@ That builds Scout, puts it in Applications, opens it, and adds the `scout` comma
 
 ## More
 
-- [Scout docs](https://scout.jackpawlik.workers.dev/docs/): everything Scout can do, on one page
+- [Scout docs](https://scoutformac.com/docs/): everything Scout can do, on one page
 - [What's new](https://github.com/jackpawlik26/scout/releases): every release and its changes
 - [Keyboard shortcuts](docs/SHORTCUTS.md)
 - [Scout for power users](docs/POWER-USERS.md): links, Shortcuts app, the `scout` command, Raycast

@@ -9,13 +9,13 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Scout Changelog">
 <meta property="og:description" content="Everything added, changed, fixed and removed in Scout, build by build.">
-<meta property="og:url" content="https://scout.jackpawlik.workers.dev/changelog/">
-<meta property="og:image" content="https://scout.jackpawlik.workers.dev/assets/og.jpg">
+<meta property="og:url" content="https://scoutformac.com/changelog/">
+<meta property="og:image" content="https://scoutformac.com/assets/og.jpg">
 <meta property="og:image:width" content="2400">
 <meta property="og:image:height" content="1260">
 <meta property="og:site_name" content="Scout">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://scout.jackpawlik.workers.dev/assets/og.jpg">
+<meta name="twitter:image" content="https://scoutformac.com/assets/og.jpg">
 <link rel="icon" href="../assets/icon.png">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -65,6 +65,27 @@
 
 <script>
 const BUILDS = [
+  {
+    date: "Nov 14, 2026", time: "Scout 0.3 preview", hash: "089a64a", title: "Triage, History, Ask Scout and more",
+    summary: "The biggest update yet: Scout now helps keep files organized, remembers everything it did, and understands what's in your files. Built and in testing; it will be in the next download (0.3).",
+    changes: [
+      ["added", "Triage Downloads <kbd>⌥⌘J</kbd>: new downloads one at a time with a big preview. One key files, trashes, renames or skips each. Suggestions learn from where similar files went before, and “Always do this” turns one into a rule that files new downloads on its own."],
+      ["added", "History <kbd>⌥⌘Y</kbd>: everything Scout moved, copied, renamed or trashed, kept after you quit. Search it to find where a file went, and undo things from days ago."],
+      ["added", "Ask Scout: describe a file in ⌘K (“the lease I signed last spring”) and press <kbd>⌥↵</kbd>. Apple's on-device model turns it into a search. Nothing leaves your Mac."],
+      ["added", "⌘K finds screenshots and images by the text in them, read on your Mac."],
+      ["added", "Smart names: Rename Items can name files by what's in them, with the new {about} variable and Smart names preset."],
+      ["added", "Commands in ⌘K: type > to run any menu command. Your own scripts in the Actions folder run on the selection from ⌘K and the right-click menu."],
+      ["added", "Where a file came from: the info panel shows the site or Mail message a download came from, and from:site in ⌘K finds everything from one place."],
+      ["added", "Compare Folders: in split view, see what's different between two folders, including subfolders, and copy changes one way."],
+      ["added", "Cloud buckets: connect Cloudflare R2 or Amazon S3 in the sidebar to browse, upload and download."],
+      ["added", "Disk Map: what fills a folder, as blocks you can click into."],
+      ["added", "Notes on files and folders, searchable in ⌘K; earlier versions of documents with Restore; and “Used around the same time” in the info panel."],
+      ["added", "A dot marks files that arrived since your last visit to a folder, and Settings ▸ Browsing can group every folder the same way."],
+      ["changed", "Notes, nicknames, colors and pins now follow files and folders when Scout moves or renames them."],
+      ["changed", "File searches finish about 3× sooner."],
+      ["fixed", "Searching in ⌘K could freeze Scout for several seconds (the spinning beach ball), especially for common words."],
+    ],
+  },
   {
     date: "Nov 14, 2026", time: "Scout 0.2.2", hash: "v0.2.2", title: "Select and drag like Finder",
     summary: "Fixes for selecting and moving several files at once, found in launch-day testing.",
