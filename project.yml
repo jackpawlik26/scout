@@ -43,8 +43,8 @@ targets:
       base:
         PRODUCT_NAME: Scout
         PRODUCT_BUNDLE_IDENTIFIER: com.jackpawlik.scout
-        MARKETING_VERSION: "0.3.0"
-        CURRENT_PROJECT_VERSION: "5"
+        MARKETING_VERSION: "0.3.1"
+        CURRENT_PROJECT_VERSION: "6"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Scout
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
