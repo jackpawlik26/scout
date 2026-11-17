@@ -403,6 +403,9 @@ final class AppServices {
 
     func isFavorite(_ path: String) -> Bool { favoritePaths.contains(path) }
 
+    /// A favorite or a location (a disk, iCloud Drive, the Trash): never moved by a sidebar drop.
+    func isSidebarPlace(_ path: String) -> Bool { isFavorite(path) || locations.contains { $0.id == path } }
+
     /// Pins paths to Favorites (before `index`, or at the end). Pinned ones move there instead.
     func addFavorites(_ paths: [String], at index: Int? = nil) {
         var list = favoritePaths

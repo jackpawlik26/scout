@@ -66,6 +66,15 @@
 <script>
 const BUILDS = [
   {
+    date: "Nov 16, 2026", time: "Next update", hash: "main", unreleased: true, title: "Drop files on the sidebar",
+    summary: "File things away without leaving the folder you're in.",
+    changes: [
+      ["added", "Drag files onto a folder in the sidebar (Favorites, Frequent, iCloud Drive, Dropbox and other cloud drives, disks) to move them into it. Another disk copies, and <kbd>⌥</kbd> always copies. Hover for a second to open the folder and drop deeper."],
+      ["added", "Drop files on Trash in the sidebar to move them to the Trash."],
+      ["changed", "On Favorites, drop in the middle of a folder to move files into it, or between two favorites to pin them there. Dragging a favorite onto another still reorders."],
+    ],
+  },
+  {
     date: "Nov 14, 2026", time: "Scout 0.3", hash: "v0.3.0", title: "Triage, History, Ask Scout and more",
     summary: "The biggest update yet: Scout now helps keep files organized, remembers everything it did, and understands what's in your files.",
     changes: [
@@ -304,7 +313,8 @@ const BUILDS = [
     const number = BUILDS.length - i;
     return '<article class="release" id="build-' + number + '">' +
       '<aside><strong>Build ' + number + '</strong><span>' + (b.date || 'Nov 13, 2026') + ' · ' + b.time + '</span><code>' + b.hash + '</code>' +
-      (i === 0 ? '<div><span class="latest-pill">Latest</span></div>' : '') + '</aside>' +
+      (b.unreleased ? '<div><span class="latest-pill">Not released yet</span></div>'
+        : i === BUILDS.findIndex(x => !x.unreleased) ? '<div><span class="latest-pill">Latest</span></div>' : '') + '</aside>' +
       '<div><h2>' + b.title + '</h2><p class="summary">' + b.summary + '</p><ul>' +
       b.changes.map(([type, text]) => '<li data-type="' + type + '"><span class="t">' + labels[type] + '</span><span>' + text + '</span></li>').join("") +
       '</ul></div></article>';

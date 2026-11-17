@@ -50,5 +50,5 @@ Press **⌘/** in Scout to see the most useful ones on screen. You can change 52
 | ⇧⌘. | Show hidden files |
 | ⌘R | Show in Finder |
 | ⌥⇧⌘T / ⌥⇧⌘E | Open in your terminal (Tern, Ghostty, iTerm, Terminal…) / code editor; pick them in Settings (⌘,) |
-| ⌃⌘T | Add the folder (or selected folders) to Favorites; drag folders onto Favorites to pin, drag to reorder |
+| ⌃⌘T | Add the folder (or selected folders) to Favorites; drag folders between favorites to pin, drag to reorder; drop files on any sidebar folder to move them in |
 | ⇧⌘H ⇧⌘D ⇧⌘O ⌥⌘L ⇧⌘A ⇧⌘I | Home, Desktop, Documents, Downloads, Applications, iCloud Drive |

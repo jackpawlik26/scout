@@ -84,7 +84,7 @@ struct SidebarView: View {
                         }
                         .help("Files you opened or downloaded lately (⌥⌘R)")
                         FavoritesList(window: window, browser: browser) { place in
-                            placeRow(place) {
+                            placeRow(place, dropsInto: false) {
                                 let favorites = services.favoritePaths
                                 Divider()
                                 Button("Move Up") { services.moveFavorite(place.id, by: -1) }
@@ -234,11 +234,14 @@ struct SidebarView: View {
 
     // MARK: - Pieces
 
-    private func placeRow(_ place: Place, @ViewBuilder extraMenu: () -> some View = { EmptyView() }) -> some View {
+    /// `dropsInto`: files dropped on the row move into the folder (Favorites does its own).
+    private func placeRow(_ place: Place, dropsInto: Bool = true,
+                          @ViewBuilder extraMenu: () -> some View = { EmptyView() }) -> some View {
         SidebarRow(title: place.name, symbol: place.symbol,
                    isSelected: browser.isFolder && browser.location.filePath == place.id) {
             browser.go(to: place.url)
         }
+        .modifier(SidebarFolderDrop(place: place, browser: browser, isEnabled: dropsInto))
         .contextMenu {
             Button("Open in New Tab") { window.newTab(at: place.url) }
             Button("Show in Finder") { FinderBridge.reveal([place.url]) }
@@ -327,8 +330,8 @@ private struct TagSidebarRow: View {
     }
 }
 
-/// Favorites: drop folders on the list to pin them (before the row you drop on, or at the
-/// end), drag a favorite onto another to reorder.
+/// Favorites: drop files onto a favorite folder to move them in, or between favorites (or
+/// on the list) to pin them there. Dragging a favorite onto another reorders.
 private struct FavoritesList<Row: View>: View {
     let window: BrowserWindowModel
     let browser: BrowserModel
@@ -340,7 +343,9 @@ private struct FavoritesList<Row: View>: View {
         let favorites = services.favorites
         VStack(spacing: 1) {
             ForEach(Array(favorites.enumerated()), id: \.element.id) { index, place in
-                FavoriteDropRow(index: index) { row(place).draggable(place.url) }
+                FavoriteDropRow(index: index, place: place, isLast: index == favorites.count - 1, browser: browser) {
+                    row(place).draggable(place.url)
+                }
             }
             if favorites.isEmpty {
                 Text("Drag folders here to pin them")
@@ -358,23 +363,153 @@ private struct FavoritesList<Row: View>: View {
     }
 }
 
-/// One favorite that shows an insertion line when something is dragged over it.
+/// Where a drag over a favorite lands: pinned above or below it, or moved into it.
+private enum FavoriteDropZone { case before, after, into }
+
+/// One favorite: an insertion line near its edges (pin or reorder), a ring over the middle
+/// of a folder (move into it, and it opens after a moment's hover so you can go deeper).
 private struct FavoriteDropRow<Content: View>: View {
     let index: Int
+    let place: Place
+    let isLast: Bool
+    let browser: BrowserModel
     @ViewBuilder let content: Content
     @Environment(AppServices.self) private var services
-    @State private var isTargeted = false
+    @State private var zone: FavoriteDropZone?
+    @State private var height: CGFloat = 28
+    @State private var spring: Task<Void, Never>?
 
     var body: some View {
         content
-            .overlay(alignment: .top) {
-                Capsule().fill(Color.accentColor).frame(height: 2.5).padding(.horizontal, 6).offset(y: -1.5)
-                    .opacity(isTargeted ? 1 : 0)
+            .overlay(alignment: .top) { insertionLine(zone == .before).offset(y: -1.5) }
+            .overlay(alignment: .bottom) { insertionLine(zone == .after).offset(y: 1.5) }
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.accentColor, lineWidth: 2)
+                .opacity(zone == .into ? 1 : 0).allowsHitTesting(false))
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
+            .onDrop(of: [.fileURL], delegate: FavoriteDropDelegate(
+                index: index, place: place, isLast: isLast, height: height, browser: browser, services: services,
+                zone: $zone, spring: $spring))
+    }
+
+    private func insertionLine(_ isOn: Bool) -> some View {
+        Capsule().fill(Color.accentColor).frame(height: 2.5).padding(.horizontal, 6).opacity(isOn ? 1 : 0)
+    }
+}
+
+private struct FavoriteDropDelegate: DropDelegate {
+    let index: Int
+    let place: Place
+    let isLast: Bool
+    let height: CGFloat
+    let browser: BrowserModel
+    let services: AppServices
+    @Binding var zone: FavoriteDropZone?
+    @Binding var spring: Task<Void, Never>?
+
+    /// The files being dragged, readable while the drag is still in the air.
+    private var dragged: [URL] {
+        let options: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
+        return NSPasteboard(name: .drag).readObjects(forClasses: [NSURL.self], options: options) as? [URL] ?? []
+    }
+
+    private func zone(at y: CGFloat) -> FavoriteDropZone {
+        let urls = dragged
+        let reordering = !urls.isEmpty && urls.allSatisfy { services.isFavorite($0.filePath) }
+        if reordering || !place.url.hasDirectoryPath { return y < height / 2 ? .before : .after }
+        if y < height * 0.25 { return .before }
+        if isLast && y > height * 0.75 { return .after }
+        return .into
+    }
+
+    func dropEntered(info: DropInfo) { update(zone(at: info.location.y)) }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        let next = zone(at: info.location.y)
+        update(next)
+        let copies = next != .into || NSEvent.modifierFlags.contains(.option)
+        return DropProposal(operation: copies ? .copy : .move)
+    }
+
+    func dropExited(info: DropInfo) { update(nil) }
+
+    func performDrop(info: DropInfo) -> Bool {
+        let target = zone(at: info.location.y)
+        update(nil)
+        let urls = dragged
+        if !urls.isEmpty { return apply(target, urls) }
+        // Not on the drag pasteboard: load the URLs from the drop itself.
+        let providers = info.itemProviders(for: [.fileURL])
+        guard !providers.isEmpty else { return false }
+        Task { @MainActor in
+            var loaded: [URL] = []
+            for provider in providers {
+                let url: URL? = await withCheckedContinuation { done in
+                    _ = provider.loadObject(ofClass: URL.self) { url, _ in done.resume(returning: url) }
+                }
+                if let url { loaded.append(url) }
             }
-            .dropDestination(for: URL.self) { urls, _ in
-                services.addFavorites(urls.map(\.filePath), at: index)
-                return true
-            } isTargeted: { isTargeted = $0 }
+            if !loaded.isEmpty { _ = apply(target, loaded) }
+        }
+        return true
+    }
+
+    private func apply(_ target: FavoriteDropZone, _ urls: [URL]) -> Bool {
+        switch target {
+        case .into: return browser.receiveDrop(urls.filter { !services.isSidebarPlace($0.filePath) }, into: place.url)
+        case .before: services.addFavorites(urls.map(\.filePath), at: index)
+        case .after: services.addFavorites(urls.map(\.filePath), at: index + 1)
+        }
+        return true
+    }
+
+    private func update(_ next: FavoriteDropZone?) {
+        guard next != zone else { return }
+        zone = next
+        spring?.cancel()
+        spring = nil
+        guard next == .into else { return }
+        let url = place.url
+        spring = Task { [browser] in
+            try? await Task.sleep(for: .seconds(1))
+            if !Task.isCancelled { browser.go(to: url) }
+        }
+    }
+}
+
+/// A sidebar folder (Locations, Frequent) that takes drops: files move into it (copy across
+/// disks, ⌥ copies), the Trash trashes them, and it opens after a moment's hover.
+private struct SidebarFolderDrop: ViewModifier {
+    let place: Place
+    let browser: BrowserModel
+    let isEnabled: Bool
+    @Environment(AppServices.self) private var services
+    @State private var isTargeted = false
+    @State private var spring: Task<Void, Never>?
+
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.accentColor, lineWidth: 2)
+                    .opacity(isTargeted ? 1 : 0).allowsHitTesting(false))
+                .dropDestination(for: URL.self) { urls, _ in
+                    spring?.cancel()
+                    // A sidebar place dragged here was being rearranged, not filed away.
+                    let urls = urls.filter { $0.isFileURL && !services.isSidebarPlace($0.filePath) }
+                    guard !urls.isEmpty else { return false }
+                    if place.symbol == "trash" { return browser.trash(urls) > 0 }
+                    return browser.receiveDrop(urls, into: place.url)
+                } isTargeted: { targeted in
+                    isTargeted = targeted
+                    spring?.cancel()
+                    guard targeted else { return }
+                    spring = Task {
+                        try? await Task.sleep(for: .seconds(1))
+                        if !Task.isCancelled { browser.go(to: place.url) }
+                    }
+                }
+        } else {
+            content
+        }
     }
 }
 
