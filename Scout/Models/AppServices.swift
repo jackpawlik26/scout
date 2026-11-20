@@ -17,7 +17,7 @@ struct Place: Identifiable, Hashable {
 @Observable
 final class AppServices {
     let fileSource = LocalFileSource()
-    let home = URL.folder(FileManager.default.homeDirectoryForCurrentUser.filePath)
+    let home = URL.folder(ScoutStore.demoHome ?? FileManager.default.homeDirectoryForCurrentUser.filePath)
     var homePath: String { home.filePath }
 
     private(set) var frecency: FrecencyLog

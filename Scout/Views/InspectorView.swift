@@ -370,7 +370,7 @@ private struct RelatedCard: View {
             related = quick
             guard let used else { return }
             search = SpotlightSearch(queryString: RelatedFiles.query(around: used),
-                                     scopes: [NSMetadataQueryUserHomeScope], live: false) { hits in
+                                     scopes: [SpotlightHome.scope], live: false) { hits in
                 exists(RelatedFiles.rank(path: path, opens: opens, history: history,
                                          spotlightUsed: used, spotlightHits: hits, home: home))
             } onResults: { found, finished in

@@ -830,7 +830,7 @@ final class BrowserModel: Identifiable {
         }
         let notFolders = "kMDItemContentType != \"public.folder\""
         spotlight = SpotlightSearch(queryString: "kMDItemLastUsedDate >= $time.today(-30) && \(notFolders)",
-                                    scopes: [NSMetadataQueryUserHomeScope], live: true) { hits, done in
+                                    scopes: [SpotlightHome.scope], live: true) { hits, done in
             opened = hits
             if done { openedDone = true }
             update()
@@ -854,7 +854,7 @@ final class BrowserModel: Identifiable {
         let home = services.homePath
         let escaped = SpotlightQueryBuilder.escape(name)
         spotlight = SpotlightSearch(queryString: "kMDItemUserTags == \"\(escaped)\"",
-                                    scopes: [NSMetadataQueryUserHomeScope], live: true) { hits in
+                                    scopes: [SpotlightHome.scope], live: true) { hits in
             LocalFileSource.items(at: hits.filter { !FileHitRanker.isNoise($0.path, home: home) }.map { URL(filePath: $0.path) })
                 .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         } onResults: { [weak self] items, finished in

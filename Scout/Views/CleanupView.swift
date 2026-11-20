@@ -352,7 +352,7 @@ struct CleanupView: View {
             var done = false
             search = SpotlightSearch(
                 queryString: "kMDItemFSSize > 524288000 && kMDItemContentType != \"public.folder\"",
-                scopes: [NSMetadataQueryUserHomeScope], live: false
+                scopes: [SpotlightHome.scope], live: false
             ) { hits in
                 hits
                     .filter { !FileHitRanker.isNoise($0.path, home: home) && !$0.path.hasPrefix(home + "/.Trash/") }

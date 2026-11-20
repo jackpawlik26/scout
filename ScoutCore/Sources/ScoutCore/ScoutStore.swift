@@ -6,8 +6,16 @@ import Foundation
 /// - `folders.txt`: the ⌘K folder index, one path per line.
 /// - `history.json`: folder visits (`{"entries": {"/path": ["2026-11-13T17:00:00Z", …]}}`).
 public enum ScoutStore {
+    /// For screenshots: `SCOUT_DEMO_HOME=/path` makes Scout treat that folder as your home and keep
+    /// its files in `<path>/Library/Application Support/Scout`, so your own folders never show.
+    /// See marketing/screenshots.
+    public static let demoHome: String? = ProcessInfo.processInfo.environment["SCOUT_DEMO_HOME"].flatMap { $0.isEmpty ? nil : $0 }
+
     public static var directory: URL {
-        URL.applicationSupportDirectory.appending(path: "Scout", directoryHint: .isDirectory)
+        if let demoHome {
+            return URL(filePath: demoHome).appending(path: "Library/Application Support/Scout", directoryHint: .isDirectory)
+        }
+        return URL.applicationSupportDirectory.appending(path: "Scout", directoryHint: .isDirectory)
     }
     public static var historyURL: URL { directory.appending(path: "history.json") }
     public static var foldersURL: URL { directory.appending(path: "folders.txt") }

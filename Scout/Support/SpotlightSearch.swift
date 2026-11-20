@@ -44,7 +44,7 @@ nonisolated final class SpotlightSearch: @unchecked Sendable {
         } else if spec.kind == .apps {
             scopes = [URL.folder("/Applications"), URL.folder("/System/Applications"), URL.folder(home)]
         } else {
-            scopes = [NSMetadataQueryUserHomeScope]
+            scopes = [SpotlightHome.scope]
         }
         self.init(queryString: string, scopes: scopes, live: live, process: process, onResults: onResults)
     }
@@ -114,7 +114,11 @@ nonisolated final class SpotlightSearch: @unchecked Sendable {
         var hits: [FileHit] = []
         hits.reserveCapacity(count)
         for i in 0..<count {
-            guard let path = query.value(ofAttribute: NSMetadataItemPathKey, forResultAt: i) as? String else { continue }
+            // On macOS 27 the value list no longer returns kMDItemPath (other attributes still come
+            // back), so read it from the result item when it's missing.
+            guard let path = query.value(ofAttribute: NSMetadataItemPathKey, forResultAt: i) as? String
+                ?? (query.result(at: i) as? NSMetadataItem)?.value(forAttribute: NSMetadataItemPathKey) as? String
+            else { continue }
             let type = query.value(ofAttribute: NSMetadataItemContentTypeKey, forResultAt: i) as? String
             hits.append(FileHit(
                 path: path,
@@ -130,4 +134,9 @@ nonisolated final class SpotlightSearch: @unchecked Sendable {
         if finished, !live { query.stop() }
         handle(hits, finished)
     }
+}
+
+/// Your home folder as a Spotlight scope: the demo home when `SCOUT_DEMO_HOME` is set (for screenshots).
+nonisolated enum SpotlightHome {
+    static var scope: Any { ScoutStore.demoHome.map { URL.folder($0) as Any } ?? NSMetadataQueryUserHomeScope }
 }

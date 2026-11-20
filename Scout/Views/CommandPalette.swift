@@ -51,7 +51,11 @@ struct CommandPalette: View {
         if isCommandMode { return matchingCommands(String(query.dropFirst()), limit: 60) }
         let folderLimit = scope == .folders ? 50 : (files.isEmpty ? 30 : 6)
         let commandRows = scope == .all && destination == nil ? matchingCommands(query, limit: 4, strict: true) : []
-        return folders.prefix(folderLimit).map(PaletteItem.folder) + commandRows + files.map(PaletteItem.file)
+        let shownFolders = folders.prefix(folderLimit)
+        // Spotlight finds folders too; don't list one the folder index already did.
+        let listed = Set(shownFolders.map(\.folder.path))
+        return shownFolders.map(PaletteItem.folder) + commandRows
+            + files.filter { !listed.contains($0.hit.path) }.map(PaletteItem.file)
     }
 
     /// Commands whose name matches. `strict` (mixed in with folders and files): the typed text
