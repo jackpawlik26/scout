@@ -62,6 +62,7 @@ struct BrowserContent: View {
     @Environment(AppServices.self) private var services
     @AppStorage(Transparency.amountKey) private var transparency = 0.0
     @State private var newWorkspaceName = ""
+    @State private var newLayoutName = ""
     /// The welcome card, once, on a new install.
     @AppStorage("welcomeShown") private var welcomeShown = true
 
@@ -117,8 +118,17 @@ struct BrowserContent: View {
         .onWindowKey(.returnKey, modifiers: .control, perform: openSelection)
         .onWindowKey(.keypadEnter, modifiers: .command, perform: openSelection)
         .onWindowKey(.keypadEnter, modifiers: .control, perform: openSelection)
+        // Commander keys, beside F5/F6 in the View menu: rename, view, edit, new folder, trash.
+        .onWindowKey(.f2) { commanderKey { _ = $0.beginRename() } }
+        .onWindowKey(.f3) { commanderKey(needsSelection: true) { $0.toggleQuickLook() } }
+        .onWindowKey(.f4) { commanderKey(needsSelection: true) { $0.openInEditor() } }
+        .onWindowKey(.f7) { commanderKey(needsSelection: false) { $0.newFolder() } }
+        .onWindowKey(.f8) { commanderKey { $0.trashSelection() } }
         .sheet(isPresented: $window.isGoToPathOpen) {
             GoToPathView(window: window)
+        }
+        .sheet(item: $window.fieldEditor) { request in
+            FieldEditorSheet(request: request)
         }
         .sheet(item: $window.comparing) { request in
             CompareView(window: window, request: request)
@@ -142,6 +152,19 @@ struct BrowserContent: View {
         } message: {
             Text("Gather folders and files from anywhere onto one page. Nothing gets moved.")
         }
+        .alert("Save Layout", isPresented: $window.isSavingLayout) {
+            TextField("Name", text: $newLayoutName)
+            Button("Save") {
+                let name = newLayoutName.trimmingCharacters(in: .whitespaces)
+                services.saveLayout(name: name.isEmpty ? "Layout \(services.savedLayouts.count + 1)" : name,
+                                    session: window.session)
+                newLayoutName = ""
+            }
+            .keyboardShortcut(.defaultAction)
+            Button("Cancel", role: .cancel) { newLayoutName = "" }
+        } message: {
+            Text("Remembers this window’s tabs and split view. Open it again from the sidebar or ⌥⌘1–9.")
+        }
         .focusedSceneValue(\.browserWindow, window)
     }
 
@@ -152,6 +175,15 @@ struct BrowserContent: View {
     private func openSelection() -> Bool {
         guard !isEditingText, !window.isPaletteOpen, !window.current.selection.isEmpty else { return false }
         window.current.openSelection()
+        return true
+    }
+
+    /// F2–F8, unless you're typing or the palette is up. Most need a selection.
+    private func commanderKey(needsSelection: Bool = true, _ action: (BrowserModel) -> Void) -> Bool {
+        let browser = window.current
+        guard !isEditingText, !window.isPaletteOpen, browser.isFolder else { return false }
+        if needsSelection, browser.selection.isEmpty { return false }
+        action(browser)
         return true
     }
 

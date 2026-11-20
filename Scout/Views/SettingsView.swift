@@ -20,6 +20,7 @@ struct SettingsView: View {
     @AppStorage("folderSizes") private var folderSizes = true
     @AppStorage("menuBarIcon") private var showsMenuBarIcon = true
     @AppStorage("terminalApp") private var terminalApp = ""
+    @AppStorage(DropShelf.key) private var dropShelf = false
     @AppStorage("editorApp") private var editorApp = ""
     @State private var isConfirmingClearHistory = false
     @State private var hasFullDiskAccess = Self.checkFullDiskAccess()
@@ -226,6 +227,14 @@ struct SettingsView: View {
                         }
                         opensFolders = FolderHandler.isScout
                     }
+                }))
+                .toggleStyle(.switch).labelsHidden()
+            }
+            Divider()
+            SettingRow("Drop shelf", detail: "Drag files from any app to the top edge of the screen to drop them on a favorite folder or the Shelf.") {
+                Toggle("", isOn: Binding(get: { dropShelf }, set: { on in
+                    dropShelf = on
+                    DropShelf.shared.apply()
                 }))
                 .toggleStyle(.switch).labelsHidden()
             }

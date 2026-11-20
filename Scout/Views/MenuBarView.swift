@@ -10,7 +10,7 @@ struct MenuBarMenu: View {
         Button("Jump to Folder or File…") { services.route(.jump(query: nil)) }
         Divider()
         Section("Latest Downloads") {
-            ForEach(services.latestDownloads) { item in
+            ForEach(services.latestDownloads.prefix(8)) { item in
                 Button {
                     services.route(.open(path: item.path, newTab: false))
                 } label: {
@@ -40,6 +40,10 @@ struct MenuBarMenu: View {
         Button("Shelf") {
             NSApp.activate()
             openWindow(id: "shelf")
+        }
+        Button("Downloads Window") {
+            NSApp.activate()
+            openWindow(id: "downloads")
         }
         Divider()
         Button("Settings…") { services.route(.settings) }

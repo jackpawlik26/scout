@@ -127,6 +127,16 @@ struct FileTableView: View {
             .customizationID("source")
             .defaultVisibility(.hidden)
 
+            // Your fields, one column each (right-click a header to show or hide them).
+            TableColumnForEach(browser.services.customizations.fields) { field in
+                TableColumn(field.name) { item in
+                    Text(fieldDisplay(browser.services.customizations.value(of: field.id, for: item.path), field))
+                        .foregroundStyle(.secondary).lineLimit(1)
+                }
+                .width(min: 50, ideal: 100)
+                .customizationID("field:" + field.id)
+            }
+
             TableColumn("Size", value: \.sizeSortKey) { item in
                 Text(Format.size(item))
                     .foregroundStyle(.tertiary)
@@ -844,7 +854,7 @@ private struct QuickActionsMenu: View {
             Menu("Quick Actions") {
                 if !images.isEmpty {
                     Menu("Convert Image") {
-                        ForEach(QuickActions.ImageFormat.allCases) { format in
+                        ForEach(QuickActions.ImageFormat.available) { format in
                             Button("to \(format.title)") {
                                 browser.selection = urls
                                 browser.convertImages(to: format)
@@ -857,6 +867,12 @@ private struct QuickActionsMenu: View {
                                 browser.selection = urls
                                 browser.resizeImages(maxPixels: size)
                             }
+                        }
+                    }
+                    ForEach(QuickActions.FlipDirection.allCases) { direction in
+                        Button(direction.title) {
+                            browser.selection = urls
+                            browser.flipImages(direction)
                         }
                     }
                 }

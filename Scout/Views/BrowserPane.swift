@@ -280,11 +280,12 @@ struct BrowserPane: View {
                 switch browser.mode {
                 case .search: Text("Search")
                 case .workspace: Text("Workspace")
-                case .cleanup, .packages, .history, .triage, .diskMap: Text("Tools")
+                case .cleanup, .packages, .agents, .history, .triage, .diskMap: Text("Tools")
                 case .bucket: Text("Bucket")
                 case .settings: Text("Scout")
                 case .recents: Text("Last 30 days")
                 case .tag: Text("Tag")
+                case .field: Text("Field")
                 case .changes: Text("Git")
                 case .folder:
                     ForEach(Array(parentCrumbs.enumerated()), id: \.offset) { index, url in
@@ -327,6 +328,7 @@ struct BrowserPane: View {
         case .workspace: browser.workspace?.symbol ?? "square.stack.3d.up"
         case .cleanup: "sparkles"
         case .packages: "shippingbox"
+        case .agents: "sparkle"
         case .settings: "gearshape"
         case .recents: "clock"
         case .history: "clock.arrow.circlepath"
@@ -334,6 +336,7 @@ struct BrowserPane: View {
         case .diskMap: "square.grid.3x3.square"
         case .bucket: "cloud"
         case .tag: "tag"
+        case .field: "list.bullet.rectangle"
         case .changes: "arrow.triangle.branch"
         }
     }
@@ -505,6 +508,8 @@ struct BrowserPane: View {
             CleanupView(browser: browser)
         } else if browser.mode == .packages {
             PackagesView(browser: browser)
+        } else if browser.mode == .agents {
+            AgentsView(browser: browser)
         } else if browser.mode == .history {
             HistoryView(browser: browser)
         } else if let id = browser.bucketID {

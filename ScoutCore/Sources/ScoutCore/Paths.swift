@@ -110,3 +110,38 @@ public enum PathCompletion {
         return String(prefix)
     }
 }
+
+/// "code .", "cursor ~/Sites/app" or "terminal" typed into Go to Path (⌘L): open a folder
+/// in an app instead of going to it. Anything that looks like a path stays a path.
+public struct PathBarCommand: Equatable, Sendable {
+    /// The command word, lowercased ("code").
+    public var name: String
+    /// The folder it acts on, as typed ("." or "~/Sites/app"), or nil for the current folder.
+    public var argument: String?
+
+    public init(name: String, argument: String? = nil) {
+        self.name = name
+        self.argument = argument
+    }
+
+    /// Splits `input` into a command and its folder when the first word is one of `known`.
+    public static func parse(_ input: String, known: Set<String>) -> PathBarCommand? {
+        let trimmed = input.trimmingCharacters(in: .whitespaces)
+        guard let first = trimmed.first, first != "/", first != "~", first != "." else { return nil }
+        let parts = trimmed.split(separator: " ", maxSplits: 1).map(String.init)
+        let name = parts[0].lowercased()
+        guard known.contains(name) else { return nil }
+        let rest = parts.count > 1 ? parts[1].trimmingCharacters(in: .whitespaces) : ""
+        return PathBarCommand(name: name, argument: rest.isEmpty ? nil : rest)
+    }
+
+    /// The folder to act on: `current` for no argument or ".", otherwise the argument
+    /// with "~" expanded, relative to `current` unless it starts with "/".
+    public func target(current: String, home: String) -> String {
+        guard let argument, argument != "." else { return current }
+        let expanded = PathCompletion.expandTilde(argument, home: home)
+        if expanded.hasPrefix("/") { return expanded }
+        let joined = (current as NSString).appendingPathComponent(expanded)
+        return (joined as NSString).standardizingPath
+    }
+}

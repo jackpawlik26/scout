@@ -26,6 +26,8 @@ final class AppServices {
     private(set) var volumes: [Place] = []
     private(set) var savedSearches: [SavedSearch] = []
     private(set) var workspaces: [Workspace] = []
+    /// Named window layouts (tabs and split), reopened from the sidebar or ⌥⌘1–9.
+    private(set) var savedLayouts: [SavedLayout] = SavedLayout.load()
     /// Copies and moves in progress (the progress card shows the slow ones).
     private(set) var transfers: [Transfer] = []
 
@@ -87,6 +89,41 @@ final class AppServices {
         try? ScoutStore.saveCustomizations(customizations)
     }
 
+    // MARK: - Your fields
+
+    func addField(_ field: FieldDefinition) {
+        customizations.addField(field)
+        try? ScoutStore.saveCustomizations(customizations)
+    }
+
+    func updateField(_ field: FieldDefinition) {
+        customizations.updateField(field)
+        try? ScoutStore.saveCustomizations(customizations)
+        reloadFieldGroups()
+    }
+
+    func deleteField(_ id: String) {
+        customizations.deleteField(id)
+        try? ScoutStore.saveCustomizations(customizations)
+        reloadFieldGroups()
+    }
+
+    /// Sets a field on files or folders (several at once from the info panel).
+    func setFieldValue(_ value: String?, of fieldID: String, for paths: [String]) {
+        for path in paths { customizations.setValue(value, of: fieldID, for: path) }
+        try? ScoutStore.saveCustomizations(customizations)
+        reloadFieldGroups()
+    }
+
+    /// Field groups list whatever has the value right now, so they reload when values change.
+    private func reloadFieldGroups() {
+        for window in windowModels.compactMap(\.model) {
+            for pane in window.panes {
+                for tab in pane.tabs where tab.fieldGroup != nil { Task { await tab.reload() } }
+            }
+        }
+    }
+
     func togglePin(_ path: String) {
         customizations.togglePin(path)
         try? ScoutStore.saveCustomizations(customizations)
@@ -101,6 +138,34 @@ final class AppServices {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard note(path) ?? "" != trimmed else { return }
         customize(path) { $0.note = trimmed.isEmpty ? nil : trimmed }
+    }
+
+    /// Web links on a file or folder.
+    func links(_ path: String) -> [ItemLink] { customizations.style(for: path)?.links ?? [] }
+
+    /// Adds a link (skipping one that's already there). False when `text` isn't a web address.
+    @discardableResult
+    func addLink(_ text: String, title: String? = nil, to path: String) -> Bool {
+        guard let link = ItemLink(text, title: title) else { return false }
+        guard !links(path).contains(where: { $0.url == link.url }) else { return true }
+        customize(path) { $0.links = ($0.links ?? []) + [link] }
+        return true
+    }
+
+    func removeLink(_ link: ItemLink, from path: String) {
+        customize(path) { style in
+            style.links?.removeAll { $0.url == link.url }
+            if style.links?.isEmpty == true { style.links = nil }
+        }
+    }
+
+    func renameLink(_ link: ItemLink, to title: String, on path: String) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        customize(path) { style in
+            guard let i = style.links?.firstIndex(where: { $0.url == link.url }) else { return }
+            style.links?[i].title = trimmed
+        }
     }
 
     /// The nickname if you gave one, else the real name.
@@ -214,7 +279,8 @@ final class AppServices {
 
     // MARK: - Latest downloads (menu bar)
 
-    /// The newest files in Downloads, for the menu bar icon's menu.
+    /// The newest files in Downloads (up to 30), for the menu bar icon's menu (first 8) and
+    /// the floating Downloads window.
     private(set) var latestDownloads: [FileItem] = []
     @ObservationIgnored private var downloadsWatcher: DirectoryWatcher?
 
@@ -230,12 +296,12 @@ final class AppServices {
                 func added(_ url: URL) -> Date {
                     (try? url.resourceValues(forKeys: [.addedToDirectoryDateKey]).addedToDirectoryDate) ?? .distantPast
                 }
-                let newest = urls.map { ($0, added($0)) }.sorted { $0.1 > $1.1 }.prefix(8)
+                let newest = urls.map { ($0, added($0)) }.sorted { $0.1 > $1.1 }.prefix(30)
                 return newest.compactMap { LocalFileSource.item(for: $0.0) }
             }.value
             guard let latest else { return } // no access (yet)
             latestDownloads = latest
-            runTriageRules(on: latest)
+            runTriageRules(on: Array(latest.prefix(8)))
             if downloadsWatcher == nil {
                 downloadsWatcher = DirectoryWatcher(url: folder) { [weak self] in self?.refreshLatestDownloads() }
             }
@@ -565,6 +631,28 @@ final class AppServices {
 
     private func persistWorkspaces() {
         try? ScoutStore.saveWorkspaces(workspaces)
+    }
+
+    // MARK: - Saved layouts
+
+    @discardableResult
+    func saveLayout(name: String, session: WindowSession) -> SavedLayout {
+        let layout = SavedLayout(name: name, session: session)
+        savedLayouts.append(layout)
+        SavedLayout.save(savedLayouts)
+        return layout
+    }
+
+    /// Replaces a layout's tabs and split with the window's current ones.
+    func updateLayout(_ id: UUID, session: WindowSession) {
+        guard let i = savedLayouts.firstIndex(where: { $0.id == id }) else { return }
+        savedLayouts[i].session = session
+        SavedLayout.save(savedLayouts)
+    }
+
+    func deleteLayout(_ id: UUID) {
+        savedLayouts.removeAll { $0.id == id }
+        SavedLayout.save(savedLayouts)
     }
 
     // MARK: - Saved searches

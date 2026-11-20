@@ -5,7 +5,9 @@ import ScoutCore
 /// (when Scout is the default file browser) and the global jump shortcut.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Set by ScoutApp once its services exist.
-    var services: AppServices?
+    var services: AppServices? {
+        didSet { DropShelf.shared.services = services }
+    }
     /// Reveal requests that arrived before a window was ready.
     private var pending: [URL] = []
 
@@ -21,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         GlobalHotKey.shared.onPress = { [weak self] in self?.services?.toggleJumpPalette() }
         GlobalHotKey.shared.apply()
+        DropShelf.shared.apply()
         for url in pending { reveal(url) }
         pending = []
     }

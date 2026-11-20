@@ -50,7 +50,10 @@ struct ShortcutsView: View {
                 ("⌘D", "Split view"),
                 ("⌥⇥  ⌘U", "Switch pane, swap panes"),
                 ("F5  F6", "Copy, move to the other pane"),
+                ("F2  F3  F4", "Rename, Quick Look, edit"),
+                ("F7  F8", "New folder, move to Trash"),
                 ("⌃1–9", "Workspaces"),
+                ("⌥⌘1–9", "Saved layouts"),
             ]),
             ShortcutGroup(title: "View", rows: [
                 ("⌘1  ⌘2  ⌘3", "List, icons, columns"),

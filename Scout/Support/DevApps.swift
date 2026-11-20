@@ -10,19 +10,24 @@ struct DevApp: Identifiable, Hashable {
     let kind: Kind
     /// A Services menu item that opens folders (more reliable than `open -a` for some terminals).
     var service: String?
+    /// Words that open a folder in this app from Go to Path ("code .").
+    var commands: [String] = []
 
     static let known: [DevApp] = [
-        DevApp(id: "so.stencil.tern", name: "Tern", kind: .terminal, service: "Open in Tern"),
-        DevApp(id: "com.mitchellh.ghostty", name: "Ghostty", kind: .terminal),
-        DevApp(id: "com.googlecode.iterm2", name: "iTerm", kind: .terminal, service: "New iTerm2 Tab Here"),
-        DevApp(id: "dev.warp.Warp-Stable", name: "Warp", kind: .terminal),
+        DevApp(id: "so.stencil.tern", name: "Tern", kind: .terminal, service: "Open in Tern", commands: ["tern"]),
+        DevApp(id: "com.mitchellh.ghostty", name: "Ghostty", kind: .terminal, commands: ["ghostty"]),
+        DevApp(id: "com.googlecode.iterm2", name: "iTerm", kind: .terminal, service: "New iTerm2 Tab Here", commands: ["iterm", "iterm2"]),
+        DevApp(id: "dev.warp.Warp-Stable", name: "Warp", kind: .terminal, commands: ["warp"]),
         DevApp(id: "com.apple.Terminal", name: "Terminal", kind: .terminal),
-        DevApp(id: "com.todesktop.230313mzl4w4u92", name: "Cursor", kind: .editor),
-        DevApp(id: "com.microsoft.VSCode", name: "VS Code", kind: .editor),
-        DevApp(id: "dev.zed.Zed", name: "Zed", kind: .editor),
-        DevApp(id: "com.sublimetext.4", name: "Sublime Text", kind: .editor),
-        DevApp(id: "com.panic.Nova", name: "Nova", kind: .editor),
-        DevApp(id: "com.apple.dt.Xcode", name: "Xcode", kind: .editor),
+        DevApp(id: "com.todesktop.230313mzl4w4u92", name: "Cursor", kind: .editor, commands: ["cursor"]),
+        DevApp(id: "com.microsoft.VSCode", name: "VS Code", kind: .editor, commands: ["code", "vscode"]),
+        DevApp(id: "com.microsoft.VSCodeInsiders", name: "VS Code Insiders", kind: .editor, commands: ["code-insiders"]),
+        DevApp(id: "com.exafunction.windsurf", name: "Windsurf", kind: .editor, commands: ["windsurf"]),
+        DevApp(id: "dev.zed.Zed", name: "Zed", kind: .editor, commands: ["zed"]),
+        DevApp(id: "com.sublimetext.4", name: "Sublime Text", kind: .editor, commands: ["subl", "sublime"]),
+        DevApp(id: "com.panic.Nova", name: "Nova", kind: .editor, commands: ["nova"]),
+        DevApp(id: "com.barebones.bbedit", name: "BBEdit", kind: .editor, commands: ["bbedit"]),
+        DevApp(id: "com.apple.dt.Xcode", name: "Xcode", kind: .editor, commands: ["xed", "xcode"]),
     ]
 
     var appURL: URL? { NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) }
@@ -58,6 +63,21 @@ struct DevApp: Identifiable, Hashable {
         let app = apps.first { $0.id == chosen } ?? apps.first
         cache[cacheKey] = (app, .now)
         return app
+    }
+
+    /// Command words for Go to Path: each installed app's own words, plus "terminal" and
+    /// "edit" for your preferred terminal and editor, and "finder" to show it in Finder.
+    static var pathBarCommands: Set<String> {
+        Set(known.filter { $0.appURL != nil }.flatMap(\.commands)).union(["terminal", "term", "edit", "editor", "finder"])
+    }
+
+    /// The app a Go to Path command word opens (nil for "finder", handled by the caller).
+    static func app(forCommand word: String) -> DevApp? {
+        switch word {
+        case "terminal", "term": preferredTerminal
+        case "edit", "editor": preferredEditor
+        default: known.first { $0.commands.contains(word) && $0.appURL != nil }
+        }
     }
 
     /// Opens a folder (or file) in this app.

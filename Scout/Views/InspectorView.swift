@@ -112,6 +112,10 @@ private struct ItemInspector: View {
 
             NoteField(browser: browser, path: item.path)
                 .id(item.id)
+            LinksCard(browser: browser, path: item.path)
+                .id(item.id)
+            FieldsCard(window: browser.pane?.window, browser: browser, path: item.path)
+                .id(item.id)
 
             if let source = item.source {
                 SourceCard(browser: browser, source: source)
@@ -191,6 +195,114 @@ private struct NoteField: View {
     private func commit() {
         save?.cancel()
         browser.services.setNote(path, text)
+    }
+}
+
+// MARK: - Links
+
+/// Web pages that belong with this item (the Notion brief, the Figma file). Paste or drop a
+/// link to add it; links follow the item when Scout moves or renames it.
+private struct LinksCard: View {
+    let browser: BrowserModel
+    let path: String
+    @State private var draft = ""
+    @State private var isAdding = false
+    @State private var invalid = false
+    @State private var renaming: ItemLink?
+    @State private var newTitle = ""
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        let links = browser.services.links(path)
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(links) { link in
+                Button { open(link) } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "link").foregroundStyle(Color.textSubtle)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(link.title).lineLimit(1)
+                            Text(link.url.replacingOccurrences(of: "https://", with: ""))
+                                .font(.ui(11)).foregroundStyle(Color.textSubtle).lineLimit(1).truncationMode(.middle)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "arrow.up.right").font(.system(size: 10)).foregroundStyle(Color.textSubtle)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(link.url)
+                .contextMenu {
+                    Button("Open") { open(link) }
+                    Button("Copy Link") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(link.url, forType: .string)
+                    }
+                    Button("Rename…") {
+                        newTitle = link.title
+                        renaming = link
+                    }
+                    Divider()
+                    Button("Remove Link", role: .destructive) { browser.services.removeLink(link, from: path) }
+                }
+            }
+            if isAdding || links.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "link.badge.plus").foregroundStyle(Color.textSubtle)
+                    TextField("Add a link (Notion, Figma, a website)…", text: $draft)
+                        .textFieldStyle(.plain)
+                        .focused($isFocused)
+                        .onSubmit(add)
+                        .onChange(of: draft) { invalid = false }
+                }
+                if invalid {
+                    Text("That isn’t a web address.").font(.ui(11)).foregroundStyle(.red)
+                }
+            } else {
+                Button {
+                    isAdding = true
+                    isFocused = true
+                } label: {
+                    Label("Add Link", systemImage: "plus").font(.ui(12)).foregroundStyle(Color.textSubtle)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .font(.ui(13))
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RaisedFill(shape: RoundedRectangle(cornerRadius: 10)))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(isFocused ? Color.accentColor.opacity(0.5) : Color.hairline))
+        .dropDestination(for: URL.self) { urls, _ in
+            let web = urls.filter { !$0.isFileURL }
+            for url in web { browser.services.addLink(url.absoluteString, to: path) }
+            return !web.isEmpty
+        }
+        .alert("Rename Link", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+            TextField("Title", text: $newTitle)
+            Button("Rename") {
+                if let renaming { browser.services.renameLink(renaming, to: newTitle, on: path) }
+                renaming = nil
+            }
+            .keyboardShortcut(.defaultAction)
+            Button("Cancel", role: .cancel) { renaming = nil }
+        }
+    }
+
+    private func add() {
+        guard !draft.trimmingCharacters(in: .whitespaces).isEmpty else {
+            isAdding = false
+            return
+        }
+        if browser.services.addLink(draft, to: path) {
+            draft = ""
+            isAdding = false
+        } else {
+            invalid = true
+        }
+    }
+
+    private func open(_ link: ItemLink) {
+        if let url = URL(string: link.url) { NSWorkspace.shared.open(url) }
     }
 }
 

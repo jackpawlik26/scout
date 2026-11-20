@@ -131,6 +131,30 @@ final class BrowserWindowModel {
         services.register(self)
     }
 
+    /// Opens a saved layout in this window, replacing its tabs and split. False when none of
+    /// its folders exist any more (the window is left as it was).
+    @discardableResult
+    func apply(_ session: WindowSession) -> Bool {
+        let restored = session.panes.prefix(2).compactMap { PaneModel(services: services, saved: $0) }
+        guard !restored.isEmpty else { return false }
+        for pane in restored { pane.window = self }
+        panes = restored
+        focusedPaneID = restored[min(max(session.focused, 0), restored.count - 1)].id
+        return true
+    }
+
+    /// Opens a saved layout, or says why it can't.
+    func open(_ layout: SavedLayout) {
+        if !apply(layout.session) {
+            current.alertMessage = "None of the folders in “\(layout.name)” exist any more."
+        }
+    }
+
+    /// The "Save Layout" dialog is up.
+    var isSavingLayout = false
+    /// Adding or editing one of your fields.
+    var fieldEditor: FieldEditorRequest?
+
     /// Everything needed to reopen this window as it is: each pane's tabs and the split.
     var session: WindowSession {
         WindowSession(panes: panes.map(\.saved), focused: panes.firstIndex { $0.id == focusedPaneID } ?? 0)
@@ -372,6 +396,32 @@ struct WindowSession: Codable, Equatable {
         guard !encoded.isEmpty, let data = encoded.data(using: .utf8),
               let session = try? JSONDecoder().decode(WindowSession.self, from: data) else { return nil }
         self = session
+    }
+}
+
+/// A window's tabs and split, saved under a name ("Client work": Clients on the left,
+/// Downloads and Invoices on the right).
+struct SavedLayout: Codable, Identifiable, Equatable {
+    var id = UUID()
+    var name: String
+    var session: WindowSession
+
+    private static let key = "savedLayouts"
+
+    static func load() -> [SavedLayout] {
+        guard let data = UserDefaults.standard.data(forKey: key) else { return [] }
+        return (try? JSONDecoder().decode([SavedLayout].self, from: data)) ?? []
+    }
+
+    static func save(_ layouts: [SavedLayout]) {
+        UserDefaults.standard.set(try? JSONEncoder().encode(layouts), forKey: key)
+    }
+
+    /// "2 panes · 5 tabs".
+    var summary: String {
+        let tabs = session.panes.reduce(0) { $0 + $1.tabs.count }
+        let panes = session.panes.count == 1 ? "1 pane" : "\(session.panes.count) panes"
+        return "\(panes) · \(tabs) \(tabs == 1 ? "tab" : "tabs")"
     }
 }
 

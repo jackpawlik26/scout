@@ -60,7 +60,16 @@ struct CommandPalette: View {
         let q = text.trimmingCharacters(in: .whitespaces)
         if q.isEmpty { return strict ? [] : commands.filter(\.isEnabled).prefix(limit).map { .command($0, []) } }
         if strict, q.count < 3 { return [] }
-        return commands
+        // Links on folders ("acme notion" → the Notion page on the Acme folder).
+        let links = services.customizations.linksMatching(q).prefix(4).map { path, link in
+            PaletteItem.command(PaletteCommand(
+                id: "link:\(path)|\(link.url)", title: link.title,
+                detail: "Link on \((path as NSString).lastPathComponent)", shortcut: "", symbol: "link", isEnabled: true
+            ) {
+                if let url = URL(string: link.url) { NSWorkspace.shared.open(url) }
+            }, FuzzyMatcher.match(q, in: link.title)?.indices ?? [])
+        }
+        return Array(links) + commands
             .compactMap { command -> (PaletteCommand, FuzzyMatch)? in
                 if strict, command.title.range(of: q, options: [.caseInsensitive, .diacriticInsensitive]) == nil { return nil }
                 return FuzzyMatcher.match(q, in: command.title).map { (command, $0) }
@@ -386,7 +395,9 @@ struct CommandPalette: View {
                 } : [])
             : []
         // Files and folders whose note matches.
-        let noteHits = spec.hasFileFilters ? [] : services.customizations.notesMatching(spec.nameQuery)
+        let customizations = services.customizations
+        let noteHits = spec.hasFileFilters ? [] : Array(Set(customizations.notesMatching(spec.nameQuery)
+            + customizations.fieldValuesMatching(spec.nameQuery))).sorted()
             .filter { path in
                 FileManager.default.fileExists(atPath: path) && (spec.withinPath.map { path.hasPrefix($0 + "/") } ?? true)
             }

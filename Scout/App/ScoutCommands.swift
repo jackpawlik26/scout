@@ -137,6 +137,7 @@ struct ScoutCommands: Commands {
             Toggle("Column Headers", isOn: $columnHeaders)
             Button("Show Shelf") { openWindow(id: "shelf") }
                 .customizableShortcut(.shelf)
+            Button("Show Downloads Window") { openWindow(id: "downloads") }
             Divider()
             Menu("Group By") {
                 ForEach(GroupBy.folderChoices) { group in
@@ -237,6 +238,7 @@ struct ScoutCommands: Commands {
                 if developerTools {
                     Button("Packages") { browser?.showPackages() }
                         .customizableShortcut(.packages)
+                    Button("AI Agents") { browser?.showAgents() }
                     Button("Git Changes") { browser?.showChanges() }
                         .customizableShortcut(.gitChanges)
                         .disabled(browser?.git == nil)
@@ -247,6 +249,12 @@ struct ScoutCommands: Commands {
                 ForEach(Array(services.workspaces.prefix(9).enumerated()), id: \.element.id) { index, workspace in
                     Button(workspace.name) { browser?.showWorkspace(workspace.id) }
                         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .control)
+                }
+                Divider()
+                Button("Save Layout…") { window.isSavingLayout = true }
+                ForEach(Array(services.savedLayouts.prefix(9).enumerated()), id: \.element.id) { index, layout in
+                    Button(layout.name) { window.open(layout) }
+                        .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [.command, .option])
                 }
                 Divider()
                 Button("Rebuild Jump Index") { Task { await services.rebuildIndex() } }

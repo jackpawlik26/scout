@@ -43,12 +43,16 @@ enum BrowserMode: Equatable, Codable {
     case changes(String)
     /// Installed Homebrew and npm packages.
     case packages
+    /// Projects set up for coding agents (Claude Code, Codex, Cursor), their tokens and dev servers.
+    case agents
     /// Scout's settings.
     case settings
     /// Files you opened or downloaded lately, from anywhere.
     case recents
     /// Everything with a Finder tag.
     case tag(String)
+    /// Everything with a value in one of your fields (field id, value): "Status: In progress".
+    case field(String, String)
     /// Everything Scout moved, copied, renamed or trashed.
     case history
     /// Going through a folder's loose files one at a time (the folder's path).
@@ -174,7 +178,7 @@ final class BrowserModel: Identifiable {
 
     /// Clean Up and Packages: pages with their own layout instead of a file list.
     var isToolPage: Bool {
-        mode == .cleanup || mode == .packages || mode == .settings || mode == .history || triageFolder != nil
+        mode == .cleanup || mode == .packages || mode == .agents || mode == .settings || mode == .history || triageFolder != nil
             || diskMapFolder != nil || bucketID != nil
     }
 
@@ -199,7 +203,13 @@ final class BrowserModel: Identifiable {
 
     /// Items come from many folders, so views show where each one lives.
     var showsLocations: Bool {
-        search != nil || workspaceID != nil || changesRoot != nil || mode == .recents || tagName != nil
+        search != nil || workspaceID != nil || changesRoot != nil || mode == .recents || tagName != nil || fieldGroup != nil
+    }
+
+    /// The field and value this tab lists, in a field group.
+    var fieldGroup: (field: String, value: String)? {
+        if case .field(let field, let value) = mode { return (field, value) }
+        return nil
     }
 
     var tagName: String? {
@@ -240,6 +250,7 @@ final class BrowserModel: Identifiable {
         case .workspace: return workspace?.name ?? "Workspace"
         case .cleanup: return "Clean Up"
         case .packages: return "Packages"
+        case .agents: return "AI Agents"
         case .settings: return "Settings"
         case .recents: return "Recents"
         case .history: return "History"
@@ -247,6 +258,8 @@ final class BrowserModel: Identifiable {
         case .diskMap(let path): return "Disk Map: " + FileManager.default.displayName(atPath: path)
         case .bucket(let id): return services.buckets.first { $0.id == id }?.name ?? "Bucket"
         case .tag(let name): return name
+        case .field(let id, let value):
+            return (services.customizations.field(id)?.name).map { "\($0): \(value)" } ?? value
         case .changes(let root): return "Changes in " + FileManager.default.displayName(atPath: root)
         case .folder: break
         }
@@ -408,6 +421,7 @@ final class BrowserModel: Identifiable {
         case .cleanup: showCleanup()
         case .changes(let root): if FileManager.default.fileExists(atPath: root) { showChanges(in: root) }
         case .packages: showPackages()
+        case .agents: showAgents()
         case .settings: showSettings()
         case .recents: showRecents()
         case .history: showHistory()
@@ -415,6 +429,7 @@ final class BrowserModel: Identifiable {
         case .diskMap(let path): if FileManager.default.fileExists(atPath: path) { showDiskMap(path) }
         case .bucket(let id): if services.buckets.contains(where: { $0.id == id }) { showBucket(id) }
         case .tag(let name): showTag(name)
+        case .field(let id, let value): if services.customizations.field(id) != nil { showFieldGroup(id, value) }
         }
     }
 
@@ -440,6 +455,13 @@ final class BrowserModel: Identifiable {
         guard tagName != name else { return }
         pushHistory()
         show(HistoryEntry(location: location, mode: .tag(name)))
+    }
+
+    /// A self-updating group: everything whose field has this value.
+    func showFieldGroup(_ fieldID: String, _ value: String) {
+        if let current = fieldGroup, current.field == fieldID, current.value == value { return }
+        pushHistory()
+        show(HistoryEntry(location: location, mode: .field(fieldID, value)))
     }
 
     func showRecents() {
@@ -483,6 +505,12 @@ final class BrowserModel: Identifiable {
         guard mode != .settings else { return }
         pushHistory()
         show(HistoryEntry(location: location, mode: .settings))
+    }
+
+    func showAgents() {
+        guard mode != .agents else { return }
+        pushHistory()
+        show(HistoryEntry(location: location, mode: .agents))
     }
 
     func showPackages() {
@@ -582,7 +610,7 @@ final class BrowserModel: Identifiable {
         case .workspace:
             loadWorkspace()
             return
-        case .cleanup, .packages, .settings, .history, .triage, .diskMap, .bucket:
+        case .cleanup, .packages, .agents, .settings, .history, .triage, .diskMap, .bucket:
             spotlight = nil
             spotlightAdded = nil
             watcher = nil
@@ -593,6 +621,18 @@ final class BrowserModel: Identifiable {
             return
         case .tag(let name):
             startTagSearch(name, generation: generation)
+            return
+        case .field(let id, let value):
+            spotlight = nil
+            spotlightAdded = nil
+            watcher = nil
+            loadError = nil
+            needsPermission = false
+            let fm = FileManager.default
+            let urls = services.customizations.paths(withValue: value, in: id)
+                .filter { fm.fileExists(atPath: $0) }.map { URL(filePath: $0) }
+            items = LocalFileSource.items(at: urls).sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+            isSearching = false
             return
         case .changes:
             spotlight = nil
@@ -1327,6 +1367,14 @@ final class BrowserModel: Identifiable {
         guard !images.isEmpty else { return }
         runActivity("Resizing \(images.count == 1 ? "“\(images[0].lastPathComponent)”" : "\(images.count) images")…") {
             try await Self.inBackground { try images.map { try QuickActions.resize($0, maxPixels: maxPixels) }.last }
+        }
+    }
+
+    func flipImages(_ direction: QuickActions.FlipDirection) {
+        let images = selectedImages
+        guard !images.isEmpty else { return }
+        runActivity("Flipping \(images.count == 1 ? "“\(images[0].lastPathComponent)”" : "\(images.count) images")…") {
+            try await Self.inBackground { try images.map { try QuickActions.flip($0, direction) }.last }
         }
     }
 

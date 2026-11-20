@@ -127,6 +127,44 @@ struct SidebarView: View {
                             .buttonStyle(.plain)
                         }
                     }
+                    let choiceFields = services.customizations.fields.filter { $0.kind == .choice }
+                    ForEach(choiceFields) { field in
+                        let counts = services.customizations.counts(for: field.id)
+                        section(field.name, addHelp: "Edit “\(field.name)”", add: { window.fieldEditor = FieldEditorRequest(field: field) }) {
+                            ForEach(field.choices, id: \.self) { choice in
+                                SidebarRow(title: choice, symbol: "circle.fill",
+                                           isSelected: browser.fieldGroup.map { $0.field == field.id && $0.value == choice } ?? false) {
+                                    browser.showFieldGroup(field.id, choice)
+                                }
+                                .overlay(alignment: .trailing) {
+                                    if let count = counts[choice] {
+                                        Text("\(count)").font(.ui(11)).foregroundStyle(Color.textSubtle).monospacedDigit().padding(.trailing, 9)
+                                    }
+                                }
+                                .help("Everything with \(field.name) set to \(choice). Updates as you change it.")
+                                .dropDestination(for: URL.self) { urls, _ in
+                                    services.setFieldValue(choice, of: field.id, for: urls.filter(\.isFileURL).map(\.filePath))
+                                    return true
+                                }
+                            }
+                        }
+                    }
+                    if !services.savedLayouts.isEmpty {
+                        section("Layouts", addHelp: "Save Layout", add: { window.isSavingLayout = true }) {
+                            ForEach(Array(services.savedLayouts.enumerated()), id: \.element.id) { index, layout in
+                                SidebarRow(title: layout.name, symbol: layout.session.panes.count > 1 ? "rectangle.split.2x1" : "rectangle",
+                                           isSelected: false) {
+                                    window.open(layout)
+                                }
+                                .help("\(layout.summary)\(index < 9 ? " (⌥⌘\(index + 1))" : "")")
+                                .contextMenu {
+                                    Button("Update to This Window") { services.updateLayout(layout.id, session: window.session) }
+                                    Divider()
+                                    Button("Delete Layout", role: .destructive) { services.deleteLayout(layout.id) }
+                                }
+                            }
+                        }
+                    }
                     let frequent = services.frequent()
                     if !frequent.isEmpty {
                         section("Frequent") {
@@ -219,6 +257,10 @@ struct SidebarView: View {
                                 browser.showPackages()
                             }
                             .help("Homebrew and npm: what’s installed and what’s outdated (⌥⌘P)")
+                            SidebarRow(title: "AI Agents", symbol: "sparkle", isSelected: browser.mode == .agents) {
+                                browser.showAgents()
+                            }
+                            .help("Projects set up for Claude Code, Codex and Cursor, with tokens used and running dev servers")
                         }
                     }
                 }

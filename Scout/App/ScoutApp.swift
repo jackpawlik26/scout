@@ -30,5 +30,14 @@ struct ScoutApp: App {
         .windowLevel(.floating)
         .defaultPosition(.trailing)
         .restorationBehavior(.disabled)
+
+        Window("Downloads", id: "downloads") {
+            DownloadsWindowView()
+                .environment(services)
+        }
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 300, height: 420)
+        .windowLevel(.floating)
+        .defaultPosition(.topTrailing)
     }
 }

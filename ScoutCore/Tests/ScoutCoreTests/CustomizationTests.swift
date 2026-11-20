@@ -65,3 +65,74 @@ import Testing
         #expect(c.style(for: "/u/b.pdf") == nil)
     }
 }
+
+@Suite struct LinkTests {
+    @Test func parsesAndNamesLinks() {
+        #expect(ItemLink("notion.so/acme/brief")?.url == "https://notion.so/acme/brief")
+        #expect(ItemLink("notion.so/acme/brief")?.title == "Notion")
+        #expect(ItemLink("https://www.figma.com/file/x")?.title == "Figma")
+        #expect(ItemLink("https://portal.acme.com", title: " Client portal ")?.title == "Client portal")
+        #expect(ItemLink("https://acme.com")?.title == "acme.com")
+        #expect(ItemLink("not a link") == nil)
+        #expect(ItemLink("javascript:alert(1)") == nil)
+        #expect(ItemLink("file:///etc/passwd") == nil)
+        #expect(ItemLink("hello") == nil)
+    }
+
+    @Test func linksFollowMovesAndSearch() {
+        var c = Customizations()
+        c.update("/d/Acme") { $0.links = [ItemLink(title: "Brief", url: "https://notion.so/acme")] }
+        #expect(!(c.style(for: "/d/Acme")?.isEmpty ?? true))
+        c.moved(from: "/d/Acme", to: "/d/Clients/Acme")
+        #expect(c.style(for: "/d/Clients/Acme")?.links?.first?.title == "Brief")
+        #expect(c.linksMatching("brief").map(\.path) == ["/d/Clients/Acme"])
+        #expect(c.linksMatching("acme notion").count == 1)
+        #expect(c.linksMatching("figma").isEmpty)
+        c.update("/d/Clients/Acme") { $0.links = [] }
+        #expect(c.styles["/d/Clients/Acme"] == nil)
+    }
+}
+
+@Suite struct FieldTests {
+    @Test func valuesNormalizeFollowMovesAndGroup() throws {
+        var c = Customizations()
+        let status = FieldDefinition(name: "Status", kind: .choice, choices: ["To do", "In progress", "Done"])
+        let amount = FieldDefinition(name: "Amount", kind: .number)
+        let due = FieldDefinition(name: "Due", kind: .date)
+        c.addField(status)
+        c.addField(amount)
+        c.addField(due)
+
+        c.setValue("in progress", of: status.id, for: "/d/Acme")
+        c.setValue("$1,200", of: amount.id, for: "/d/Acme")
+        c.setValue("2026-12-01", of: due.id, for: "/d/Acme")
+        c.setValue("Done", of: status.id, for: "/d/Globex")
+        c.setValue("next week", of: due.id, for: "/d/Globex") // not a date: ignored
+        #expect(c.value(of: status.id, for: "/d/Acme") == "In progress") // matched to the choice's casing
+        #expect(c.value(of: amount.id, for: "/d/Acme") == "1200")
+        #expect(c.value(of: due.id, for: "/d/Globex") == nil)
+
+        c.moved(from: "/d/Acme", to: "/d/Clients/Acme")
+        #expect(c.paths(withValue: "In progress", in: status.id) == ["/d/Clients/Acme"])
+        #expect(c.counts(for: status.id) == ["In progress": 1, "Done": 1])
+        #expect(c.fieldValuesMatching("progress") == ["/d/Clients/Acme"])
+
+        #expect(status.less("To do", "Done"))
+        #expect(amount.less("9", "1200"))
+        #expect(!amount.less(nil, "1"))
+
+        c.setValue("", of: status.id, for: "/d/Globex")
+        #expect(c.styles["/d/Globex"] == nil) // cleared values drop the style
+
+        c.deleteField(status.id)
+        #expect(c.fields.map(\.name) == ["Amount", "Due"])
+        #expect(c.value(of: status.id, for: "/d/Clients/Acme") == nil)
+        #expect(c.value(of: amount.id, for: "/d/Clients/Acme") == "1200")
+
+        // Saved files from before fields existed still load.
+        let old = #"{"styles":{"/d/x":{"note":"hi"}},"pinned":{}}"#.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(Customizations.self, from: old)
+        #expect(decoded.style(for: "/d/x")?.note == "hi")
+        #expect(decoded.fields.isEmpty)
+    }
+}

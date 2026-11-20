@@ -34,6 +34,36 @@ import UniformTypeIdentifiers
         #expect(FileManager.default.fileExists(atPath: png.filePath)) // original kept
     }
 
+    @Test func flipsAndWritesAVIF() throws {
+        defer { try? FileManager.default.removeItem(at: dir) }
+        // Left half red, right half blue: flipping horizontally swaps them.
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let context = CGContext(data: nil, width: 40, height: 20, bitsPerComponent: 8, bytesPerRow: 0,
+                                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        context.setFillColor(red: 1, green: 0, blue: 0, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: 20, height: 20))
+        context.setFillColor(red: 0, green: 0, blue: 1, alpha: 1)
+        context.fill(CGRect(x: 20, y: 0, width: 20, height: 20))
+        let png = dir.appending(path: "halves.png")
+        let writer = CGImageDestinationCreateWithURL(png as CFURL, UTType.png.identifier as CFString, 1, nil)!
+        CGImageDestinationAddImage(writer, context.makeImage()!, nil)
+        CGImageDestinationFinalize(writer)
+
+        let flipped = try QuickActions.flip(png, .horizontal)
+        #expect(flipped.lastPathComponent == "halves flipped.png")
+        let image = CGImageSourceCreateImageAtIndex(CGImageSourceCreateWithURL(flipped as CFURL, nil)!, 0, nil)!
+        let pixels = CGContext(data: nil, width: 40, height: 20, bitsPerComponent: 8, bytesPerRow: 160,
+                               space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        pixels.draw(image, in: CGRect(x: 0, y: 0, width: 40, height: 20))
+        let bytes = pixels.data!.assumingMemoryBound(to: UInt8.self)
+        #expect(bytes[2] > 200 && bytes[0] < 50) // leftmost pixel is now blue
+        #expect(bytes[39 * 4] > 200)              // rightmost pixel is now red
+
+        let avif = try QuickActions.convert(png, to: .avif)
+        #expect(avif.lastPathComponent == "halves.avif")
+        #expect(QuickActions.pixelSize(avif)?.width == 40)
+    }
+
     @Test func combinesPDFs() throws {
         defer { try? FileManager.default.removeItem(at: dir) }
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

@@ -12,6 +12,12 @@ enum Key: UInt16 {
     case upArrow = 126
     case leftArrow = 123
     case rightArrow = 124
+    // Commander keys (with fn on a Mac keyboard whose top row is media keys).
+    case f2 = 120
+    case f3 = 99
+    case f4 = 118
+    case f7 = 98
+    case f8 = 100
 }
 
 extension View {
