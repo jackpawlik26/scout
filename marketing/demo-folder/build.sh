@@ -3,7 +3,7 @@
 set -e
 HERE=${0:A:h}
 STAGE=$HERE/stage/Northwind\ Studio
-DEST="/Users/Shared/Northwind Studio"
+DEST="${NORTHWIND_DEST:-/Users/Shared/Northwind Studio}"
 rm -rf "$HERE/stage"; mkdir -p "$STAGE"
 cd "$HERE/.."   # marketing/, where puppeteer-core is installed
 node demo-folder/gen.mjs "$STAGE"

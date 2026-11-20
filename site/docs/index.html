@@ -20,28 +20,30 @@
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">
 <link rel="stylesheet" href="../assets/site.css">
 </head>
 <body>
-<nav class="nav scrolled" aria-label="Main">
+<nav class="nav" aria-label="Main">
   <div class="wrap">
-    <a class="logo" href="../"><img src="../assets/icon.png" alt="">Scout</a>
-    <div class="nav-links">
-      <a href="../#features">Features</a>
-      <a href="../#developers">Developers</a>
-      <a href="./" aria-current="page">Docs</a>
-      <a href="../changelog/">Changelog</a>
-    </div>
-    <div class="nav-right">
-      <a class="btn btn-dark btn-sm" href="https://github.com/jackpawlik26/scout/releases/latest/download/Scout.zip"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v8.5M4.5 7.5 8 11l3.5-3.5M3 14h10"/></svg>Download</a>
+    <div class="nav-bar">
+      <a class="logo" href="../"><img src="../assets/icon.png" alt="">Scout</a>
+      <div class="nav-links"><a href="../#find">Find</a><a href="../#organize">Organize</a><a href="../#developers">Developers</a><a href="../docs/" aria-current="page">Docs</a><a href="../changelog/">Changelog</a></div>
+      <div class="nav-right">
+        <a class="nav-gh" href="https://github.com/jackpawlik26/scout" aria-label="Scout on GitHub"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+        <a class="btn btn-dark btn-sm" href="https://github.com/jackpawlik26/scout/releases/latest/download/Scout.zip">Download</a>
+        <details class="nav-menu">
+          <summary aria-label="Menu"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 6h12M3 12h12"/></svg></summary>
+          <div class="menu"><a href="../#find">Find</a><a href="../#organize">Organize</a><a href="../#developers">Developers</a><a href="../docs/">Docs</a><a href="../changelog/">Changelog</a><a href="https://github.com/jackpawlik26/scout">GitHub</a></div>
+        </details>
+      </div>
     </div>
   </div>
 </nav>
 
 <div class="wrap">
   <header class="docs-hero">
-    <span class="kicker">Docs · Scout 0.4</span>
+    <span class="kicker">Docs · Scout 0.4.1</span>
     <h1>Everything Scout can do.</h1>
     <p>How to install Scout, find your way around, and get the most out of it, from your first ⌥Space to the <code style="font:500 .86em var(--mono)">scout</code> command.</p>
     <div class="quick">
@@ -174,7 +176,7 @@
             <div><b>Info panel</b><span>A preview of the selection, its details, tags, links and your own fields, and what takes the space in a folder. <kbd>⌘I</kbd> toggles it.</span></div>
             <div><b>Footer</b><span>Item count, free space, and an icon size slider in icon view.</span></div>
           </div>
-          <figure class="shot"><img src="../assets/list.jpg" width="1984" height="1330" alt="Scout's window: sidebar, a folder in list view with client folders expanded, and a PDF previewed in the info panel" loading="lazy"></figure>
+          <figure class="shot"><img src="../assets/shots/list.webp" width="2000" height="1182" alt="Scout's window: the sidebar with Status and Layouts sections, a folder in list view with Status, Client and Due columns, and the info panel showing a folder's links and fields" loading="lazy"></figure>
           <p>Previews in the info panel include images, PDFs you can scroll, video, rendered Markdown and highlighted code. Press <kbd>Space</kbd> for a full Quick Look.</p>
         </section>
 
@@ -189,7 +191,7 @@
             <li><code>from:</code> and part of a site or sender finds downloads by where they came from: <code>syllabus from:canvas.depaul.edu</code>.<span class="new-pill">0.3</span></li>
             <li>Type <code>&gt;</code> to run any command, describe a file and press <kbd>⌥↵</kbd> to <a href="#ask">Ask Scout</a>, and find screenshots by the text in them.<span class="new-pill">0.3</span></li>
           </ul>
-          <figure class="shot" style="max-width:560px"><img src="../assets/palette.jpg" width="680" height="512" alt="The palette searching for 'harbor' inside the Northwind Studio folder" loading="lazy"></figure>
+          <figure class="shot" style="max-width:560px"><img src="../assets/shots/palette.webp" width="1200" height="895" alt="The palette searching for “acme”: the Acme Coffee folder, its links and matching files" loading="lazy"></figure>
           <h3>Other ways to get somewhere</h3>
           <div class="table"><table>
             <tr><th>Keys</th><th>What it does</th></tr>
@@ -212,7 +214,7 @@
           <h3>Split view</h3>
           <p><kbd>⌘D</kbd> shows two folders side by side, each with its own tabs. <kbd>⌥⇥</kbd> switches pane, <kbd>⌘U</kbd> swaps them, and <kbd>F5</kbd> / <kbd>F6</kbd> copy or move the selection to the other pane. The rest of the classic function keys work too: <kbd>F2</kbd> rename, <kbd>F3</kbd> Quick Look, <kbd>F4</kbd> open in your editor, <kbd>F7</kbd> new folder and <kbd>F8</kbd> move to Trash (with <kbd>fn</kbd> on most Mac keyboards).<span class="new-pill">0.4</span></p>
           <p><strong>Go ▸ Save Layout…</strong> remembers a window’s tabs and split view so you can bring them back with <kbd>⌥⌘1</kbd>–<kbd>9</kbd>. See <a href="#layouts">Saved layouts</a>.<span class="new-pill">0.4</span></p>
-          <figure class="shot"><img src="../assets/split.jpg" width="1725" height="1066" alt="Split view: Northwind Studio on the left, its Inbox on the right" loading="lazy"></figure>
+          <figure class="shot"><img src="../assets/shots/split.webp" width="2000" height="1182" alt="Split view: client folders on the left, Downloads grouped by day on the right with an Invoices tab" loading="lazy"></figure>
         </section>
 
         <section id="move">
@@ -290,7 +292,7 @@
             <li>Old <code>node_modules</code>, Mail attachments, leftovers from deleted apps, and apps you haven’t opened in six months</li>
           </ul>
           <p>Everything you pick goes to the <strong>Trash</strong>, so nothing is gone until you empty it.</p>
-          <figure class="shot"><img src="../assets/cleanup.jpg" width="1984" height="1330" alt="Clean Up listing reclaimable space by category" loading="lazy"></figure>
+          <figure class="shot"><img src="../assets/shots/cleanup.webp" width="2000" height="1182" alt="Clean Up listing reclaimable space by category" loading="lazy"></figure>
         </section>
 
         <section id="more-actions">
@@ -372,6 +374,7 @@
         <section id="agents">
           <h2>AI Agents<span class="new-pill">0.4</span></h2>
           <p>With <a href="#developer-tools">Developer tools</a> on, <strong>AI Agents</strong> in the sidebar (or <strong>Go ▸ AI Agents</strong>) lists your projects that are set up for Claude Code, Codex, Cursor, Gemini or Windsurf, most recently used first. For each one you see how many tokens your Claude Code and Codex sessions used there and the MCP servers it uses, with buttons to open it in Scout, your terminal or your editor, or open its <code>CLAUDE.md</code> or <code>AGENTS.md</code>.</p>
+          <figure class="shot"><img src="../assets/shots/agents.webp" width="2000" height="1182" alt="The AI Agents page: a running dev server, and projects set up for Claude Code, Codex, Cursor and Gemini with tokens and MCP servers" loading="lazy"></figure>
           <p>At the top, <strong>Running dev servers</strong> lists local servers started from your folders, with their ports, so you can open one in the browser or jump to its folder. Scout reads all of this from the agents’ own files on your Mac. Nothing leaves it.</p>
         </section>
       </div>
@@ -396,6 +399,7 @@
             <tr><td><span class="keys-row"><kbd>⌫</kbd></span></td><td>Move it to the Trash</td></tr>
             <tr><td><span class="keys-row"><kbd>→</kbd> <kbd>←</kbd></span></td><td>Skip, or go back</td></tr>
           </table></div>
+          <figure class="shot"><img src="../assets/shots/triage.webp" width="2000" height="1182" alt="Triage Downloads: a new invoice with a preview, suggested folders on 1, 2 and 3 with the reason for each, and two rules" loading="lazy"></figure>
           <p>Suggestions learn from where you put similar files before: the same site, words in common, or the same type. For example, “6 PDF files from canvas.depaul.edu went here”. Turn on <strong>Always do this</strong> (<kbd>A</kbd>) when you file something, and Scout makes a rule: new downloads like it go to that folder on their own while Scout is open. Each one shows in <a href="#history">History</a>, so you can undo it, and rules can be switched off or deleted on the Triage page.</p>
           <p>To triage any other folder, open it and choose <strong>Go ▸ Triage This Folder</strong>.</p>
         </section>
@@ -452,6 +456,7 @@
         <section id="disk-map">
           <h2>Disk Map<span class="new-pill">0.3</span></h2>
           <p><strong>Go ▸ Disk Map</strong>, or <strong>Disk Map</strong> next to “What takes the space” in the info panel, shows what fills a folder as blocks sized by space. Click a folder to go in, use the path bar to come back out, hover for sizes, and right-click to show, open or trash something.</p>
+          <figure class="shot"><img src="../assets/shots/diskmap.webp" width="2000" height="1182" alt="Disk Map of a folder: blocks sized by space, folders in purple and files colored by kind" loading="lazy"></figure>
         </section>
       </div>
 
@@ -461,6 +466,7 @@
         <section id="shortcuts">
           <h2>Keyboard shortcuts</h2>
           <p>Press <kbd>⌘/</kbd> in Scout to see them on screen. You can change 52 of them in Settings.</p>
+          <figure class="shot"><img src="../assets/shots/shortcuts.webp" width="2000" height="1182" alt="The keyboard shortcuts sheet (⌘/)" loading="lazy"></figure>
           <h3>Find and go</h3>
           <div class="table"><table>
             <tr><td><span class="keys-row"><kbd>⌥Space</kbd></span></td><td>Jump from any app (change it in Settings)</td></tr>
@@ -583,7 +589,7 @@ scout duplicates ~/Desktop</pre><button type="button">Copy</button></div>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/></svg>
             <p>A downloaded repository’s own settings can tell git to run programs. Scout checks first, and in a repository like that it waits until you click <strong>Trust This Repository</strong>.</p>
           </div>
-          <figure class="shot"><img src="../assets/packages.jpg" width="1984" height="1330" alt="The Packages page listing Homebrew and npm packages and available updates" loading="lazy"></figure>
+          <figure class="shot"><img src="../assets/shots/packages.webp" width="2000" height="1182" alt="The Packages page listing Homebrew and npm packages and available updates" loading="lazy"></figure>
         </section>
 
         <section id="build">
@@ -659,8 +665,8 @@ defaults delete com.jackpawlik.scout</pre><button type="button">Copy</button></d
 
 <footer>
   <div class="wrap">
-    <span>Scout · a free file browser for macOS</span>
-    <nav aria-label="Footer"><a href="../#features">Features</a><a href="./">Docs</a><a href="../changelog/">Changelog</a><a href="https://github.com/jackpawlik26/scout">GitHub</a></nav>
+    <span class="foot-brand"><img src="../assets/icon.png" alt="">Scout · a free file browser for macOS</span>
+    <nav aria-label="Footer"><a href="../docs/">Docs</a><a href="../changelog/">Changelog</a><a href="../docs/#privacy">Privacy</a><a href="https://github.com/jackpawlik26/scout">GitHub</a><a href="https://github.com/jackpawlik26/scout/issues/new/choose">Report a bug</a></nav>
   </div>
 </footer>
 

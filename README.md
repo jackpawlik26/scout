@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="site/assets/list.jpg" alt="Scout's list view: client folders expanded in place, with a PDF previewed in the info panel" width="860">
+  <img src="site/assets/shots/list.webp" alt="Scout's list view: a folder with your own Status, Client and Due fields as columns, and a folder's links and fields in the info panel" width="860">
 </p>
 
 ## Install
@@ -54,11 +54,11 @@ That builds Scout, puts it in Applications, opens it, and adds the `scout` comma
 
 **Find anything in a few keystrokes.** Press ⌥Space in any app, or ⌘K inside Scout, and type a few letters. Folders you use most come first; files are found by name or by what's inside them. Filter by kind or date, and save searches you repeat.
 
-<p align="center"><img src="site/assets/palette.jpg" alt="The Scout palette finding files inside a folder" width="560"></p>
+<p align="center"><img src="site/assets/shots/palette.webp" alt="The Scout palette finding a folder, its links and matching files" width="560"></p>
 
 **Browse your way.** Tabs, split view (⌘D), list, icons or columns, and folders that open in place. Tabs and splits come back after you quit, just like Finder.
 
-<p align="center"><img src="site/assets/split.jpg" alt="Split view: a folder on the left and its Inbox on the right" width="720"></p>
+<p align="center"><img src="site/assets/shots/split.webp" alt="Split view: client folders on the left, Downloads on the right" width="720"></p>
 
 **Move things without dragging.** Select files, press ⇧⌘M, type a few letters of where they should go, and press Return. Every move, rename and trash can be undone with ⌘Z.
 
@@ -68,15 +68,15 @@ That builds Scout, puts it in Applications, opens it, and adds the `scout` comma
 
 **See what's taking space.** The info panel shows what fills a folder. Clean Up finds old installers, big downloads, duplicate files and developer caches, and everything goes to the Trash, so nothing is lost by accident.
 
-<p align="center"><img src="site/assets/cleanup.jpg" alt="Clean Up showing reclaimable space" width="720"></p>
+<p align="center"><img src="site/assets/shots/cleanup.webp" alt="Clean Up showing reclaimable space" width="720"></p>
 
 **Made for the keyboard.** Almost everything has a shortcut, and you can change 52 of them. Press ⌘/ in Scout for the list, or see [all shortcuts](docs/SHORTCUTS.md).
 
-<p align="center"><img src="site/assets/shortcuts.jpg" alt="Scout's keyboard shortcuts sheet" width="720"></p>
+<p align="center"><img src="site/assets/shots/shortcuts.webp" alt="Scout's keyboard shortcuts sheet" width="720"></p>
 
 **For developers.** Turn on **Settings ▸ Developer tools** for git branch and file status in every folder, Open in Terminal or your editor (or type `code .` in ⌘L), a page for your Homebrew and npm packages, and an AI Agents page for your Claude Code, Codex and Cursor projects. There are also `scout://` links, a `scout` command and a Raycast extension. See [Scout for power users](docs/POWER-USERS.md).
 
-<p align="center"><img src="site/assets/packages.jpg" alt="The Packages page listing Homebrew and npm packages with available updates" width="720"></p>
+<p align="center"><img src="site/assets/shots/packages.webp" alt="The Packages page listing Homebrew and npm packages with available updates" width="720"></p>
 
 **Private.** No account, no tracking. Your files and Scout's index stay on your Mac.
 
