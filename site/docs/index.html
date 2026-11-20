@@ -41,7 +41,7 @@
 
 <div class="wrap">
   <header class="docs-hero">
-    <span class="kicker">Docs · Scout 0.3.1</span>
+    <span class="kicker">Docs · Scout 0.4</span>
     <h1>Everything Scout can do.</h1>
     <p>How to install Scout, find your way around, and get the most out of it, from your first ⌥Space to the <code style="font:500 .86em var(--mono)">scout</code> command.</p>
     <div class="quick">
@@ -74,8 +74,16 @@
           <a href="#cleanup">Clean Up</a>
           <a href="#more-actions">Archives and Quick Actions</a>
           <a href="#settings">Settings</a>
-          <div class="toc-group">New in 0.3</div>
+          <div class="toc-group">New in 0.4</div>
           <a href="#new">What’s new</a>
+          <a href="#fields">Your own fields</a>
+          <a href="#folder-links">Links on folders</a>
+          <a href="#layouts">Saved layouts</a>
+          <a href="#downloads-window">Downloads window and drop shelf</a>
+          <a href="#path-commands">Open folders in your apps</a>
+          <a href="#agents">AI Agents</a>
+          <div class="toc-group">New in 0.3</div>
+          <a href="#new-0-3">What’s new in 0.3</a>
           <a href="#triage">Triage Downloads</a>
           <a href="#history">History</a>
           <a href="#ask">Ask Scout and smart names</a>
@@ -163,7 +171,7 @@
           <div class="feature-grid">
             <div><b>Sidebar</b><span>Favorites, workspaces, your most-used folders, tags you use, disks and cloud drives, and tools. <kbd>⌃⌘S</kbd> hides it.</span></div>
             <div><b>Folder</b><span>The path above the title is clickable. Tabs appear when you open a second one. Type a name to jump to it.</span></div>
-            <div><b>Info panel</b><span>A preview of the selection, its details and tags, and what takes the space in a folder. <kbd>⌘I</kbd> toggles it.</span></div>
+            <div><b>Info panel</b><span>A preview of the selection, its details, tags, links and your own fields, and what takes the space in a folder. <kbd>⌘I</kbd> toggles it.</span></div>
             <div><b>Footer</b><span>Item count, free space, and an icon size slider in icon view.</span></div>
           </div>
           <figure class="shot"><img src="../assets/list.jpg" width="1984" height="1330" alt="Scout's window: sidebar, a folder in list view with client folders expanded, and a PDF previewed in the info panel" loading="lazy"></figure>
@@ -185,7 +193,7 @@
           <h3>Other ways to get somewhere</h3>
           <div class="table"><table>
             <tr><th>Keys</th><th>What it does</th></tr>
-            <tr><td><span class="keys-row"><kbd>⌘L</kbd></span></td><td>Go to a path. <kbd>⇥</kbd> completes folder names.</td></tr>
+            <tr><td><span class="keys-row"><kbd>⌘L</kbd></span></td><td>Go to a path. <kbd>⇥</kbd> completes folder names. Type <code>code .</code> or <code>terminal</code> to <a href="#path-commands">open the folder in an app</a>.<span class="new-pill">0.4</span></td></tr>
             <tr><td><span class="keys-row"><kbd>⌘F</kbd></span></td><td>Filter the folder you’re in as you type.</td></tr>
             <tr><td><span class="keys-row"><kbd>⇧⌘F</kbd></span></td><td>Find files (the palette, starting on Files).</td></tr>
             <tr><td><span class="keys-row"><kbd>⌥⌘R</kbd></span></td><td>Recents: files opened or downloaded in the last 30 days.</td></tr>
@@ -202,7 +210,8 @@
           <h3>Tabs</h3>
           <p><kbd>⌘T</kbd> opens a tab, <kbd>⌘W</kbd> closes it, <kbd>⇧⌘]</kbd> and <kbd>⇧⌘[</kbd> switch. Tabs and splits come back after you quit.</p>
           <h3>Split view</h3>
-          <p><kbd>⌘D</kbd> shows two folders side by side, each with its own tabs. <kbd>⌥⇥</kbd> switches pane, <kbd>⌘U</kbd> swaps them, and <kbd>F5</kbd> / <kbd>F6</kbd> copy or move the selection to the other pane.</p>
+          <p><kbd>⌘D</kbd> shows two folders side by side, each with its own tabs. <kbd>⌥⇥</kbd> switches pane, <kbd>⌘U</kbd> swaps them, and <kbd>F5</kbd> / <kbd>F6</kbd> copy or move the selection to the other pane. The rest of the classic function keys work too: <kbd>F2</kbd> rename, <kbd>F3</kbd> Quick Look, <kbd>F4</kbd> open in your editor, <kbd>F7</kbd> new folder and <kbd>F8</kbd> move to Trash (with <kbd>fn</kbd> on most Mac keyboards).<span class="new-pill">0.4</span></p>
+          <p><strong>Go ▸ Save Layout…</strong> remembers a window’s tabs and split view so you can bring them back with <kbd>⌥⌘1</kbd>–<kbd>9</kbd>. See <a href="#layouts">Saved layouts</a>.<span class="new-pill">0.4</span></p>
           <figure class="shot"><img src="../assets/split.jpg" width="1725" height="1066" alt="Split view: Northwind Studio on the left, its Inbox on the right" loading="lazy"></figure>
         </section>
 
@@ -288,7 +297,7 @@
           <h2>Archives and Quick Actions</h2>
           <ul>
             <li><strong>Compress</strong> and <strong>Extract Here</strong> (right-click): zip items, or unzip <code>.zip</code>, <code>.tar</code> (<code>.gz</code>, <code>.bz2</code>, <code>.xz</code>) and <code>.7z</code>.</li>
-            <li><strong>Quick Actions</strong> (right-click): convert or resize images and combine PDFs. Originals are kept.</li>
+            <li><strong>Quick Actions</strong> (right-click): convert images (JPEG, PNG, HEIC, AVIF, TIFF, and WebP when <code>cwebp</code> is installed), resize or flip them, and combine PDFs. Originals are kept.<span class="new-pill">0.4</span></li>
             <li><strong>New folder</strong> <kbd>⇧⌘N</kbd>, <strong>new text file</strong> <kbd>⌃⌘N</kbd>, <strong>copy path</strong> <kbd>⌥⌘C</kbd>, <strong>make alias</strong> <kbd>⌃⌘A</kbd>, <strong>AirDrop</strong> <kbd>⇧⌘R</kbd>, and Finder’s <strong>Get Info</strong> <kbd>⌥⌘I</kbd>.</li>
           </ul>
         </section>
@@ -300,10 +309,70 @@
             <tr><th>Section</th><th>What you can change</th></tr>
             <tr><td>Appearance</td><td>Light, dark or match the system; accent color; window transparency and blur.</td></tr>
             <tr><td>Browsing</td><td>The view for new tabs, a grouping for every folder, folders on top, hidden files, folder sizes, sidebar and info panel.</td></tr>
-            <tr><td>Keyboard &amp; System</td><td>The Jump from anywhere key, Show in Finder and Open folders in Scout, the menu bar icon, Open at login.</td></tr>
+            <tr><td>Keyboard &amp; System</td><td>The Jump from anywhere key, Show in Finder and Open folders in Scout, the <a href="#downloads-window">drop shelf</a><span class="new-pill">0.4</span>, the menu bar icon, Open at login.</td></tr>
             <tr><td>Keyboard Shortcuts</td><td>Change any of 52 shortcuts. Scout sorts out clashes for you.</td></tr>
-            <tr><td>Developer tools</td><td>Git, Packages, and your terminal and editor apps. <a href="#developer-tools">More below</a>.</td></tr>
+            <tr><td>Developer tools</td><td>Git, Packages, AI Agents, and your terminal and editor apps. <a href="#developer-tools">More below</a>.</td></tr>
           </table></div>
+        </section>
+      </div>
+
+      <!-- ============ NEW IN 0.4 ============ -->
+      <div class="part">
+        <span class="kicker">New in 0.4</span>
+
+        <section id="new">
+          <h2>What’s new in 0.4</h2>
+          <p>Scout 0.4 adds everything in this part, and anything marked <span class="new-pill">0.4</span> elsewhere on this page. If you have an older Scout, <a href="#updating">download the new one</a> and replace it. See the <a href="../changelog/">changelog</a> for the full list.</p>
+        </section>
+
+        <section id="fields">
+          <h2>Your own fields<span class="new-pill">0.4</span></h2>
+          <p>Give files and folders your own columns, like a spreadsheet: a <strong>Status</strong> to pick from, a <strong>Client</strong>, a <strong>Due</strong> date or an <strong>Amount</strong>. In the info panel, click <strong>Add a field</strong> and choose text, number, date or choice. Then set it on any file from the info panel.</p>
+          <ul>
+            <li>Each field gets its own column in list view. Right-click the column headers to show or hide it.</li>
+            <li>⌘K finds files by their field values.</li>
+            <li>Each choice field adds a section to the sidebar, with a row for every choice and a count. A row lists everything set to that choice and updates as you change it. Drop files on a row to set that choice.</li>
+            <li>Values follow files when Scout moves or renames them. Nothing is written into the files themselves.</li>
+          </ul>
+          <p>To rename a field, change its choices or delete it, right-click its name in the info panel and choose <strong>Edit Field…</strong>.</p>
+        </section>
+
+        <section id="folder-links">
+          <h2>Links on folders<span class="new-pill">0.4</span></h2>
+          <p>A project lives in more places than its folder. In the info panel’s <strong>Links</strong> card, paste a web address or drop a link from your browser to attach it: the Notion brief, the Figma file, the repository, a client portal. Links are named after the site (Notion, Figma, GitHub…), open in one click, and follow the folder when it moves.</p>
+          <p>⌘K finds them too: type part of a link’s name (“acme notion”) to open it. Right-click a link to rename, copy or remove it.</p>
+        </section>
+
+        <section id="layouts">
+          <h2>Saved layouts<span class="new-pill">0.4</span></h2>
+          <p>Set up a window the way you like it, say Clients on the left with Downloads and Invoices in tabs on the right, then choose <strong>Go ▸ Save Layout…</strong> and name it. Open it again with <kbd>⌥⌘1</kbd>–<kbd>9</kbd>, from the <strong>Go</strong> menu, or from <strong>Layouts</strong> in the sidebar. Right-click a layout in the sidebar to update it to the current window or delete it.</p>
+        </section>
+
+        <section id="downloads-window">
+          <h2>Downloads window and drop shelf<span class="new-pill">0.4</span></h2>
+          <ul>
+            <li><strong>Downloads window:</strong> <strong>View ▸ Show Downloads Window</strong>, or <strong>Downloads Window</strong> in the menu bar icon, opens a small window that stays on top with your 30 newest downloads. Drag files out of it into any app, double-click to open, or drop files on it to move them into Downloads (<kbd>⌥</kbd> copies).</li>
+            <li><strong>Drop shelf:</strong> turn on <strong>Settings ▸ Keyboard &amp; System ▸ Drop shelf</strong>. Now when you drag files in any app to the top edge of the screen, a strip slides down with your favorite folders and the <a href="#move">Shelf</a>. Drop on a folder to move the files into it (<kbd>⌥</kbd> copies), or on the Shelf to hold them for later. Moving needs a Scout window open, so the move can be undone with <kbd>⌘Z</kbd>.</li>
+          </ul>
+        </section>
+
+        <section id="path-commands">
+          <h2>Open folders in your apps<span class="new-pill">0.4</span></h2>
+          <p>In <strong>Go to Path</strong> (<kbd>⌘L</kbd>), type a command instead of a path, the way you would in Terminal:</p>
+          <div class="table"><table>
+            <tr><th>Type</th><th>What it does</th></tr>
+            <tr><td><code>code .</code></td><td>Open the folder you’re in with VS Code</td></tr>
+            <tr><td><code>cursor ~/Sites/app</code></td><td>Open another folder with Cursor (paths can be relative to where you are)</td></tr>
+            <tr><td><code>terminal</code> <code>edit</code></td><td>Your terminal or editor from Settings</td></tr>
+            <tr><td><code>finder</code></td><td>Show the folder in Finder</td></tr>
+          </table></div>
+          <p>Scout knows <code>code</code>, <code>code-insiders</code>, <code>cursor</code>, <code>windsurf</code>, <code>zed</code>, <code>subl</code>, <code>nova</code>, <code>bbedit</code>, <code>xed</code>, <code>tern</code>, <code>ghostty</code>, <code>iterm</code> and <code>warp</code>, for whichever of those apps you have installed. Anything else is treated as a path.</p>
+        </section>
+
+        <section id="agents">
+          <h2>AI Agents<span class="new-pill">0.4</span></h2>
+          <p>With <a href="#developer-tools">Developer tools</a> on, <strong>AI Agents</strong> in the sidebar (or <strong>Go ▸ AI Agents</strong>) lists your projects that are set up for Claude Code, Codex, Cursor, Gemini or Windsurf, most recently used first. For each one you see how many tokens your Claude Code and Codex sessions used there and the MCP servers it uses, with buttons to open it in Scout, your terminal or your editor, or open its <code>CLAUDE.md</code> or <code>AGENTS.md</code>.</p>
+          <p>At the top, <strong>Running dev servers</strong> lists local servers started from your folders, with their ports, so you can open one in the browser or jump to its folder. Scout reads all of this from the agents’ own files on your Mac. Nothing leaves it.</p>
         </section>
       </div>
 
@@ -311,9 +380,9 @@
       <div class="part">
         <span class="kicker">New in 0.3</span>
 
-        <section id="new">
+        <section id="new-0-3">
           <h2>What’s new in 0.3</h2>
-          <p>Scout 0.3 adds everything in this part, and anything marked <span class="new-pill">0.3</span> elsewhere on this page. If you have an older Scout, <a href="#updating">download the new one</a> and replace it. See the <a href="../changelog/">changelog</a> for the full list.</p>
+          <p>Scout 0.3 added everything in this part, and anything marked <span class="new-pill">0.3</span> elsewhere on this page. See the <a href="../changelog/">changelog</a> for the full list.</p>
         </section>
 
         <section id="triage">
@@ -415,6 +484,8 @@
             <tr><td><span class="keys-row"><kbd>⌘Z</kbd></span></td><td>Undo</td></tr>
             <tr><td><span class="keys-row"><kbd>⌥⌘C</kbd></span></td><td>Copy path</td></tr>
             <tr><td><span class="keys-row"><kbd>⌘R</kbd></span></td><td>Show in Finder</td></tr>
+            <tr><td><span class="keys-row"><kbd>F2</kbd> <kbd>F3</kbd> <kbd>F4</kbd></span></td><td>Rename, Quick Look, open in your editor<span class="new-pill">0.4</span></td></tr>
+            <tr><td><span class="keys-row"><kbd>F7</kbd> <kbd>F8</kbd></span></td><td>New folder, move to Trash<span class="new-pill">0.4</span></td></tr>
           </table></div>
           <h3>Tabs, panes and view</h3>
           <div class="table"><table>
@@ -433,6 +504,7 @@
             <tr><td><span class="keys-row"><kbd>⌥⌘T</kbd></span></td><td>Tidy Folder</td></tr>
             <tr><td><span class="keys-row"><kbd>⌥⌘S</kbd></span></td><td>Shelf</td></tr>
             <tr><td><span class="keys-row"><kbd>⌥⌘N</kbd> <kbd>⌃1</kbd>–<kbd>9</kbd></span></td><td>New workspace, open workspace</td></tr>
+            <tr><td><span class="keys-row"><kbd>⌥⌘1</kbd>–<kbd>9</kbd></span></td><td>Open a saved layout<span class="new-pill">0.4</span></td></tr>
             <tr><td><span class="keys-row"><kbd>⌥⌘P</kbd> <kbd>⌥⌘G</kbd></span></td><td>Packages, git changes (Developer tools)</td></tr>
             <tr><td><span class="keys-row"><kbd>⌥⇧⌘T</kbd> <kbd>⌥⇧⌘E</kbd></span></td><td>Open in Terminal, open in editor (Developer tools)</td></tr>
           </table></div>
@@ -469,7 +541,7 @@
         <section id="shortcuts-app">
           <h2>Shortcuts app and menu bar</h2>
           <p>Scout adds actions to the <strong>Shortcuts</strong> app and Siri: Open in Scout, Open Workspace, Jump, Recents, Clean Up and Tidy Downloads.</p>
-          <p>The <strong>menu bar icon</strong> has Jump, your latest downloads, favorites, workspaces, Recents, Clean Up and the Shelf. Turn it off in Settings.</p>
+          <p>The <strong>menu bar icon</strong> has Jump, your latest downloads and the <a href="#downloads-window">Downloads window</a><span class="new-pill">0.4</span>, favorites, workspaces, Recents, Clean Up and the Shelf. Turn it off in Settings.</p>
         </section>
 
         <section id="cli">
@@ -505,6 +577,7 @@ scout duplicates ~/Desktop</pre><button type="button">Copy</button></div>
             <div><b>Packages</b><span>Everything Homebrew and npm installed, with sizes and updates (<kbd>⌥⌘P</kbd>). Scout hands you the upgrade command; it never runs installs itself.</span></div>
             <div><b>Your terminal</b><span>Open in Terminal (<kbd>⌥⇧⌘T</kbd>) with Tern, Ghostty, iTerm or Terminal.</span></div>
             <div><b>Your editor</b><span>Open in Editor (<kbd>⌥⇧⌘E</kbd>) with Cursor, VS Code, Zed or Xcode.</span></div>
+            <div><b>AI Agents<span class="new-pill">0.4</span></b><span>Your Claude Code, Codex and Cursor projects with token use and MCP servers, plus running dev servers. <a href="#agents">More above</a>.</span></div>
           </div>
           <div class="callout">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/></svg>
@@ -542,7 +615,7 @@ cd scout
             <tr><td><code>folders.txt</code></td><td>The folder index behind ⌘K, one path per line</td></tr>
             <tr><td><code>history.json</code></td><td>Folder visits, for “most used” ranking</td></tr>
             <tr><td><code>favorites.json</code> <code>workspaces.json</code> <code>saved-searches.json</code></td><td>What their names say</td></tr>
-            <tr><td><code>customizations.json</code></td><td>Folder colors, symbols, nicknames, pins and notes</td></tr>
+            <tr><td><code>customizations.json</code></td><td>Folder colors, symbols, nicknames, pins and notes, plus links and your own fields<span class="new-pill">0.4</span></td></tr>
             <tr><td><code>rename-presets.json</code></td><td>Your saved rename presets</td></tr>
             <tr><td><code>file-history.jsonl</code><span class="new-pill">0.3</span></td><td>What Scout moved, copied, renamed and trashed (History), kept for a year</td></tr>
             <tr><td><code>triage-rules.json</code><span class="new-pill">0.3</span></td><td>Triage’s “Always do this” rules</td></tr>

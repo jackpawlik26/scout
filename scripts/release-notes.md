@@ -1,4 +1,4 @@
-**Scout 0.3.1**: drop files on the sidebar. Drag files onto a folder in the sidebar to file them away without leaving the folder you're in. Plus everything in 0.3: Triage Downloads, History, Ask Scout and more.
+**Scout 0.4**: your own fields, links on folders and saved layouts. Organize files like a database, keep a project's links with its folder, and bring back a whole window with one key.
 
 ### Install
 1. Download **Scout.zip** below and open it.
@@ -11,10 +11,14 @@ Needs macOS 26 or later. Works on Apple silicon and Intel Macs. Ask Scout and sm
 Prefer to build it yourself? With Xcode 26 and Homebrew, it's `git clone`, `brew install xcodegen` and `./scripts/install.sh`, with no "Open Anyway" step. See [Build Scout from source](https://github.com/jackpawlik26/scout/blob/main/docs/BUILDING.md).
 
 ### New
-- **Drop files on the sidebar**: drag files onto a favorite, a frequent folder, iCloud Drive, Dropbox and other cloud drives, or a disk to move them into it. Another disk copies, and ⌥ always copies. Hover for a second to open the folder and drop deeper.
-- **Drop on Trash** in the sidebar to move files to the Trash.
+- **Your own fields**: give files and folders a Status, Client, Due date or Amount from the info panel. Each field gets a list column and is searchable in ⌘K, and each choice field adds a sidebar section that always lists what's set to each choice. Drop files on a choice to set it.
+- **Links on folders**: attach the Notion brief, the Figma file or the repo to a folder. Links follow the folder when it moves, and ⌘K opens them.
+- **Saved layouts**: Go ▸ Save Layout… remembers a window's tabs and split view. Reopen it with ⌥⌘1–9 or from the sidebar.
+- **Downloads window**: a small window that stays on top with your 30 newest downloads, to drag into any app. Drop files on it to move them into Downloads.
+- **Drop shelf** (Settings ▸ Keyboard & System, off by default): drag files to the top edge of the screen from any app to drop them on a favorite folder or the Shelf.
+- **Open folders in your apps from ⌘L**: type `code .`, `cursor`, `zed`, `terminal` or `finder` in Go to Path.
+- **Function keys**: F2 rename, F3 Quick Look, F4 open in your editor, F7 new folder, F8 move to Trash, alongside F5 and F6.
+- **AI Agents** (Developer tools): your Claude Code, Codex, Cursor and Gemini projects with token use and MCP servers, plus the dev servers running from your folders. All read on your Mac.
+- **Image tools**: flip images, and convert to AVIF, or to WebP when `cwebp` is installed (`brew install webp`).
 
-### Changed
-- On **Favorites**, drop in the middle of a folder to move files into it, or between two favorites to pin them there. Dragging a favorite onto another still reorders.
-
-See the [docs](https://scoutformac.com/docs/#move) and the [changelog](https://scoutformac.com/changelog/). Found a bug? [Open an issue](https://github.com/jackpawlik26/scout/issues/new/choose).
+See the [docs](https://scoutformac.com/docs/#new) and the [changelog](https://scoutformac.com/changelog/). Found a bug? [Open an issue](https://github.com/jackpawlik26/scout/issues/new/choose).

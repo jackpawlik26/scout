@@ -8,7 +8,7 @@ Press **⌘/** in Scout to see the most useful ones on screen. You can change 52
 | ⌘K | Find any folder or file (folders ranked by use; files via Spotlight, names and contents) |
 | ⇧⌘F | Find files (⌘K starting on Files) |
 | In ⌘K: ⇥ / ⌘↵ / ⇧↵ | Cycle All/Folders/Files / new tab or show in Scout / all results in a tab |
-| ⌘L | Go to path (Tab completes) |
+| ⌘L | Go to path (Tab completes). Type `code .`, `cursor`, `zed`, `terminal`, `finder` and similar to open the folder in that app instead |
 | ⌘F | Filter this folder |
 | ⌘T / ⌘W | New tab / close tab |
 | ⇧⌘] / ⇧⌘[ | Next / previous tab |
@@ -31,9 +31,9 @@ Press **⌘/** in Scout to see the most useful ones on screen. You can change 52
 | ⌘+ / ⌘− | Bigger / smaller icons (slider in the footer); right-click list headers to add Kind or Tags columns |
 | ⌥⌘S | Shelf: collect files from anywhere, then Copy Here / Move Here |
 | ⌃⌘A / ⇧⌘R / ⌥⌘I | Make Alias / AirDrop / Finder's Get Info (plus Duplicate and Share in the right-click menu) |
-| Right-click ▸ Quick Actions | Convert or resize images, combine PDFs (originals kept) |
+| Right-click ▸ Quick Actions | Convert images (JPEG, PNG, HEIC, AVIF, TIFF; WebP with `cwebp`), resize or flip them, combine PDFs (originals kept) |
 | Drag onto a folder | Moves into it; hover a second to open it and drop deeper |
-| Menu bar 🔭 | Jump, latest downloads, favorites, workspaces, Recents, Clean Up, Shelf (turn off in Settings) |
+| Menu bar 🔭 | Jump, latest downloads, the Downloads window, favorites, workspaces, Recents, Clean Up, Shelf (turn off in Settings) |
 | Shortcuts app / Siri | Open in Scout, Open Workspace, Jump, Recents, Clean Up, Tidy Downloads |
 | Right-click ▸ Customize | Folder color and symbol, nickname, Pin to Top (Scout-only) |
 | Settings ▸ Keyboard Shortcuts | Change any of 52 shortcuts; clashes are resolved for you |
@@ -44,7 +44,10 @@ Press **⌘/** in Scout to see the most useful ones on screen. You can change 52
 | Right-click ▸ Tags | Finder-compatible colored tags; sidebar Tags lists everything with a tag |
 | ⌘D / ⌘U / ⌥⇥ | Split view / swap panes / switch pane |
 | F5 / F6 | Copy / move selection to the other pane |
+| F2 / F3 / F4 | Rename, Quick Look, open in your editor |
+| F7 / F8 | New folder, move to Trash |
 | ⌥⌘N / ⌃1–9 | New workspace / open workspace 1–9 |
+| Go ▸ Save Layout… / ⌥⌘1–9 | Save this window's tabs and split view / open saved layout 1–9 |
 | ⇧⌘K / ⌥⌘P / ⌥⌘G | Clean Up / Packages / Git changes |
 | ⌘I / ⌃⌘S / ⌘, | Info panel / sidebar / Settings (appearance, accent color, transparency, folder sizes, terminal and editor) |
 | ⇧⌘. | Show hidden files |

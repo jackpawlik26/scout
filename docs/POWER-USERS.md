@@ -31,11 +31,13 @@ In the sidebar, **Buckets ▸ Add Bucket…** connects any S3-compatible storage
 
 A bucket opens as a page: go into folders, **Download** (to the other pane's folder in split view, otherwise Downloads), **Upload…**, drop files onto it, **New Folder** and **Delete**. In split view with a bucket on one side, F5 uploads the selection from the other side. Deleting from a bucket is permanent (there's no Trash in the cloud), so Scout asks first.
 
+## Compare and sync two folders
 
 Open two folders side by side (⌘D), then **View ▸ Compare Folders…**. Scout lists every file that's only on one side, newer on one side, or different, including subfolders (it skips hidden files and folders like `node_modules` and `.git`). **Check contents** reads files whose dates differ but sizes match, to see if they really changed.
 
 **Copy to Right →** or **← Copy to Left** copies new, newer and different files across, after showing what it will do. Files that are newer on the receiving side are never overwritten. Replaced files go to the Trash; turn on **Also move extra files on the receiving side to the Trash** to make the two folders match exactly.
 
+## Commands in ⌘K
 
 Type `>` in ⌘K to search every command in Scout's menus (New Folder, Group By, Triage, Show Hidden Files…) and run it with ↵. Commands that don't apply right now are dimmed. Without the `>`, commands whose names contain what you typed also appear under Folders.
 
@@ -48,11 +50,27 @@ Put scripts in `~/Library/Application Support/Scout/Actions/` (⌘K ▸ **Open A
 - Anything the script prints is shown when it finishes; if it fails, you see why.
 - Scripts run as you, with your permissions. Only put scripts there that you trust.
 
+## Ask Scout (on-device AI)
 
 On Macs with Apple Intelligence, type a description in ⌘K, like *the lease I signed last spring* or *screenshots of error messages*, and click **Ask Scout what you mean** (or press ⌥↵). Apple's on-device model turns it into a search (words, a kind and a date range) and Scout shows what it understood, with a way back to your own words. Nothing leaves your Mac.
 
 In **Rename Items**, the `{about}` variable (and the built-in **Smart names** preset) names each file by what's in it: text in images, the start of PDFs and text files. Files the model can't read keep their names.
 
+## Your own fields and links
+
+- **Fields:** in the info panel, **Add a field** (text, number, date or a list of choices) to track things like Status, Client or Due on any file or folder. Each field gets a list column (right-click the headers to hide it), ⌘K searches the values, and each choice field adds a sidebar section that always lists what's set to each choice. Drop files on a choice to set it. Right-click a field's name in the info panel ▸ **Edit Field…** to rename, change or delete it.
+- **Links:** paste a URL into the info panel's **Links** card, or drop one from a browser, to keep a folder's Notion page, Figma file or repo with it. ⌘K finds links by name.
+- Both live in `customizations.json` and follow files when Scout moves or renames them. Nothing is written into the files.
+
+## Saved layouts
+
+**Go ▸ Save Layout…** names the window's tabs and split view. Reopen one with ⌥⌘1–9 (in the order they're listed), from the Go menu, or from **Layouts** in the sidebar, where right-click updates or deletes it.
+
+## Open folders in apps from Go to Path
+
+In ⌘L, type a command instead of a path: `code .`, `cursor ~/Sites/app`, `zed ..`, `subl`, `xed`, `warp`, `ghostty`, `iterm`, `tern` and others open the folder in that app (only for apps you have installed). `terminal` and `edit` use the apps you picked in Settings, and `finder` shows the folder in Finder. Anything else, or anything starting with `/`, `~` or `.`, is treated as a path.
+
+## Developer tools
 
 Turn on **Settings ▸ Developer tools** (it's off for new installs) for:
 
@@ -60,6 +78,7 @@ Turn on **Settings ▸ Developer tools** (it's off for new installs) for:
 - **Packages** (⌥⌘P): everything Homebrew and npm installed, and what's outdated.
 - **Changes** (⌥⌘G): every changed file in the repository.
 - **Open in Terminal** (⌥⇧⌘T) and **Open in Editor** (⌥⇧⌘E), using the apps you pick in Settings.
+- **AI Agents** (sidebar or Go menu): every project you've used with Claude Code, Codex, Cursor, Gemini or Windsurf, most recent first, with tokens used (from Claude Code's and Codex's session files), MCP servers and its agent files. **Running dev servers** lists programs listening on a local port that were started from your folders, with Open and Show Folder. All read on your Mac.
 
 ## Links
 
@@ -130,6 +149,6 @@ Stop it with Ctrl-C; it stays installed in Raycast.
 - `triage-rules.json`: Triage's "Always do this" rules (new downloads that match are filed on their own while Scout is open)
 - `file-history.jsonl`: what Scout moved, copied, renamed and trashed (the History page), one JSON entry per line, kept for a year
 - `favorites.json`, `workspaces.json`, `saved-searches.json`: what their names say
-- `customizations.json`: folder colors, symbols, nicknames, pins and notes (they follow files when Scout moves or renames them)
+- `customizations.json`: folder colors, symbols, nicknames, pins, notes, links and your fields (they follow files when Scout moves or renames them)
 
 Scout has no accounts, analytics or tracking. Only two things go online: Packages, which asks Homebrew and npm whether updates exist, and buckets you add yourself, which talk only to the storage you connected.

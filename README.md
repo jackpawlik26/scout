@@ -48,7 +48,9 @@ That builds Scout, puts it in Applications, opens it, and adds the `scout` comma
 
 ## What it does
 
-> **New in 0.3:** Triage Downloads files new downloads with one key and learns where things go. History remembers everything Scout moved, so you can find it or undo it days later. Ask Scout finds files from a description, using Apple's on-device model. Plus Compare Folders, cloud buckets (R2, S3), Disk Map, notes and more. [See what's new](https://scoutformac.com/docs/#new).
+> **New in 0.4:** Give files your own fields (Status, Client, Due…) and get sidebar groups that keep themselves up to date. Attach Notion, Figma or GitHub links to folders, save window layouts for ⌥⌘1–9, and keep a Downloads window on top. Plus `code .` in Go to Path, F2–F8, an AI Agents page and AVIF/WebP. [See what's new](https://scoutformac.com/docs/#new).
+>
+> **New in 0.3:** Triage Downloads, History, Ask Scout, Compare Folders, cloud buckets (R2, S3), Disk Map, notes and more.
 
 **Find anything in a few keystrokes.** Press ⌥Space in any app, or ⌘K inside Scout, and type a few letters. Folders you use most come first; files are found by name or by what's inside them. Filter by kind or date, and save searches you repeat.
 
@@ -72,7 +74,7 @@ That builds Scout, puts it in Applications, opens it, and adds the `scout` comma
 
 <p align="center"><img src="site/assets/shortcuts.jpg" alt="Scout's keyboard shortcuts sheet" width="720"></p>
 
-**For developers.** Turn on **Settings ▸ Developer tools** for git branch and file status in every folder, Open in Terminal or your editor, and a page for your Homebrew and npm packages. There are also `scout://` links, a `scout` command and a Raycast extension. See [Scout for power users](docs/POWER-USERS.md).
+**For developers.** Turn on **Settings ▸ Developer tools** for git branch and file status in every folder, Open in Terminal or your editor (or type `code .` in ⌘L), a page for your Homebrew and npm packages, and an AI Agents page for your Claude Code, Codex and Cursor projects. There are also `scout://` links, a `scout` command and a Raycast extension. See [Scout for power users](docs/POWER-USERS.md).
 
 <p align="center"><img src="site/assets/packages.jpg" alt="The Packages page listing Homebrew and npm packages with available updates" width="720"></p>
 
